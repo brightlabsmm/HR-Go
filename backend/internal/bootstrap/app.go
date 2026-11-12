@@ -51,6 +51,10 @@ func NewEngine(deps Dependencies) *gin.Engine {
 
 	registerProbes(engine, deps.DB)
 
+	engine.GET("/ping", func(c *gin.Context) {
+		responses.OK(c, gin.H{"message": "pong"})
+	})
+
 	return engine
 }
 
