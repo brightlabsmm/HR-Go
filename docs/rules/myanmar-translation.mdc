@@ -1,0 +1,43 @@
+---
+description: Myanmar (my) UI copy is mostly Burmese, with a few familiar English loanwords left as-is.
+globs: frontend/src/locales/my/**/*.json
+alwaysApply: false
+---
+
+# Myanmar translation (light mix)
+
+Write **mostly Burmese**. Do not leave whole screens, nav items, or buttons in English. Only keep a word in English when Myanmar users already say that English word in daily work.
+
+## Keep in English (loanwords only)
+
+`platform`, `account`, `admin`, `email`, `password`, `user`, `role`, `permission`, `profile`, `portal`, `tenant`
+
+Use them inside a Burmese sentence or with a Burmese plural: `account`, `Role များ`, `platform admin`.
+
+## Translate into Burmese (everything else)
+
+Buttons, status, nav, places, and helper text: ဝင်ရောက်ရန်, သိမ်းရန်, ပယ်ဖျက်ရန်, ပြင်ဆင်ရန်, ဖျက်ရန်, ဌာန, ဌာနခွဲ, အဖွဲ့အစည်း, ဆက်တင်များ, နိုင်ငံ, ရက်စွဲ, ရှာရန်.
+
+Do **not** leave `Save`, `Cancel`, `Settings`, `Sign in`, `Branches`, `Welcome`, `Home`, `Filter`, `Status`, `Actions` in English.
+
+## Examples
+
+```json
+// ❌ Too English
+"roles": "Roles",
+"submit_button": "Sign in",
+"help_body": "Contact your platform admin."
+
+// ❌ Too Burmese (forced calques)
+"account": "ကျွန်ုပ်၏ အကောင့်",
+"help_body": "ပလက်ဖောင်း စီမံခန့်ခွဲသူကို ဆက်သွယ်ပါ။",
+"roles": "အခန်းကဏ္ဍများ"
+
+// ✅ Light mix
+"account": "ကျွန်ုပ်၏ account",
+"help_body": "သင့် platform admin ကို ဆက်သွယ်ပါ။",
+"roles": "Role များ",
+"submit_button": "ဝင်ရောက်ရန်"
+```
+
+English `en` stays fully English. Thai/Chinese stay fully localized. Do not copy this mix into those files.

@@ -1,0 +1,12 @@
+name: Deploy Staging
+
+on:
+  workflow_call:
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/render-deploy.yaml
+    with:
+      environment: staging
+    secrets:
+      render_deploy_hook: ${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}

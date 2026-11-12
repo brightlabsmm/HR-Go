@@ -1,0 +1,12 @@
+name: Deploy Dev
+
+on:
+  workflow_call:
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/render-deploy.yaml
+    with:
+      environment: dev
+    secrets:
+      render_deploy_hook: ${{ secrets.RENDER_DEPLOY_HOOK_DEV }}

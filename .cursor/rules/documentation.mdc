@@ -1,0 +1,37 @@
+---
+description: Every documentation change adds a Changed Logs row with the author name
+globs:
+  - "docs/**/*.md"
+  - "README.md"
+  - "CONTRIBUTING.md"
+  - "CODE_OF_CONDUCT.md"
+  - "backend/README.md"
+  - "frontend/README.md"
+  - "mobile/README.md"
+  - ".cursor/rules/backend-code-format.mdc"
+  - "docs/rules/backend-code-format.mdc"
+alwaysApply: false
+---
+
+# Documentation change log
+
+When you create or edit a file matched by this rule, update its **Changed Logs** table in the same change.
+
+- Put the section at the end of the file. Heading text is exactly `## Changed Logs`.
+- Add the new row at the top of the table. Do not edit or delete older rows.
+- **Author** is the name from `git config user.name` for the person making the change. Do not invent a name. If that value is empty, ask before writing the row.
+- **Date** is `YYYY-MM-DD`.
+- **Time** is `HH:MM` (24-hour local time).
+- **Change** is one sentence describing what changed in the document.
+
+```markdown
+## Changed Logs
+
+| Date | Time | Author | Change |
+|---|---|---|---|
+| 2026-10-20 | 14:30 | Jane Doe | Described the branch phone field on the create screen. |
+```
+
+This rule does not apply to `mobile/AGENTS.md` or `.github/pull_request_template.md`.
+
+Do not edit locked Phase 0 documentation (`docs/phase_0/**` or Implementation Plan V2 PDFs). See `.cursor/rules/phase-0-locked.mdc`.

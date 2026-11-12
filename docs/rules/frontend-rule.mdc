@@ -1,0 +1,240 @@
+---
+description: Frontend component structure and conventions for React + TypeScript
+globs: ["**/*.tsx", "**/*.ts"]
+alwaysApply: true
+---
+
+# Frontend Component & Structure Conventions
+
+## Tech Stack
+
+- **Build tool:** Vite
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS + shadcn/ui
+- **Forms & validation:** react-hook-form + zod
+- **Global state:** Zustand
+- **Server state / data fetching:** TanStack Query (React Query)
+- **Routing:** React Router
+- **HTTP client:** Axios
+- **Animation:** Framer Motion
+- **Localization (i18n):** react-i18next
+- **Image cropping:** react-image-crop
+- **Carousel:** embla-carousel-react (via shadcn/ui Carousel)
+
+## File & Folder Structure
+
+- One component per file. File name is **kebab-case (dash-case)**, while the component itself stays PascalCase: `user-card.tsx` exporting `UserCard`, not `UserCard.tsx` or `userCard.tsx`.
+- Project structure:
+  ```
+  src/
+    components/
+      core/             # main/global components: navbar, footer, sidebar
+      common/           # reusable building blocks: form inputs, confirm dialog, wrappers
+      layouts/          # page/section layout shells
+      ui/               # low-level primitive UI components (button, badge, etc.)
+
+    shared/
+      hooks/            # global/cross-feature custom hooks
+      services/         # api services, e.g. some.service.ts
+      queries/          # react-query queries & mutations, e.g. some.query.ts
+      stores/           # global state stores
+
+    features/
+      auth/
+        components/     # feature-specific components
+        hooks/           # feature-specific hooks
+        pages/           # feature-specific pages
+      products/
+        components/
+        hooks/
+        pages/
+
+    app/
+      config/           # app configuration
+      api/              # app api clients (axios/fetch instances, interceptors)
+
+    constants/          # app-wide constants
+    routes/             # app routes
+    util/               # pure helper functions
+    styles/             # global styles
+  ```
+- **Where a component goes:**
+  - `components/core` → app-shell/global pieces used once per app (navbar, footer, sidebar).
+  - `components/common` → reusable, feature-agnostic components used in 2+ features (inputs, dialogs, wrappers).
+  - `components/ui` → smallest, most generic primitives (button, badge, avatar) — typically the base that `common` components are built on top of.
+  - `components/layouts` → structural shells that arrange pages (e.g. `DashboardLayout`, `AuthLayout`).
+  - `features/<name>/components` → components only that feature uses. Promote to `components/common` the moment a second feature needs it.
+- **`shared/` vs `features/`:** if it's used by more than one feature, it belongs in `shared/` (hooks, services, queries, stores). If it's specific to one feature's domain, it stays inside that feature's folder.
+- **Services vs queries:** `shared/services/*.service.ts` holds the raw API call functions using **Axios** (request/response shaping, error normalization). `shared/queries/*.query.ts` wraps those service calls in `useQuery`/`useMutation` hooks from TanStack Query. Components call queries, not services, directly. The shared Axios instance (with base URL, interceptors, auth headers) lives in `app/api/`.
+- **Keep data transformation simple.** Don't build dedicated normalizer/mapper layers (e.g. a `user.mapper.ts` that transforms every API response into a separate "domain model") unless the API shape is genuinely unusable as-is (deeply nested, inconsistent casing, etc.). In most cases, use the API response type directly or do small inline shaping (renaming a field, picking what you need) right in the service or query function. Don't add an abstraction layer "for the future" — add it when a real mismatch shows up.
+
+## Component Conventions
+
+- Use function components with named exports, not default exports:
+  ```tsx
+  // file: user-card.tsx
+  export function UserCard({ name, email }: UserCardProps) { ... }
+  ```
+  Named exports make imports consistent and refactors/renames safer.
+- Define a `Props` interface (not `type`, for consistency) above the component, named `<ComponentName>Props`:
+  ```tsx
+  interface UserCardProps {
+    name: string;
+    email: string;
+    onSelect?: (id: string) => void;
+  }
+  ```
+- Keep components small and focused. If a component exceeds ~150–200 lines or mixes more than one responsibility (e.g. data fetching + complex layout + business logic), split it.
+- Prefer composition over configuration. Instead of a component with many boolean/variant props controlling internal layout, expose `children` or slot-like props (`header`, `footer`) so consumers compose the structure.
+- Never inline complex JSX logic (nested ternaries, multi-line `.map` with branching) directly in `return`. Extract to a named variable or sub-component above the return statement.
+
+## Props & Typing
+
+- No `any`. Use `unknown` plus narrowing, or a precise type/generic.
+- Destructure props in the function signature, not inside the body.
+- Optional props get a default via destructuring (`{ size = 'md' }`), not `||` inside the component body.
+- Avoid prop drilling more than 2 levels deep — lift state, use composition, or use context for cross-cutting concerns (theme, auth, locale).
+
+## Hooks
+
+- Custom hooks always start with `use` and live in `hooks/` (shared) or alongside the feature that owns them.
+- A hook should do one thing. If a hook returns more than ~5 values, reconsider whether it should be split or return a single object instead of a tuple.
+- Don't call hooks conditionally or inside loops — standard Rules of Hooks, enforced via eslint-plugin-react-hooks.
+
+## State
+
+- Local UI state → `useState`/`useReducer` in the component.
+- Cross-component/shared client state → lift to nearest common ancestor first; reach for a **Zustand** store (in `shared/stores/` or feature-local) only when prop drilling becomes painful.
+- Server data (anything from an API) → always **TanStack Query**, via the `shared/queries/*.query.ts` files. Never duplicate server data into Zustand or local state — read it from the query hook each time.
+- Zustand stores are for client-only state: UI state that needs to persist across routes (e.g. sidebar collapsed, selected filters, multi-step form state), auth/session info, theme, etc.
+
+## Styling
+
+- Use Tailwind utility classes directly in JSX; avoid creating one-off CSS files per component unless the styling is too complex for utilities.
+- Use **shadcn/ui** components as the base for primitives (`components/ui/`) instead of building buttons, dialogs, inputs, etc. from scratch. Customize via the shadcn component's own variant config, not by overriding with extra wrapper classes.
+- For repeated style combinations, extract to a `cva` (class-variance-authority) variant config or a small wrapper component — not a giant string of conditional `clsx`/`cn` classes inline.
+- No inline `style={{}}` except for truly dynamic values (computed positions, colors from data) that can't be expressed as a Tailwind class.
+
+## Forms
+
+- Use **react-hook-form** for all forms with more than 1–2 fields. Avoid manual `useState` per field.
+- Define a **zod** schema per form, colocated near the form (or in the feature's `types`/`schemas` file), and infer the form type from it:
+  ```tsx
+  const loginSchema = z.object({
+    email: z.string().email(),
+    password: z.string().min(8),
+  });
+  type LoginFormValues = z.infer<typeof loginSchema>;
+  ```
+- Wire validation through `zodResolver`; don't hand-roll validation logic alongside react-hook-form.
+- Reusable form fields (text input, select, date picker) go in `components/common/`, built on top of `components/ui/` shadcn primitives, and accept react-hook-form's `register`/`control` so they're consistent across forms.
+
+## Routing
+
+- Use **React Router**. Route definitions live in `src/routes/`, not scattered inline in components.
+- Group routes by feature where practical, and lazy-load feature route components (`React.lazy` + `Suspense`) to keep initial bundle size down.
+- Route-level data needs go through TanStack Query inside the page component — don't fetch in route loaders unless the project has explicitly adopted that pattern.
+
+## Theming & Color
+
+- Never use raw/arbitrary color values in components — no `bg-[#ff6600]`, no `text-red-500` picked freely, no inline hex/rgb. All color must come from the **semantic theme tokens** defined in the Tailwind/shadcn theme config (`primary`, `secondary`, `accent`, `destructive`, `muted`, `background`, `foreground`, `border`, etc.).
+  ```tsx
+  // ❌ Don't
+  <div className="bg-[#1a73e8] text-white" />
+  <div className="bg-blue-600 text-red-500" />
+
+  // ✅ Do
+  <div className="bg-primary text-primary-foreground" />
+  <div className="bg-destructive text-destructive-foreground" />
+  ```
+- Theme tokens are defined once as CSS variables (light/dark) in `styles/` (e.g. `globals.css`) and mapped in `tailwind.config.ts` under `theme.extend.colors`. This is the **only** place raw color values (hex/hsl) are allowed to appear.
+- If a needed color doesn't exist as a token yet, add it to the theme config first — don't reach for an arbitrary Tailwind color or hex value as a shortcut. This keeps light/dark mode and rebranding consistent across the whole app.
+- Every semantic color token should have a paired `-foreground` token for text/icons placed on top of it (`primary` / `primary-foreground`, `destructive` / `destructive-foreground`), matching the shadcn convention.
+- Status/feedback colors (success, warning, info, error) should also be defined as named tokens (e.g. `success`, `warning`) rather than reused ad hoc from the default Tailwind palette (`green-500`, `yellow-500`), so they can be themed and reused consistently.
+- Component variants (e.g. a `Button` with `variant="primary" | "secondary" | "destructive"`) should map to these tokens via `cva`, not accept a raw color prop.
+
+## Performance & Optimization
+
+- **Don't memoize by default.** `React.memo`, `useMemo`, `useCallback` are not free — only reach for them when there's an actual measured re-render problem (a large list, an expensive computation, or a component re-rendering visibly too often), not as a reflex on every component/function.
+- **Code-split by route/feature.** Lazy-load feature pages with `React.lazy` + `Suspense` (see Routing) so the initial bundle only includes what the first screen needs. Avoid lazy-loading tiny components — the overhead isn't worth it.
+- **Avoid unnecessary re-renders from state placement.**
+  - Keep state as local as possible. Don't lift state to a parent (or Zustand) "just in case" — it forces every consumer to re-render on change.
+  - In Zustand, select only the slice you need (`useStore(state => state.user)`), not the whole store, so components don't re-render on unrelated state changes.
+  - Split large Zustand stores into smaller, focused stores instead of one giant store everything subscribes to.
+- **Lists:**
+  - Always provide a stable, unique `key` (an id, not array index) when rendering lists.
+  - For long lists (hundreds+ rows), use a virtualization library (e.g. `@tanstack/react-virtual`) instead of rendering everything at once.
+- **TanStack Query caching:**
+  - Set sensible `staleTime`/`gcTime` per query instead of refetching aggressively — most data doesn't need to be refetched on every mount/focus.
+  - Use query keys consistently so cached data is reused across components instead of duplicate fetches for the same data.
+  - Prefer `select` on `useQuery` to derive/shape data instead of recomputing it in the component on every render.
+  - **Always invalidate the relevant query keys after a mutation succeeds** (`onSuccess` → `queryClient.invalidateQueries({ queryKey: [...] })`), so the UI doesn't show stale data after a create/update/delete. Define this in the mutation hook itself (in `*.query.ts`), not left for each component to remember to do.
+  - Keep query keys consistent and shared (e.g. export a `userKeys.list()` / `userKeys.detail(id)` factory per resource in its `*.query.ts` file) so invalidation targets the exact right keys instead of guessing string literals in multiple places.
+  - For instant-feeling updates on simple mutations, optimistic updates are fine — but still invalidate/refetch afterward to reconcile with the real server state.
+- **Debounce/throttle expensive triggers** — search inputs, resize/scroll handlers, autosave — instead of firing a query or expensive computation on every keystroke/event.
+- **Images & assets:**
+  - Use modern formats (WebP/AVIF) and appropriately sized images; don't ship a 4000px image for a 200px avatar.
+  - Lazy-load below-the-fold images (`loading="lazy"`).
+- **Bundle hygiene:**
+  - Import only what's needed from large libraries (`import { debounce } from 'lodash-es'`, not the whole `lodash` package).
+  - Check bundle impact before adding a new dependency for something a small utility or existing library could already do.
+- **Measure before optimizing.** Use React DevTools Profiler or browser performance tools to confirm where the actual bottleneck is rather than guessing. Optimization that isn't based on a measured problem usually just adds complexity (see "don't memoize by default" above).
+
+## Animation
+
+- Use **Framer Motion** for animations — transitions, enter/exit, layout animations, gestures. Avoid hand-rolled CSS transitions/keyframes once a component needs more than a simple hover/opacity change.
+- Keep animations purposeful and simple: short durations (~150–300ms for UI feedback), subtle easing. Don't animate just because the library is available — animation should support the interaction (loading, focus, state change), not decorate it.
+- Define reusable animation variants (`fadeIn`, `slideUp`, etc.) in a shared file (e.g. `shared/motion-variants.ts` or `lib/motion.ts`) instead of redefining the same transition object inline in every component.
+- Respect `prefers-reduced-motion`. Use Framer Motion's `useReducedMotion` hook (or a shared wrapper) to shorten/skip non-essential animations for users who've requested reduced motion.
+- Use `AnimatePresence` for mount/unmount transitions (modals, toasts, route transitions) rather than conditionally rendering without an exit animation.
+- Avoid animating layout-affecting properties (`width`, `height`, `top`/`left`) when a `transform`-based animation (`scale`, `x`/`y`) achieves the same effect — it's cheaper for the browser to render.
+
+## Localization (i18n)
+
+- Use **react-i18next**. No hardcoded user-facing strings in components — every visible string goes through `t('key')`.
+- Translation files live in `src/locales/<lang>/<namespace>.json` (e.g. `locales/en/common.json`, `locales/th/common.json`, `locales/zh/common.json`), split into namespaces by feature/area (`common`, `auth`, `products`) rather than one giant file per language.
+- **Key naming:** use `namespace:scoped.key` in `snake_case` or `camelCase` consistently (pick one and stick to it), grouped by feature/section — e.g. `auth:login.title`, `auth:login.submit_button`. Don't use the literal English text as the key.
+- Keep interpolation and pluralization in the translation string itself (i18next supports `{{count}}`, plural keys) rather than concatenating strings in the component:
+  ```tsx
+  // ❌ Don't
+  <p>{count} {count === 1 ? 'item' : 'items'}</p>
+
+  // ✅ Do
+  <p>{t('cart:item_count', { count })}</p>
+  ```
+- Every new key must be added to **all** supported languages at the same time — don't merge a feature with English-only keys and "translate later." Missing keys should fall back visibly (i18next's fallback language) so gaps are easy to spot, not silently blank. UI switcher currently shows `en` and `my` only; still keep `th`/`zh` files in sync when you add keys.
+- **Myanmar (`my`) copy is mostly Burmese** with a few familiar English loanwords (`platform`, `account`, `email`, `admin`, `role`, …). Do not leave whole labels in English. Follow `.cursor/rules/myanmar-translation.mdc`.
+- Don't bake locale-specific formatting (dates, currency, numbers) into translation strings — use `Intl`/i18next's built-in formatters so THB/MMK and date formats stay correct per locale instead of hardcoded.
+- Language switching state (current locale) lives in the Zustand store or i18next's own persisted instance — pick one source of truth, don't duplicate it in both.
+
+## Image Components
+
+Image display follows a shared set of components in `components/common/image/` — don't build one-off image viewers per feature.
+
+- **`image-cropper.tsx`** — wraps **react-image-crop**. Used for upload/edit flows (avatars, product images). Outputs the cropped result (blob/file) to the caller; doesn't know about upload/API logic itself.
+- **`single-image.tsx`** — renders one thumbnail. On click, opens `image-dialog` showing the full-size image. No count overlay, no carousel controls (since there's only one image) — the dialog just renders detail view.
+- **`image-gallery.tsx`** — renders a grid/row of thumbnails for multiple images.
+  - If the number of images exceeds the visible slot count (e.g. showing 4 of 9), overlay a **"+N" count badge** on the last visible thumbnail (e.g. `+5`), not a separate "view all" button.
+  - Clicking **any** thumbnail (including the "+N" one) opens `image-dialog` in carousel mode, starting at the index of the clicked image.
+- **`image-dialog.tsx`** — the single shared dialog (built on the shadcn `Dialog`) used by both `single-image` and `image-gallery`:
+  - Always receives an array of images, even for the single-image case (array of length 1) — one component, one behavior path, no duplicated dialog logic.
+  - When the array has more than 1 image, render the shadcn/embla **Carousel** inside the dialog for next/prev navigation (swipe + arrow controls).
+  - Show a position indicator while the dialog is open, e.g. `2 / 9`, so the user knows where they are in the set — this is separate from the gallery's "+N" badge, which only applies to the closed/thumbnail state.
+  - When the array has exactly 1 image, render the image directly without mounting the carousel (avoid pulling in carousel UI/controls for a single image).
+
+This keeps a clear split: **`single-image`** and **`image-gallery`** are just entry points that prep the image list and open `image-dialog`; all viewing/navigation logic lives in one place.
+
+## Imports
+
+- Group imports: external packages → internal absolute imports (`@/...`) → relative imports → types. Separate each group with a blank line.
+- Use absolute imports (`@/components/...`) over deep relative paths (`../../../components/...`).
+
+## Naming
+
+- **Files:** `kebab-case` for all files — components, hooks, services, queries, utils (`user-card.tsx`, `use-auth.ts`, `user.service.ts`, `user.query.ts`).
+- **Components (the exported identifier):** `PascalCase` (`UserCard`, `DashboardLayout`).
+- **Hooks (the exported identifier):** `useCamelCase` (`useAuth`, `useDebounce`) — file is still kebab-case (`use-auth.ts`).
+- **Functions/variables:** `camelCase`
+- **Constants (module-level, unchanging):** `UPPER_SNAKE_CASE`
+- **Booleans** read as questions: `isLoading`, `hasError`, `canSubmit`
+- **Folders:** `kebab-case` as well (`shared/services`, `features/auth`, not `Shared/Services`).
