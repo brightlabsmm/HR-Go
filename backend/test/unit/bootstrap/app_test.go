@@ -54,6 +54,28 @@ func TestEngineProbesAndNotFound(t *testing.T) {
 		}
 	})
 
+	t.Run("GET /ping returns 200 pong envelope", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+		rec := httptest.NewRecorder()
+		engine.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200", rec.Code)
+		}
+		var payload struct {
+			Success bool `json:"success"`
+			Data    struct {
+				Message string `json:"message"`
+			} `json:"data"`
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+			t.Fatalf("invalid JSON: %v", err)
+		}
+		if !payload.Success || payload.Data.Message != "pong" {
+			t.Fatalf("payload = %+v, want success=true message=pong", payload)
+		}
+	})
+
 	t.Run("unknown route returns JSON 404 envelope", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/does-not-exist", nil)
 		rec := httptest.NewRecorder()
