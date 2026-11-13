@@ -15,7 +15,7 @@ import (
 func TestEnvelopes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
-	t.Run("OK writes success envelope", func(t *testing.T) {
+	t.Run("OK writes direct data payload", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(rec)
 		responses.OK(c, map[string]string{"ping": "pong"})
@@ -23,16 +23,16 @@ func TestEnvelopes(t *testing.T) {
 		if rec.Code != http.StatusOK {
 			t.Fatalf("status = %d, want 200", rec.Code)
 		}
-		var payload map[string]any
+		var payload map[string]string
 		if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
 			t.Fatalf("invalid JSON: %v", err)
 		}
-		if payload["success"] != true {
-			t.Errorf("success = %v, want true", payload["success"])
+		if payload["ping"] != "pong" {
+			t.Errorf("ping = %v, want pong", payload["ping"])
 		}
 	})
 
-	t.Run("Fail writes error envelope", func(t *testing.T) {
+	t.Run("Fail writes Section 3.7 error envelope", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(rec)
 		responses.Fail(c, apperrors.BadRequest("bad input"))
@@ -44,12 +44,32 @@ func TestEnvelopes(t *testing.T) {
 		if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
 			t.Fatalf("invalid JSON: %v", err)
 		}
-		if payload["success"] != false {
-			t.Errorf("success = %v, want false", payload["success"])
-		}
 		errObj, ok := payload["error"].(map[string]any)
 		if !ok || errObj["code"] != "BAD_REQUEST" {
 			t.Errorf("error = %#v, want code BAD_REQUEST", payload["error"])
+		}
+	})
+
+	t.Run("Page writes Section 3.5 paginated structure", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(rec)
+		responses.Page(c, []string{"item1", "item2"}, 1, 10, 2)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200", rec.Code)
+		}
+		var payload struct {
+			Items      []string `json:"items"`
+			Page       int      `json:"page"`
+			PageSize   int      `json:"pageSize"`
+			TotalItems int64    `json:"totalItems"`
+			TotalPages int      `json:"totalPages"`
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+			t.Fatalf("invalid JSON: %v", err)
+		}
+		if len(payload.Items) != 2 || payload.TotalItems != 2 || payload.TotalPages != 1 {
+			t.Errorf("invalid pagination envelope: %+v", payload)
 		}
 	})
 }

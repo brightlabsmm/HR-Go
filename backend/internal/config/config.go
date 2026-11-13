@@ -11,20 +11,26 @@ import (
 )
 
 const (
-	defaultAppEnv       = "development"
-	defaultPort         = "8080"
-	defaultLogLevel     = "info"
-	defaultMaxBodyBytes = int64(1 << 20) // 1 MiB
+	defaultAppEnv         = "development"
+	defaultPort           = "8080"
+	defaultLogLevel       = "info"
+	defaultMaxBodyBytes   = int64(1 << 20) // 1 MiB
+	defaultJWTSecret      = "dev-only-secret-key-must-be-changed-in-production"
+	defaultSuperadminPass = "Admin@12345"
 )
 
 // Config holds process-level server and infrastructure configuration.
 type Config struct {
-	AppEnv             string
-	Port               string
-	LogLevel           string
-	DatabaseURL        string
-	CORSAllowedOrigins []string
-	MaxBodyBytes       int64
+	AppEnv                string
+	Port                  string
+	LogLevel              string
+	DatabaseURL           string
+	CORSAllowedOrigins    []string
+	MaxBodyBytes          int64
+	JWTSecret             string
+	PlatformAdminEmail    string
+	PlatformAdminPassword string
+	PlatformAdminFullName string
 }
 
 // Load reads .env files when present and parses environment configuration.
@@ -64,13 +70,37 @@ func Load() (Config, error) {
 		dbURL = normalizeDatabaseURL(rawDB)
 	}
 
+	jwtSecret := strings.TrimSpace(os.Getenv("JWT_SECRET"))
+	if jwtSecret == "" {
+		jwtSecret = defaultJWTSecret
+	}
+
+	adminEmail := strings.TrimSpace(os.Getenv("PLATFORM_ADMIN_EMAIL"))
+	if adminEmail == "" {
+		adminEmail = "admin@example.com"
+	}
+
+	adminPass := os.Getenv("PLATFORM_ADMIN_PASSWORD")
+	if adminPass == "" {
+		adminPass = defaultSuperadminPass
+	}
+
+	adminName := strings.TrimSpace(os.Getenv("PLATFORM_ADMIN_FULL_NAME"))
+	if adminName == "" {
+		adminName = "Platform Superadmin"
+	}
+
 	return Config{
-		AppEnv:             appEnv,
-		Port:               port,
-		LogLevel:           logLevel,
-		DatabaseURL:        dbURL,
-		CORSAllowedOrigins: splitList(os.Getenv("CORS_ALLOWED_ORIGINS")),
-		MaxBodyBytes:       maxBodyBytes,
+		AppEnv:                appEnv,
+		Port:                  port,
+		LogLevel:              logLevel,
+		DatabaseURL:           dbURL,
+		CORSAllowedOrigins:    splitList(os.Getenv("CORS_ALLOWED_ORIGINS")),
+		MaxBodyBytes:          maxBodyBytes,
+		JWTSecret:             jwtSecret,
+		PlatformAdminEmail:    adminEmail,
+		PlatformAdminPassword: adminPass,
+		PlatformAdminFullName: adminName,
 	}, nil
 }
 
@@ -99,6 +129,7 @@ func normalizeDatabaseURL(raw string) string {
 		return raw
 	}
 	query := parsed.Query()
+	query.Del("channel_binding")
 	if query.Get("TimeZone") == "" {
 		query.Set("TimeZone", "UTC")
 	}
