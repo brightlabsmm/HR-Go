@@ -1,0 +1,1954 @@
+openapi: 3.0.3
+info:
+  title: HRGo API — Phase 0 & Phase 1
+  version: 1.2.0
+  description: |
+    Complete OpenAPI 3.0 specification for **HRGo Phase 0 & Phase 1** (Platform Administration & Organization Workspace Foundation).
+
+    ### Quick Start / Testing Credentials (Dev DB)
+    1. **Platform Admin (`/api/v1/control/...`)**:
+       - Email: `admin@example.com`
+       - Password: `Admin@12345`
+    2. **Organization Workspace (`/api/v1/workspace/...`)**:
+       - Identifier: `EMP-001`
+       - Password: `Password@123`
+
+    ### How to Change Base URL
+    Use the **Server / Base URL** box to type any custom URL (default: `https://www.dev-api.hrgo.pro`) or switch between Dev and Localhost.
+
+servers:
+  - url: "{baseUrl}"
+    description: Custom Base URL (Editable input box)
+    variables:
+      baseUrl:
+        default: https://www.dev-api.hrgo.pro
+        description: Enter your API Base URL (without trailing slash)
+  - url: https://www.dev-api.hrgo.pro
+    description: Development Server (Render)
+  - url: http://localhost:8080
+    description: Local Development Server
+
+tags:
+  - name: Operational
+    description: Liveness and readiness health check endpoints
+  - name: Control - Auth
+    description: Platform administrator authentication (`/api/v1/control/auth`)
+  - name: Control - Roles & Permissions
+    description: Platform role and shared permission catalogue lookup
+  - name: Control - Users
+    description: Platform user administration and role assignment
+  - name: Control - Organizations
+    description: Customer organization CRUD and lifecycle status transitions
+  - name: Workspace - Auth
+    description: Organization / employee workspace authentication (`/api/v1/workspace/auth`)
+  - name: Workspace - Branches
+    description: Organization-scoped branch management
+  - name: Workspace - Departments
+    description: Organization-scoped department management
+  - name: Workspace - Positions
+    description: Organization-scoped position management
+  - name: Workspace - Roles
+    description: Organization role catalogue and account role assignment
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Paste the `accessToken` returned by either:
+        - `POST /api/v1/control/auth/login` (for `/api/v1/control/...` routes)
+        - `POST /api/v1/workspace/auth/login` (for `/api/v1/workspace/...` routes)
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: 1-based page number
+    PageSizeParam:
+      name: pageSize
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Number of items per page
+    QuerySearchParam:
+      name: q
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Optional text search query
+    SortByParam:
+      name: sortBy
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Field to sort by
+    SortDirectionParam:
+      name: sortDirection
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: desc
+      description: Sort direction (`asc` or `desc`)
+
+  schemas:
+    ErrorDetail:
+      type: object
+      required: [field, message]
+      properties:
+        field:
+          type: string
+          example: organizationCode
+        message:
+          type: string
+          example: This organization code is already in use.
+
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, details, traceId]
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              example: The request contains invalid data.
+            details:
+              type: array
+              items:
+                $ref: "#/components/schemas/ErrorDetail"
+            traceId:
+              type: string
+              example: 550e8400-e29b-41d4-a716-446655440000
+
+    PlatformRoleSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 8e40b5b0-1234-4a5b-8c9d-0123456789ab
+        roleCode:
+          type: string
+          example: SUPERADMIN
+        roleName:
+          type: string
+          example: Superadmin
+
+    PlatformRoleWithPermissions:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 8e40b5b0-1234-4a5b-8c9d-0123456789ab
+        roleCode:
+          type: string
+          example: SUPERADMIN
+        roleName:
+          type: string
+          example: Superadmin
+        permissions:
+          type: array
+          items:
+            type: string
+          example:
+            - platform.organization.create
+            - platform.organization.read
+            - platform.user.read
+
+    PermissionItem:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 2f41b5b0-1234-4a5b-8c9d-0123456789ab
+        permissionScope:
+          type: string
+          enum: [PLATFORM, ORG]
+          example: PLATFORM
+        permissionCode:
+          type: string
+          example: platform.organization.read
+        description:
+          type: string
+          example: View and search customer organizations
+
+    PlatformUserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d
+        fullName:
+          type: string
+          example: Platform Superadmin
+        email:
+          type: string
+          format: email
+          example: admin@example.com
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+          example: ACTIVE
+        lastLoginAt:
+          type: string
+          format: date-time
+          nullable: true
+        roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlatformRoleSummary"
+        permissions:
+          type: array
+          items:
+            type: string
+          example:
+            - platform.user.read
+            - platform.organization.read
+
+    PlatformLoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@example.com
+        password:
+          type: string
+          example: Admin@12345
+
+    PlatformLoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        tokenType:
+          type: string
+          example: Bearer
+        expiresIn:
+          type: integer
+          example: 3600
+        user:
+          $ref: "#/components/schemas/PlatformUserProfile"
+
+    CreatePlatformUserRequest:
+      type: object
+      required: [fullName, email, password]
+      properties:
+        fullName:
+          type: string
+          example: Platform Support User
+        email:
+          type: string
+          format: email
+          example: support@example.com
+        password:
+          type: string
+          example: Support@12345
+        roleIds:
+          type: array
+          items:
+            type: string
+          example: []
+
+    UpdatePlatformUserRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+          example: Updated Platform User
+        email:
+          type: string
+          format: email
+          example: updated@example.com
+
+    ReplacePlatformUserRolesRequest:
+      type: object
+      required: [roleIds]
+      properties:
+        roleIds:
+          type: array
+          items:
+            type: string
+          example:
+            - 8e40b5b0-1234-4a5b-8c9d-0123456789ab
+
+    Organization:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 9c1b2a3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+        organizationCode:
+          type: string
+          example: ORG-001
+        legalName:
+          type: string
+          example: Bright Labs Myanmar Co., Ltd.
+        displayName:
+          type: string
+          example: Bright Labs
+        contactEmail:
+          type: string
+          format: email
+          example: contact@brightlabs.mm
+        contactPhone:
+          type: string
+          example: "+959123456789"
+        country:
+          type: string
+          example: MM
+        address:
+          type: string
+          example: Yangon, Myanmar
+        status:
+          type: string
+          enum: [PENDING, ACTIVE, SUSPENDED, ARCHIVED]
+          example: ACTIVE
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateOrganizationRequest:
+      type: object
+      required: [organizationCode, legalName, displayName]
+      properties:
+        organizationCode:
+          type: string
+          example: ORG-002
+        legalName:
+          type: string
+          example: Golden Myanmar Enterprise Ltd.
+        displayName:
+          type: string
+          example: Golden Myanmar
+        contactEmail:
+          type: string
+          format: email
+          example: info@goldenmyanmar.mm
+        contactPhone:
+          type: string
+          example: "+959987654321"
+        country:
+          type: string
+          example: MM
+        address:
+          type: string
+          example: Mandalay, Myanmar
+
+    UpdateOrganizationRequest:
+      type: object
+      properties:
+        legalName:
+          type: string
+          example: Golden Myanmar Enterprise Co., Ltd.
+        displayName:
+          type: string
+          example: Golden Myanmar Group
+        contactEmail:
+          type: string
+          format: email
+          example: contact@goldenmyanmar.mm
+        contactPhone:
+          type: string
+          example: "+959111222333"
+        country:
+          type: string
+          example: MM
+        address:
+          type: string
+          example: Yangon, Myanmar
+
+    UpdateOrganizationStatusRequest:
+      type: object
+      required: [status, confirmation]
+      properties:
+        status:
+          type: string
+          enum: [PENDING, ACTIVE, SUSPENDED, ARCHIVED]
+          example: ACTIVE
+        reason:
+          type: string
+          example: Approved for production launch
+        confirmation:
+          type: boolean
+          example: true
+
+    WorkspaceRoleAssignment:
+      type: object
+      properties:
+        roleCode:
+          type: string
+          example: ORG_ADMIN
+        roleName:
+          type: string
+          example: Org Admin
+        branchId:
+          type: string
+          nullable: true
+          example: null
+        departmentId:
+          type: string
+          nullable: true
+          example: null
+
+    WorkspaceUserProfile:
+      type: object
+      properties:
+        organizationId:
+          type: string
+          example: 9c1b2a3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+        organizationCode:
+          type: string
+          example: ORG-001
+        accountId:
+          type: string
+          example: 7a6b5c4d-3e2f-1a0b-9c8d-7e6f5a4b3c2d
+        employeeId:
+          type: string
+          example: 6f5e4d3c-2b1a-0f9e-8d7c-6b5a4f3e2d1c
+        employeeCode:
+          type: string
+          example: EMP-001
+        fullName:
+          type: string
+          example: Aung Kyaw
+        accountStatus:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+          example: ACTIVE
+        roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkspaceRoleAssignment"
+        permissions:
+          type: array
+          items:
+            type: string
+          example:
+            - org.branch.read
+            - org.branch.create
+            - org.department.read
+            - org.position.read
+
+    WorkspaceLoginRequest:
+      type: object
+      required: [identifier, password]
+      properties:
+        identifier:
+          type: string
+          description: Employee Code or Employee ID
+          example: EMP-001
+        password:
+          type: string
+          example: Password@123
+
+    WorkspaceLoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        tokenType:
+          type: string
+          example: Bearer
+        expiresIn:
+          type: integer
+          example: 3600
+        user:
+          $ref: "#/components/schemas/WorkspaceUserProfile"
+
+    Branch:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 3b4c5d6e-7f8a-9b0c-1d2e-3f4a5b6c7d8e
+        organizationId:
+          type: string
+          example: 9c1b2a3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+        parentId:
+          type: string
+          nullable: true
+          example: null
+        branchCode:
+          type: string
+          example: YGN-01
+        branchName:
+          type: string
+          example: Yangon Main Branch
+        address:
+          type: string
+          example: Yangon, Myanmar
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+          example: ACTIVE
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateBranchRequest:
+      type: object
+      required: [branchCode, branchName]
+      properties:
+        branchCode:
+          type: string
+          example: MDY-01
+        branchName:
+          type: string
+          example: Mandalay Branch
+        parentId:
+          type: string
+          nullable: true
+          example: null
+        address:
+          type: string
+          example: Mandalay, Myanmar
+
+    UpdateBranchRequest:
+      type: object
+      properties:
+        branchName:
+          type: string
+          example: Mandalay Regional Office
+        parentId:
+          type: string
+          nullable: true
+          example: null
+        address:
+          type: string
+          example: 78th Street, Mandalay
+
+    Department:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 4c5d6e7f-8a9b-0c1d-2e3f-4a5b6c7d8e9f
+        organizationId:
+          type: string
+          example: 9c1b2a3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+        branchId:
+          type: string
+          nullable: true
+          example: null
+        departmentCode:
+          type: string
+          example: HR
+        departmentName:
+          type: string
+          example: Human Resources
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+          example: ACTIVE
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateDepartmentRequest:
+      type: object
+      required: [departmentCode, departmentName]
+      properties:
+        departmentCode:
+          type: string
+          example: ENG
+        departmentName:
+          type: string
+          example: Engineering
+        branchId:
+          type: string
+          nullable: true
+          example: null
+
+    UpdateDepartmentRequest:
+      type: object
+      properties:
+        departmentName:
+          type: string
+          example: Product & Engineering
+        branchId:
+          type: string
+          nullable: true
+          example: null
+
+    Position:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 5d6e7f8a-9b0c-1d2e-3f4a-5b6c7d8e9f0a
+        organizationId:
+          type: string
+          example: 9c1b2a3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+        departmentId:
+          type: string
+          nullable: true
+          example: 4c5d6e7f-8a9b-0c1d-2e3f-4a5b6c7d8e9f
+        positionCode:
+          type: string
+          example: HR-MGR
+        positionName:
+          type: string
+          example: HR Manager
+        status:
+          type: string
+          enum: [ACTIVE, INACTIVE]
+          example: ACTIVE
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreatePositionRequest:
+      type: object
+      required: [positionCode, positionName]
+      properties:
+        positionCode:
+          type: string
+          example: SWE-SR
+        positionName:
+          type: string
+          example: Senior Software Engineer
+        departmentId:
+          type: string
+          nullable: true
+          example: null
+
+    UpdatePositionRequest:
+      type: object
+      properties:
+        positionName:
+          type: string
+          example: Lead Software Engineer
+        departmentId:
+          type: string
+          nullable: true
+          example: null
+
+    OrgRoleItem:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 6e7f8a9b-0c1d-2e3f-4a5b-6c7d8e9f0a1b
+        roleCode:
+          type: string
+          example: ORG_ADMIN
+        roleName:
+          type: string
+          example: Org Admin
+        permissions:
+          type: array
+          items:
+            type: string
+          example:
+            - org.branch.read
+            - org.branch.create
+
+    ReplaceWorkspaceAccountRolesRequest:
+      type: object
+      required: [assignments]
+      properties:
+        assignments:
+          type: array
+          items:
+            type: object
+            required: [roleId]
+            properties:
+              roleId:
+                type: string
+                example: 6e7f8a9b-0c1d-2e3f-4a5b-6c7d8e9f0a1b
+              branchId:
+                type: string
+                nullable: true
+                example: null
+              departmentId:
+                type: string
+                nullable: true
+                example: null
+
+  responses:
+    BadRequest:
+      description: Malformed request or invalid parameters
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    Unauthorized:
+      description: Missing, invalid, or expired access token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    Forbidden:
+      description: Insufficient permissions or inactive account
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    NotFound:
+      description: Resource not found within caller's scope
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    Conflict:
+      description: Duplicate code or invalid status transition
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    ValidationError:
+      description: Business validation failure
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+
+paths:
+  /health:
+    get:
+      tags: [Operational]
+      summary: Application liveness probe
+      description: Checks whether the HTTP server process is alive.
+      responses:
+        "200":
+          description: Application is alive
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: UP
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /ready:
+    get:
+      tags: [Operational]
+      summary: Application readiness probe
+      description: Checks whether the application and PostgreSQL database connection are ready.
+      responses:
+        "200":
+          description: Application and database are ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: UP
+                  database:
+                    type: string
+                    example: UP
+                  timestamp:
+                    type: string
+                    format: date-time
+        "503":
+          description: Database or dependency unavailable
+
+  # ===========================================================================
+  # CONTROL API — PLATFORM ADMINISTRATION
+  # ===========================================================================
+
+  /api/v1/control/auth/login:
+    post:
+      tags: [Control - Auth]
+      summary: Platform Admin login
+      description: Authenticate a platform user (`Superadmin` or `Platform Support`) using email and password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlatformLoginRequest"
+      responses:
+        "200":
+          description: Authenticated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformLoginResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/control/auth/logout:
+    post:
+      tags: [Control - Auth]
+      summary: Platform Admin logout
+      description: Ends the current platform session.
+      security:
+        - BearerAuth: []
+      responses:
+        "204":
+          description: Logged out successfully
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/control/auth/me:
+    get:
+      tags: [Control - Auth]
+      summary: Get current Platform Admin profile
+      description: Returns the authenticated platform user's profile, roles, and effective permissions.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Authenticated platform user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformUserProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/control/roles:
+    get:
+      tags: [Control - Roles & Permissions]
+      summary: List platform roles
+      description: List platform roles and their permission summaries. Requires `platform.role.read`.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of platform roles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PlatformRoleWithPermissions"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/control/permissions:
+    get:
+      tags: [Control - Roles & Permissions]
+      summary: List permissions
+      description: List permissions, optionally filtered by `PLATFORM` or `ORG` scope. Requires `platform.permission.read`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [PLATFORM, ORG]
+          description: Filter by permission scope (`PLATFORM` or `ORG`)
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: Paginated list of permissions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PermissionItem"
+                  page:
+                    type: integer
+                    example: 1
+                  pageSize:
+                    type: integer
+                    example: 20
+                  totalItems:
+                    type: integer
+                    example: 25
+                  totalPages:
+                    type: integer
+                    example: 2
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/control/users:
+    get:
+      tags: [Control - Users]
+      summary: List platform users
+      description: List and search platform users with pagination. Requires `platform.user.read`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/QuerySearchParam"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE]
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortDirectionParam"
+      responses:
+        "200":
+          description: Paginated platform users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PlatformUserProfile"
+                  page:
+                    type: integer
+                    example: 1
+                  pageSize:
+                    type: integer
+                    example: 20
+                  totalItems:
+                    type: integer
+                    example: 1
+                  totalPages:
+                    type: integer
+                    example: 1
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    post:
+      tags: [Control - Users]
+      summary: Create platform user
+      description: Create a platform user and assign initial platform roles. Requires `platform.user.create`.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlatformUserRequest"
+      responses:
+        "201":
+          description: Platform user created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformUserProfile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/control/users/{platformUserId}:
+    parameters:
+      - name: platformUserId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Platform user ID
+    get:
+      tags: [Control - Users]
+      summary: Get platform user by ID
+      description: Retrieve a platform user's profile, status, and roles. Requires `platform.user.read`.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Platform user details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformUserProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Control - Users]
+      summary: Update platform user
+      description: Update permitted platform user profile fields. Requires `platform.user.update`.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePlatformUserRequest"
+      responses:
+        "200":
+          description: Updated platform user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformUserProfile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/control/users/{platformUserId}/roles:
+    put:
+      tags: [Control - Users]
+      summary: Replace platform user roles
+      description: Replace the platform user's role assignments. Requires `platform.role.assign`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: platformUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplacePlatformUserRolesRequest"
+      responses:
+        "200":
+          description: Updated platform user with new roles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformUserProfile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/control/users/{platformUserId}/deactivate:
+    post:
+      tags: [Control - Users]
+      summary: Deactivate platform user
+      description: Deactivate a platform user account. Requires `platform.user.deactivate`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: platformUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deactivated platform user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformUserProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/control/users/{platformUserId}/reactivate:
+    post:
+      tags: [Control - Users]
+      summary: Reactivate platform user
+      description: Reactivate a previously deactivated platform user. Requires `platform.user.update`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: platformUserId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reactivated platform user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformUserProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/control/organizations:
+    post:
+      tags: [Control - Organizations]
+      summary: Create customer organization
+      description: Create a new customer organization account. Requires `platform.organization.create`.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrganizationRequest"
+      responses:
+        "201":
+          description: Organization created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+    get:
+      tags: [Control - Organizations]
+      summary: List and search customer organizations
+      description: List, search, filter, sort, and paginate customer organizations. Requires `platform.organization.read`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/QuerySearchParam"
+        - name: organizationCode
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [PENDING, ACTIVE, SUSPENDED, ARCHIVED]
+        - name: createdFrom
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: createdTo
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortDirectionParam"
+      responses:
+        "200":
+          description: Paginated organizations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Organization"
+                  page:
+                    type: integer
+                    example: 1
+                  pageSize:
+                    type: integer
+                    example: 20
+                  totalItems:
+                    type: integer
+                    example: 1
+                  totalPages:
+                    type: integer
+                    example: 1
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/control/organizations/{organizationId}:
+    parameters:
+      - name: organizationId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Control - Organizations]
+      summary: Get organization by ID
+      description: Retrieve a customer organization's profile and current status. Requires `platform.organization.read`.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Organization details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Control - Organizations]
+      summary: Update organization profile
+      description: Update permitted organization profile fields. Requires `platform.organization.update`.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrganizationRequest"
+      responses:
+        "200":
+          description: Updated organization
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/control/organizations/{organizationId}/status:
+    post:
+      tags: [Control - Organizations]
+      summary: Transition organization lifecycle status
+      description: Execute an approved organization lifecycle status transition (`PENDING`, `ACTIVE`, `SUSPENDED`, `ARCHIVED`). Requires `platform.organization.status.update`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrganizationStatusRequest"
+      responses:
+        "200":
+          description: Organization status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  # ===========================================================================
+  # WORKSPACE API — ORGANIZATION & EMPLOYEE ACCESS
+  # ===========================================================================
+
+  /api/v1/workspace/auth/login:
+    post:
+      tags: [Workspace - Auth]
+      summary: Workspace user login
+      description: Authenticate an organization user using Employee Code or Employee ID and password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkspaceLoginRequest"
+      responses:
+        "200":
+          description: Authenticated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceLoginResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/workspace/auth/logout:
+    post:
+      tags: [Workspace - Auth]
+      summary: Workspace user logout
+      description: End the current organization-user session.
+      security:
+        - BearerAuth: []
+      responses:
+        "204":
+          description: Logged out successfully
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/workspace/auth/me:
+    get:
+      tags: [Workspace - Auth]
+      summary: Get current Workspace user profile
+      description: Get the authenticated account, linked employee identity, organization, roles, and effective permissions.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Workspace user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceUserProfile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/workspace/branches:
+    post:
+      tags: [Workspace - Branches]
+      summary: Create branch
+      description: Create a branch in the authenticated organization. Requires `org.branch.create`.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBranchRequest"
+      responses:
+        "201":
+          description: Branch created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+    get:
+      tags: [Workspace - Branches]
+      summary: List branches
+      description: List and filter branches belonging to the authenticated organization. Requires `org.branch.read`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/QuerySearchParam"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE]
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortDirectionParam"
+      responses:
+        "200":
+          description: Paginated branches
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Branch"
+                  page:
+                    type: integer
+                    example: 1
+                  pageSize:
+                    type: integer
+                    example: 20
+                  totalItems:
+                    type: integer
+                    example: 1
+                  totalPages:
+                    type: integer
+                    example: 1
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/workspace/branches/{branchId}:
+    parameters:
+      - name: branchId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Workspace - Branches]
+      summary: Get branch by ID
+      description: Retrieve a branch within the authenticated organization. Requires `org.branch.read`.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Branch details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Workspace - Branches]
+      summary: Update branch
+      description: Update permitted branch fields without changing its organization. Requires `org.branch.update`.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBranchRequest"
+      responses:
+        "200":
+          description: Updated branch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/workspace/branches/{branchId}/deactivate:
+    post:
+      tags: [Workspace - Branches]
+      summary: Deactivate branch
+      description: Deactivate a branch after checking references and business constraints. Requires `org.branch.deactivate`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: branchId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deactivated branch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/workspace/departments:
+    post:
+      tags: [Workspace - Departments]
+      summary: Create department
+      description: Create a department, optionally associated with a branch. Requires `org.department.create`.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDepartmentRequest"
+      responses:
+        "201":
+          description: Department created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Department"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+    get:
+      tags: [Workspace - Departments]
+      summary: List departments
+      description: List and filter departments in the authenticated organization. Requires `org.department.read`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/QuerySearchParam"
+        - name: branchId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE]
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortDirectionParam"
+      responses:
+        "200":
+          description: Paginated departments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Department"
+                  page:
+                    type: integer
+                    example: 1
+                  pageSize:
+                    type: integer
+                    example: 20
+                  totalItems:
+                    type: integer
+                    example: 1
+                  totalPages:
+                    type: integer
+                    example: 1
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/workspace/departments/{departmentId}:
+    parameters:
+      - name: departmentId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Workspace - Departments]
+      summary: Get department by ID
+      description: Retrieve a department within the authenticated organization. Requires `org.department.read`.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Department details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Department"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Workspace - Departments]
+      summary: Update department
+      description: Update permitted department fields and validate its branch relationship. Requires `org.department.update`.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDepartmentRequest"
+      responses:
+        "200":
+          description: Updated department
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Department"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/workspace/departments/{departmentId}/deactivate:
+    post:
+      tags: [Workspace - Departments]
+      summary: Deactivate department
+      description: Deactivate a department after checking data-integrity constraints. Requires `org.department.deactivate`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: departmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deactivated department
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Department"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/workspace/positions:
+    post:
+      tags: [Workspace - Positions]
+      summary: Create position
+      description: Create a position, optionally associated with a department. Requires `org.position.create`.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePositionRequest"
+      responses:
+        "201":
+          description: Position created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Position"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+    get:
+      tags: [Workspace - Positions]
+      summary: List positions
+      description: List and filter positions in the authenticated organization. Requires `org.position.read`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/QuerySearchParam"
+        - name: departmentId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE]
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortDirectionParam"
+      responses:
+        "200":
+          description: Paginated positions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Position"
+                  page:
+                    type: integer
+                    example: 1
+                  pageSize:
+                    type: integer
+                    example: 20
+                  totalItems:
+                    type: integer
+                    example: 1
+                  totalPages:
+                    type: integer
+                    example: 1
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/workspace/positions/{positionId}:
+    parameters:
+      - name: positionId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Workspace - Positions]
+      summary: Get position by ID
+      description: Retrieve a position within the authenticated organization. Requires `org.position.read`.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Position details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Position"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      tags: [Workspace - Positions]
+      summary: Update position
+      description: Update permitted position fields and validate its department relationship. Requires `org.position.update`.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePositionRequest"
+      responses:
+        "200":
+          description: Updated position
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Position"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/workspace/positions/{positionId}/deactivate:
+    post:
+      tags: [Workspace - Positions]
+      summary: Deactivate position
+      description: Deactivate a position after checking references. Requires `org.position.deactivate`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: positionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deactivated position
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Position"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/workspace/roles:
+    get:
+      tags: [Workspace - Roles]
+      summary: List organization roles
+      description: List organization roles available to the authenticated organization. Requires `org.role.read`.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Organization role catalogue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/OrgRoleItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/workspace/accounts/{accountId}/roles:
+    put:
+      tags: [Workspace - Roles]
+      summary: Replace organization account roles
+      description: Replace an organization account's role assignments and optional branch/department scopes. Requires `org.role.assign`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplaceWorkspaceAccountRolesRequest"
+      responses:
+        "200":
+          description: Updated role assignments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accountId:
+                    type: string
+                  roles:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WorkspaceRoleAssignment"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
