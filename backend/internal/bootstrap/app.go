@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"hrgo/backend/internal/apidocs"
 	"hrgo/backend/internal/config"
 	"hrgo/backend/internal/database"
 	"hrgo/backend/internal/middleware"
@@ -101,6 +102,7 @@ func NewEngine(deps Dependencies) *gin.Engine {
 	})
 
 	registerProbes(engine, deps.DB)
+	apidocs.Register(engine)
 
 	// API v1 Routing
 	v1 := engine.Group("/api/v1")

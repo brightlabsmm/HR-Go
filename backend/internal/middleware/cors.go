@@ -9,8 +9,13 @@ import (
 // CORS applies origin allow-list checks and preflight headers.
 func CORS(allowed []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if origin := AllowedOrigin(c.GetHeader("Origin"), allowed); origin != "" {
-			c.Header("Access-Control-Allow-Origin", origin)
+		origin := c.GetHeader("Origin")
+		resolved := AllowedOrigin(origin, allowed)
+		if resolved == "" && len(allowed) == 0 && origin != "" {
+			resolved = origin
+		}
+		if resolved != "" {
+			c.Header("Access-Control-Allow-Origin", resolved)
 			c.Header("Vary", "Origin")
 			c.Header("Access-Control-Allow-Credentials", "true")
 		}
@@ -32,7 +37,7 @@ func AllowedOrigin(origin string, allowed []string) string {
 		return ""
 	}
 	for _, item := range allowed {
-		if origin == item {
+		if item == "*" || origin == item {
 			return origin
 		}
 	}
