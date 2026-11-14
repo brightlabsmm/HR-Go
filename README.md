@@ -1,4 +1,4 @@
-# HRGo
+# HRGo.
 
 **HR and Payroll Management System for Myanmar Organizations**
 
