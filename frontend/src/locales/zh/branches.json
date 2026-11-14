@@ -1,0 +1,48 @@
+{
+  "title": "分支机构",
+  "not_found": "未找到分支机构。",
+  "subtitle": "管理组织的分支机构。",
+  "add": "添加分支",
+  "search_placeholder": "按代码或名称搜索",
+  "all_status": "全部状态",
+  "reset_filters": "重置筛选",
+  "empty_value": "—",
+  "empty": {
+    "title": "还没有分支机构",
+    "description": "创建第一个分支机构以开始使用。"
+  },
+  "columns": {
+    "code": "代码",
+    "name": "分支名称",
+    "parent": "上级分支",
+    "address": "地址",
+    "status": "状态",
+    "actions": "操作"
+  },
+  "deactivate": {
+    "title": "停用该分支？",
+    "description": "将停用 {{name}}。其他分支仍可继续使用。",
+    "confirm": "停用"
+  },
+  "form": {
+    "title": "添加分支",
+    "subtitle": "填写以下信息以创建新分支。",
+    "create": "创建分支",
+    "save": "保存",
+    "edit_title": "编辑分支",
+    "edit_subtitle": "更新此分支。",
+    "information": "分支信息",
+    "code": "代码",
+    "code_placeholder": "001",
+    "name": "名称",
+    "name_placeholder": "输入分支名称",
+    "parent": "上级分支",
+    "none": "无",
+    "address": "地址",
+    "address_placeholder": "街道、乡镇、城市",
+    "errors": {
+      "code_required": "请填写分支代码。",
+      "name_required": "请填写分支名称。"
+    }
+  }
+}

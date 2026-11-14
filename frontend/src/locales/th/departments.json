@@ -1,0 +1,41 @@
+{
+  "title": "แผนก",
+  "subtitle": "จัดแผนก และผูกกับสาขาได้ตามต้องการ",
+  "add": "เพิ่มแผนก",
+  "all_status": "ทุกสถานะ",
+  "all_branches": "ทุกสาขา",
+  "columns": {
+    "code": "รหัส",
+    "name": "ชื่อ",
+    "status": "สถานะ",
+    "actions": "การดำเนินการ"
+  },
+  "deactivate": {
+    "title": "ปิดใช้งานแผนกนี้?",
+    "description": "จะปิดใช้งาน {{name}}",
+    "confirm": "ปิดใช้งาน"
+  },
+  "form": {
+    "create_title": "เพิ่มแผนก",
+    "edit_title": "แก้ไขแผนก",
+    "code": "รหัส",
+    "code_placeholder": "001",
+    "name": "ชื่อ",
+    "branch": "สาขา",
+    "none": "ไม่มี",
+    "create": "สร้างแผนก",
+    "save": "บันทึก",
+    "cancel": "ยกเลิก",
+    "errors": {
+      "code": "ต้องระบุรหัสแผนก",
+      "name": "ต้องระบุชื่อแผนก"
+    }
+  },
+  "empty": {
+    "title": "ยังไม่มีแผนก",
+    "description": "เพิ่มแผนกเพื่อจัดทีมงาน"
+  },
+  "sections": {
+    "details": "รายละเอียดแผนก"
+  }
+}

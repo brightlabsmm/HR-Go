@@ -1,0 +1,55 @@
+{
+  "title": "Organizations",
+  "subtitle": "Manage customer organizations on the platform.",
+  "add": "Add organization",
+  "search_placeholder": "Search by code or name",
+  "all_status": "All status",
+  "not_found": "Organization not found.",
+  "columns": {
+    "code": "Code",
+    "name": "Name",
+    "country": "Country",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "detail": {
+    "title": "Organization"
+  },
+  "form": {
+    "create_title": "New organization",
+    "create_subtitle": "Create a customer organization account.",
+    "code": "Organization code",
+    "code_placeholder": "001",
+    "legal_name": "Legal name",
+    "display_name": "Display name",
+    "status": "Status",
+    "country": "Country",
+    "phone": "Phone",
+    "email": "Email",
+    "address": "Address",
+    "reason": "Status reason",
+    "create": "Create organization",
+    "save": "Save",
+    "cancel": "Cancel",
+    "errors": {
+      "code": "Code is required.",
+      "legal_name": "Legal name is required.",
+      "display_name": "Display name is required.",
+      "email": "Email must be a valid email address."
+    }
+  },
+  "empty": {
+    "title": "No organizations yet",
+    "description": "Create your first customer organization to get started."
+  },
+  "sections": {
+    "identity": "Identity",
+    "identity_description": "How this organization is named and identified.",
+    "contact": "Contact",
+    "contact_description": "Where people can reach this organization.",
+    "status": "Lifecycle status",
+    "status_description": "Change the organization status. A reason is recorded with the transition.",
+    "overview": "Overview"
+  },
+  "created_at": "Created"
+}

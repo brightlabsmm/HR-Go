@@ -1,0 +1,47 @@
+{
+  "title": "Roles",
+  "columns": {
+    "code": "Code",
+    "name": "Name"
+  },
+  "form": {
+    "permissions": "Permissions"
+  },
+  "empty": {
+    "title": "No roles yet",
+    "description": "Roles are provided by the platform."
+  },
+  "picker": {
+    "no_permissions": "No roles available."
+  },
+  "selected_count": "{{count}} permissions",
+  "actions": {
+    "read": "View",
+    "create": "Create",
+    "update": "Edit",
+    "delete": "Delete",
+    "deactivate": "Deactivate",
+    "assign": "Assign",
+    "manage": "Manage",
+    "status_update": "Change status"
+  },
+  "resources": {
+    "org_branch": "Org / Branch",
+    "org_department": "Org / Department",
+    "org_position": "Org / Position",
+    "org_role": "Org / Role",
+    "branch": "Org / Branch",
+    "department": "Org / Department",
+    "position": "Org / Position",
+    "platform_user": "Platform / User",
+    "platform_role": "Platform / Role",
+    "organization": "Platform / Organization",
+    "permission": "Platform / Permission"
+  },
+  "system_title": "Platform roles",
+  "system_subtitle": "Built-in platform roles and their permissions.",
+  "catalog_subtitle": "Roles available in this organization and what each one can do.",
+  "catalog_heading": "Available roles",
+  "compare_heading": "Compare permissions",
+  "managed_hint": "Roles are managed by the platform. Contact an administrator to change them."
+}

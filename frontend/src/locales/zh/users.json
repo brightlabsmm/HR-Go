@@ -1,0 +1,56 @@
+{
+  "title": "平台用户",
+  "subtitle": "创建平台用户并分配平台角色。",
+  "add": "添加用户",
+  "search_placeholder": "按姓名或邮箱搜索",
+  "all_status": "全部状态",
+  "not_found": "未找到用户。",
+  "columns": {
+    "status": "状态",
+    "roles": "角色",
+    "actions": "操作",
+    "name": "姓名"
+  },
+  "create": {
+    "title": "新建平台用户",
+    "subtitle": "创建平台用户并分配初始角色。",
+    "submit": "创建用户"
+  },
+  "detail": {
+    "title": "用户",
+    "deactivate": "停用",
+    "reactivate": "重新启用"
+  },
+  "deactivate": {
+    "title": "停用该用户？",
+    "description": "该平台用户将被设为停用。",
+    "confirm": "停用"
+  },
+  "form": {
+    "email": "邮箱",
+    "full_name": "全名",
+    "password": "临时密码",
+    "roles": "角色",
+    "save": "保存",
+    "cancel": "取消",
+    "errors": {
+      "email_required": "请填写邮箱。",
+      "email_invalid": "请输入有效邮箱。",
+      "full_name": "请填写全名。",
+      "password": "密码至少 8 位，且包含 1 个大写字母、1 个小写字母和 1 个数字。"
+    }
+  },
+  "empty": {
+    "title": "还没有用户",
+    "description": "创建第一个平台用户。"
+  },
+  "sections": {
+    "profile": "资料",
+    "profile_description": "该用户的姓名和邮箱。",
+    "access": "权限",
+    "access_description": "角色决定该用户可以查看和执行的操作。",
+    "danger": "停用用户",
+    "danger_description": "该用户会立即失去平台访问权限。"
+  },
+  "self_roles_hint": "不能修改自己的角色。"
+}
