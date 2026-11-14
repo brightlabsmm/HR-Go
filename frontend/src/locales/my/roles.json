@@ -1,0 +1,47 @@
+{
+  "title": "Role များ",
+  "columns": {
+    "code": "ကုဒ်",
+    "name": "အမည်"
+  },
+  "form": {
+    "permissions": "Permission များ"
+  },
+  "empty": {
+    "title": "Role မရှိသေးပါ",
+    "description": "Role များကို platform က ပေးထားသည်။"
+  },
+  "picker": {
+    "no_permissions": "Role မရှိပါ။"
+  },
+  "selected_count": "permission {{count}} ခု",
+  "actions": {
+    "read": "ကြည့်ရန်",
+    "create": "ဖန်တီးရန်",
+    "update": "ပြင်ဆင်ရန်",
+    "delete": "ဖျက်ရန်",
+    "deactivate": "ပိတ်ရန်",
+    "assign": "သတ်မှတ်ရန်",
+    "manage": "စီမံရန်",
+    "status_update": "အခြေအနေ ပြောင်းရန်"
+  },
+  "resources": {
+    "org_branch": "အဖွဲ့အစည်း / ဌာနခွဲ",
+    "org_department": "အဖွဲ့အစည်း / ဌာန",
+    "org_position": "အဖွဲ့အစည်း / ရာထူး",
+    "org_role": "အဖွဲ့အစည်း / Role",
+    "branch": "အဖွဲ့အစည်း / ဌာနခွဲ",
+    "department": "အဖွဲ့အစည်း / ဌာန",
+    "position": "အဖွဲ့အစည်း / ရာထူး",
+    "platform_user": "Platform / User",
+    "platform_role": "Platform / Role",
+    "organization": "Platform / အဖွဲ့အစည်း",
+    "permission": "Platform / Permission"
+  },
+  "system_title": "Platform role များ",
+  "system_subtitle": "Built-in platform role များနှင့် ၎င်းတို့၏ permission များ။",
+  "catalog_subtitle": "ဤအဖွဲ့အစည်းတွင် ရနိုင်သော role များနှင့် လုပ်ပိုင်ခွင့်များ။",
+  "catalog_heading": "ရရှိနိုင်သော Role များ",
+  "compare_heading": "Permission နှိုင်းယှဉ်ရန်",
+  "managed_hint": "Role များကို platform က စီမံသည်။ ပြောင်းလိုပါက admin ထံ ဆက်သွယ်ပါ။"
+}

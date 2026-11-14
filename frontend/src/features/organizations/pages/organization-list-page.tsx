@@ -1,0 +1,111 @@
+import { PlusIcon } from "lucide-react"
+import { useTranslation } from "react-i18next"
+import { useNavigate } from "react-router"
+
+import { FilterBar } from "@/components/common/filter-bar"
+import { FilterSelect } from "@/components/common/filter-select"
+import { ListCard } from "@/components/common/list-card"
+import { MotionStack } from "@/components/common/motion-stack"
+import { PageEmptyState } from "@/components/common/page-empty-state"
+import { PageHeader } from "@/components/common/page-header"
+import { Pagination } from "@/components/common/pagination"
+import { SearchBox } from "@/components/common/search-box"
+import { TableSkeleton } from "@/components/common/table-skeleton"
+import { Button } from "@/components/ui/button"
+import { OrganizationTable } from "@/features/organizations/components/organization-table"
+import { useOrganizationListParams } from "@/features/organizations/hooks/use-organization-list-params"
+import { useOrganizationsQuery } from "@/shared/queries/organization.query"
+
+export function OrganizationListPage() {
+  const { t } = useTranslation("organizations")
+  const { t: tCommon } = useTranslation("common")
+  const navigate = useNavigate()
+  const params = useOrganizationListParams()
+  const organizationsQuery = useOrganizationsQuery(params.listParams)
+  const items = organizationsQuery.data?.items ?? []
+  const isUnfilteredEmpty =
+    organizationsQuery.isSuccess &&
+    !params.hasFilters &&
+    (organizationsQuery.data?.meta.totalItems ?? 0) === 0
+  const statusItems = [
+    { value: "all", label: t("all_status") },
+    { value: "pending", label: tCommon("status.pending") },
+    { value: "active", label: tCommon("status.active") },
+    { value: "suspended", label: tCommon("status.suspended") },
+    { value: "archived", label: tCommon("status.archived") },
+  ]
+
+  const addButton = (
+    <Button type="button" onClick={() => void navigate("/organizations/new")}>
+      <PlusIcon className="size-4" />
+      {t("add")}
+    </Button>
+  )
+
+  function renderBody() {
+    if (organizationsQuery.isPending) {
+      return <TableSkeleton columns={6} />
+    }
+
+    if (isUnfilteredEmpty) {
+      return (
+        <PageEmptyState
+          title={t("empty.title")}
+          description={t("empty.description")}
+          action={addButton}
+        />
+      )
+    }
+
+    if (items.length === 0) {
+      return (
+        <PageEmptyState
+          variant="no-results"
+          title={tCommon("states.no_results_title")}
+          description={tCommon("states.no_results_description")}
+          action={
+            <Button type="button" variant="outline" onClick={params.resetFilters}>
+              {tCommon("actions.reset_filters")}
+            </Button>
+          }
+        />
+      )
+    }
+
+    return <OrganizationTable data={items} />
+  }
+
+  return (
+    <MotionStack className="flex h-full min-h-0 flex-col gap-8">
+      <PageHeader title={t("title")} description={t("subtitle")} actions={addButton} />
+      <ListCard
+        toolbar={
+          <FilterBar hasFilters={params.hasFilters} onReset={params.resetFilters}>
+            <SearchBox
+              value={params.search}
+              onValueChange={params.setSearch}
+              placeholder={t("search_placeholder")}
+              className="w-80 max-w-full shrink-0"
+            />
+            <FilterSelect
+              items={statusItems}
+              value={params.status ?? "all"}
+              label={t("all_status")}
+              onValueChange={params.setStatus}
+            />
+          </FilterBar>
+        }
+        footer={
+          isUnfilteredEmpty ? null : (
+            <Pagination
+              meta={organizationsQuery.data?.meta}
+              isDisabled={organizationsQuery.isPending && !organizationsQuery.data}
+            />
+          )
+        }
+      >
+        {renderBody()}
+      </ListCard>
+    </MotionStack>
+  )
+}

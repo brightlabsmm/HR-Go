@@ -1,0 +1,55 @@
+{
+  "title": "组织",
+  "subtitle": "管理平台上的客户组织。",
+  "add": "添加组织",
+  "search_placeholder": "按代码或名称搜索",
+  "all_status": "全部状态",
+  "not_found": "未找到组织。",
+  "columns": {
+    "code": "代码",
+    "name": "名称",
+    "country": "国家",
+    "status": "状态",
+    "actions": "操作"
+  },
+  "detail": {
+    "title": "组织"
+  },
+  "form": {
+    "create_title": "新建组织",
+    "create_subtitle": "创建客户组织账户。",
+    "code": "组织代码",
+    "code_placeholder": "001",
+    "legal_name": "法定名称",
+    "display_name": "显示名称",
+    "status": "状态",
+    "country": "国家",
+    "phone": "电话",
+    "email": "邮箱",
+    "address": "地址",
+    "reason": "状态原因",
+    "create": "创建组织",
+    "save": "保存",
+    "cancel": "取消",
+    "errors": {
+      "code": "请填写代码。",
+      "legal_name": "请填写法定名称。",
+      "display_name": "请填写显示名称。",
+      "email": "请输入有效邮箱。"
+    }
+  },
+  "empty": {
+    "title": "还没有组织",
+    "description": "创建第一个客户组织以开始使用。"
+  },
+  "sections": {
+    "identity": "身份信息",
+    "identity_description": "该组织的名称与标识。",
+    "contact": "联系方式",
+    "contact_description": "联系该组织的方式。",
+    "status": "生命周期状态",
+    "status_description": "更改组织状态。系统会记录原因。",
+    "overview": "概览"
+  },
+  "created_at": "创建时间"
+}

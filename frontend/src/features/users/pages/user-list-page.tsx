@@ -1,0 +1,228 @@
+import { useState } from "react"
+import { PlusIcon } from "lucide-react"
+import { useTranslation } from "react-i18next"
+import { useNavigate, useSearchParams } from "react-router"
+
+import { ConfirmDialog } from "@/components/common/confirm-dialog"
+import { DataTable } from "@/components/common/data-table"
+import { DataTableActions } from "@/components/common/data-table-actions"
+import { createDataTableColumns } from "@/components/common/data-table-columns"
+import { FilterBar } from "@/components/common/filter-bar"
+import { FilterSelect } from "@/components/common/filter-select"
+import { IdentityCell } from "@/components/common/identity-cell"
+import { ListCard } from "@/components/common/list-card"
+import { MotionStack } from "@/components/common/motion-stack"
+import { PageEmptyState } from "@/components/common/page-empty-state"
+import { PageHeader } from "@/components/common/page-header"
+import { Pagination } from "@/components/common/pagination"
+import { SearchBox } from "@/components/common/search-box"
+import { StatusBadge } from "@/components/common/status-badge"
+import { TableSkeleton } from "@/components/common/table-skeleton"
+import { ToneBadge } from "@/components/common/tone-badge"
+import { Button } from "@/components/ui/button"
+import { PAGE_PARAM, PAGE_SIZE_PARAM } from "@/constants/pagination"
+import { useCurrentUserQuery } from "@/shared/queries/auth.query"
+import {
+  useDeactivateUserMutation,
+  useUsersQuery,
+} from "@/shared/queries/user.query"
+import { parsePageParam, parsePageSizeParam } from "@/util/pagination"
+
+import type { PlatformUser } from "@/shared/services/user.service"
+
+const column = createDataTableColumns<PlatformUser>()
+const FILTER_KEYS = ["search", "status"] as const
+
+export function UserListPage() {
+  const { t } = useTranslation("users")
+  const { t: tCommon } = useTranslation("common")
+  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const page = parsePageParam(searchParams.get(PAGE_PARAM))
+  const limit = parsePageSizeParam(searchParams.get(PAGE_SIZE_PARAM))
+  const search = searchParams.get("search") ?? ""
+  const status = searchParams.get("status") ?? undefined
+  const hasFilters = FILTER_KEYS.some((key) => searchParams.has(key))
+  const usersQuery = useUsersQuery({
+    page,
+    limit,
+    search: search || undefined,
+    status,
+  })
+  const meQuery = useCurrentUserQuery()
+  const deactivateMutation = useDeactivateUserMutation()
+  const [target, setTarget] = useState<PlatformUser | null>(null)
+  const users = usersQuery.data?.items ?? []
+  const isUnfilteredEmpty =
+    usersQuery.isSuccess && !hasFilters && (usersQuery.data?.meta.totalItems ?? 0) === 0
+
+  function patch(updates: Record<string, string | null>) {
+    const next = new URLSearchParams(searchParams)
+    for (const [key, value] of Object.entries(updates)) {
+      if (!value || value === "all") {
+        next.delete(key)
+      } else {
+        next.set(key, value)
+      }
+    }
+    next.delete(PAGE_PARAM)
+    setSearchParams(next)
+  }
+
+  function resetFilters() {
+    const next = new URLSearchParams(searchParams)
+    for (const key of FILTER_KEYS) {
+      next.delete(key)
+    }
+    next.delete(PAGE_PARAM)
+    setSearchParams(next)
+  }
+
+  const statusItems = [
+    { value: "all", label: t("all_status") },
+    { value: "active", label: tCommon("status.active") },
+    { value: "inactive", label: tCommon("status.inactive") },
+  ]
+  const columns = column.columns([
+    column.display({
+      id: "name",
+      header: t("columns.name"),
+      cell: ({ row }) => (
+        <IdentityCell name={row.original.fullName} secondary={row.original.email} />
+      ),
+    }),
+    column.accessor("status", {
+      header: t("columns.status"),
+      cell: ({ getValue }) => <StatusBadge status={getValue()} />,
+    }),
+    column.accessor("roles", {
+      header: t("columns.roles"),
+      cell: ({ getValue }) => (
+        <div className="flex flex-wrap gap-1">
+          {getValue().map((role) => (
+            <ToneBadge key={role.roleCode} tone="brand">
+              {role.roleName}
+            </ToneBadge>
+          ))}
+        </div>
+      ),
+    }),
+    column.display({
+      id: "actions",
+      header: t("columns.actions"),
+      meta: { align: "end" },
+      cell: ({ row }) => (
+        <DataTableActions
+          onEdit={() => void navigate(`/users/${row.original.id}`)}
+          onDelete={
+            meQuery.data?.id === row.original.id
+              ? undefined
+              : () => setTarget(row.original)
+          }
+        />
+      ),
+    }),
+  ])
+
+  const addButton = (
+    <Button type="button" onClick={() => void navigate("/users/new")}>
+      <PlusIcon className="size-4" />
+      {t("add")}
+    </Button>
+  )
+
+  function renderBody() {
+    if (usersQuery.isPending) {
+      return <TableSkeleton columns={4} />
+    }
+
+    if (isUnfilteredEmpty) {
+      return (
+        <PageEmptyState
+          title={t("empty.title")}
+          description={t("empty.description")}
+          action={addButton}
+        />
+      )
+    }
+
+    if (users.length === 0) {
+      return (
+        <PageEmptyState
+          variant="no-results"
+          title={tCommon("states.no_results_title")}
+          description={tCommon("states.no_results_description")}
+          action={
+            <Button type="button" variant="outline" onClick={resetFilters}>
+              {tCommon("actions.reset_filters")}
+            </Button>
+          }
+        />
+      )
+    }
+
+    return (
+      <DataTable
+        columns={columns}
+        data={users}
+        getRowId={(user) => user.id}
+        label={t("title")}
+        onRowClick={(user) => void navigate(`/users/${user.id}`)}
+      />
+    )
+  }
+
+  return (
+    <MotionStack className="flex h-full min-h-0 flex-col gap-8">
+      <PageHeader title={t("title")} description={t("subtitle")} actions={addButton} />
+      <ListCard
+        toolbar={
+          <FilterBar hasFilters={hasFilters} onReset={resetFilters}>
+            <SearchBox
+              value={search}
+              onValueChange={(value) => patch({ search: value })}
+              placeholder={t("search_placeholder")}
+              className="w-80 max-w-full shrink-0"
+            />
+            <FilterSelect
+              items={statusItems}
+              value={status ?? "all"}
+              label={t("all_status")}
+              onValueChange={(value) => patch({ status: value })}
+            />
+          </FilterBar>
+        }
+        footer={
+          isUnfilteredEmpty ? null : (
+            <Pagination
+              meta={usersQuery.data?.meta}
+              isDisabled={usersQuery.isPending && !usersQuery.data}
+            />
+          )
+        }
+      >
+        {renderBody()}
+      </ListCard>
+      <ConfirmDialog
+        open={target !== null}
+        title={t("deactivate.title")}
+        description={t("deactivate.description")}
+        confirmLabel={t("deactivate.confirm")}
+        isPending={deactivateMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open) {
+            setTarget(null)
+          }
+        }}
+        onConfirm={() => {
+          if (!target) {
+            return
+          }
+          deactivateMutation.mutate(target.id, {
+            onSuccess: () => setTarget(null),
+          })
+        }}
+      />
+    </MotionStack>
+  )
+}

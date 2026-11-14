@@ -1,0 +1,41 @@
+{
+  "title": "职位",
+  "subtitle": "管理职位，可选关联部门。",
+  "add": "添加职位",
+  "all_status": "全部状态",
+  "all_departments": "全部部门",
+  "columns": {
+    "code": "代码",
+    "name": "名称",
+    "status": "状态",
+    "actions": "操作"
+  },
+  "deactivate": {
+    "title": "停用该职位？",
+    "description": "将停用 {{name}}。",
+    "confirm": "停用"
+  },
+  "form": {
+    "create_title": "添加职位",
+    "edit_title": "编辑职位",
+    "code": "代码",
+    "code_placeholder": "001",
+    "name": "名称",
+    "department": "部门",
+    "none": "无",
+    "create": "创建职位",
+    "save": "保存",
+    "cancel": "取消",
+    "errors": {
+      "code": "请填写职位代码。",
+      "name": "请填写职位名称。"
+    }
+  },
+  "empty": {
+    "title": "还没有职位",
+    "description": "添加职位以定义组织中的岗位。"
+  },
+  "sections": {
+    "details": "职位详情"
+  }
+}
