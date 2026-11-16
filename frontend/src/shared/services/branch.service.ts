@@ -25,7 +25,6 @@ export interface BranchListParams {
 }
 
 export interface BranchInput {
-  branchCode: string
   branchName: string
   parentId?: string | null
   address?: string
@@ -47,7 +46,7 @@ export function createBranch(input: BranchInput) {
   return unwrap<Branch>(apiClient.post(workspacePath("/branches"), input))
 }
 
-export function updateBranch(id: string, input: Partial<Omit<BranchInput, "branchCode">>) {
+export function updateBranch(id: string, input: Partial<BranchInput>) {
   return unwrap<Branch>(apiClient.patch(workspacePath(`/branches/${id}`), input))
 }
 

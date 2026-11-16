@@ -61,7 +61,6 @@ export function BranchEditPage() {
         submitLabel={t("form.save")}
         parentOptions={parentOptions}
         defaultValues={{
-          branchCode: branch.branchCode,
           branchName: branch.branchName,
           parentId: branch.parentId ?? "none",
           address: branch.address ?? "",
