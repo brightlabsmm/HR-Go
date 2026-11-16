@@ -8,6 +8,7 @@
   "columns": {
     "code": "代码",
     "name": "名称",
+    "email": "邮箱",
     "country": "国家",
     "status": "状态",
     "actions": "操作"
@@ -15,6 +16,7 @@
   "detail": {
     "title": "组织"
   },
+  "updated_at": "更新时间",
   "form": {
     "create_title": "新建组织",
     "create_subtitle": "创建客户组织账户。",
@@ -22,13 +24,13 @@
     "code_placeholder": "001",
     "legal_name": "法定名称",
     "display_name": "显示名称",
-    "status": "状态",
     "country": "国家",
     "phone": "电话",
     "email": "邮箱",
     "address": "地址",
-    "reason": "状态原因",
     "create": "创建组织",
+    "edit_title": "编辑组织",
+    "edit_subtitle": "更新该组织。",
     "save": "保存",
     "cancel": "取消",
     "errors": {
@@ -47,9 +49,13 @@
     "identity_description": "该组织的名称与标识。",
     "contact": "联系方式",
     "contact_description": "联系该组织的方式。",
-    "status": "生命周期状态",
-    "status_description": "更改组织状态。系统会记录原因。",
     "overview": "概览"
   },
-  "created_at": "创建时间"
+  "created_at": "创建时间",
+  "status_change": {
+    "menu": "更改状态",
+    "title": "将状态改为{{status}}？",
+    "description": "这将把 {{name}} 设为 {{status}}。更改会立即生效。",
+    "confirm": "更改状态"
+  }
 }

@@ -7,13 +7,13 @@
   "not_found": "User not found.",
   "columns": {
     "status": "Status",
-    "roles": "Roles",
+    "role": "Role",
     "actions": "Actions",
     "name": "Name"
   },
   "create": {
     "title": "New platform user",
-    "subtitle": "Create a platform user and assign initial roles.",
+    "subtitle": "Create a platform user and assign a role.",
     "submit": "Create user"
   },
   "detail": {
@@ -30,13 +30,16 @@
     "email": "Email",
     "full_name": "Full name",
     "password": "Temporary password",
-    "roles": "Roles",
+    "role": "Role",
+    "permissions": "Permissions",
     "save": "Save",
     "cancel": "Cancel",
+    "edit_subtitle": "Update this user.",
     "errors": {
       "email_required": "Email is required.",
       "email_invalid": "Email must be a valid email address.",
       "full_name": "Full name is required.",
+      "role": "Select a role.",
       "password": "Password must be at least 8 characters and include 1 uppercase letter, 1 lowercase letter, and 1 digit."
     }
   },
@@ -48,9 +51,14 @@
     "profile": "Profile",
     "profile_description": "Name and email for this user.",
     "access": "Access",
-    "access_description": "Roles decide what this user can see and do.",
+    "access_description": "The assigned role decides what this user can see and do.",
     "danger": "Deactivate user",
     "danger_description": "The user loses platform access immediately."
   },
-  "self_roles_hint": "You can't change your own roles."
+  "self_roles_hint": "You can't change your own roles.",
+  "last_login_at": "Last login",
+  "permissions": {
+    "empty": "Select a role to review its permissions.",
+    "none": "This role has no permissions."
+  }
 }

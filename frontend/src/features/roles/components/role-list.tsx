@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next"
+import { useNavigate } from "react-router"
 
 import { DataTable } from "@/components/common/data-table"
 import { createDataTableColumns } from "@/components/common/data-table-columns"
@@ -14,6 +15,7 @@ const column = createDataTableColumns<Role>()
 
 export function RoleList() {
   const { t } = useTranslation("roles")
+  const navigate = useNavigate()
   const rolesQuery = useRolesQuery()
   const roles = rolesQuery.data ?? []
   const columns = column.columns([
@@ -61,6 +63,7 @@ export function RoleList() {
         data={roles}
         getRowId={(role) => role.id}
         label={t("title")}
+        onRowClick={(role) => void navigate(`/roles/${role.id}`)}
       />
     )
   }

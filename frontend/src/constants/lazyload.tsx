@@ -61,9 +61,17 @@ export const OrganizationDetailPage = pageLoader(
   () => import("@/features/organizations/pages/organization-detail-page"),
   "OrganizationDetailPage"
 )
+export const OrganizationEditPage = pageLoader(
+  () => import("@/features/organizations/pages/organization-edit-page"),
+  "OrganizationEditPage"
+)
 export const RoleListPage = pageLoader(
   () => import("@/features/roles/pages/role-list-page"),
   "RoleListPage"
+)
+export const RoleDetailPage = pageLoader(
+  () => import("@/features/roles/pages/role-detail-page"),
+  "RoleDetailPage"
 )
 export const UserListPage = pageLoader(
   () => import("@/features/users/pages/user-list-page"),
@@ -76,4 +84,8 @@ export const UserCreatePage = pageLoader(
 export const UserDetailPage = pageLoader(
   () => import("@/features/users/pages/user-detail-page"),
   "UserDetailPage"
+)
+export const UserEditPage = pageLoader(
+  () => import("@/features/users/pages/user-edit-page"),
+  "UserEditPage"
 )

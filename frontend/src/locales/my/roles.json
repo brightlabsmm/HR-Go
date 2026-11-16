@@ -2,10 +2,15 @@
   "title": "Role များ",
   "columns": {
     "code": "ကုဒ်",
-    "name": "အမည်"
+    "name": "အမည်",
+    "action": "လုပ်ဆောင်ချက်"
   },
   "form": {
-    "permissions": "Permission များ"
+    "name": "အမည်",
+    "code": "ကုဒ်",
+    "description": "ဖော်ပြချက်",
+    "permissions": "Permission များ",
+    "system": "System"
   },
   "empty": {
     "title": "Role မရှိသေးပါ",
@@ -42,6 +47,16 @@
   "system_subtitle": "Built-in platform role များနှင့် ၎င်းတို့၏ permission များ။",
   "catalog_subtitle": "ဤအဖွဲ့အစည်းတွင် ရနိုင်သော role များနှင့် လုပ်ပိုင်ခွင့်များ။",
   "catalog_heading": "ရရှိနိုင်သော Role များ",
-  "compare_heading": "Permission နှိုင်းယှဉ်ရန်",
-  "managed_hint": "Role များကို platform က စီမံသည်။ ပြောင်းလိုပါက admin ထံ ဆက်သွယ်ပါ။"
+  "managed_hint": "Role များကို platform က စီမံသည်။ ပြောင်းလိုပါက admin ထံ ဆက်သွယ်ပါ။",
+  "not_found": "Role မတွေ့ပါ။",
+  "detail": {
+    "title": "Role"
+  },
+  "sections": {
+    "identity": "အထောက်အထား",
+    "permissions": "Permission များ"
+  },
+  "permissions": {
+    "none": "ဤ role တွင် permission မရှိပါ။"
+  }
 }

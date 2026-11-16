@@ -2,10 +2,15 @@
   "title": "角色",
   "columns": {
     "code": "代码",
-    "name": "名称"
+    "name": "名称",
+    "action": "操作"
   },
   "form": {
-    "permissions": "权限"
+    "name": "名称",
+    "code": "代码",
+    "description": "说明",
+    "permissions": "权限",
+    "system": "系统"
   },
   "empty": {
     "title": "还没有角色",
@@ -42,6 +47,16 @@
   "system_subtitle": "内置平台角色及其权限。",
   "catalog_subtitle": "本组织可用的角色及其权限。",
   "catalog_heading": "可用角色",
-  "compare_heading": "权限对比",
-  "managed_hint": "角色由平台管理。如需更改请联系管理员。"
+  "managed_hint": "角色由平台管理。如需更改请联系管理员。",
+  "not_found": "未找到角色。",
+  "detail": {
+    "title": "角色"
+  },
+  "sections": {
+    "identity": "身份信息",
+    "permissions": "权限"
+  },
+  "permissions": {
+    "none": "该角色没有任何权限。"
+  }
 }

@@ -7,13 +7,13 @@
   "not_found": "User မတွေ့ပါ။",
   "columns": {
     "status": "အခြေအနေ",
-    "roles": "Role များ",
+    "role": "Role",
     "actions": "လုပ်ဆောင်ချက်များ",
     "name": "အမည်"
   },
   "create": {
     "title": "Platform user အသစ်",
-    "subtitle": "Platform user တစ်ဦး ဖန်တီးပြီး ကနဦး role များ သတ်မှတ်ပါ။",
+    "subtitle": "Platform user တစ်ဦး ဖန်တီးပြီး role တစ်ခု သတ်မှတ်ပါ။",
     "submit": "User ဖန်တီးရန်"
   },
   "detail": {
@@ -30,13 +30,16 @@
     "email": "Email",
     "full_name": "အမည်အပြည့်",
     "password": "ယာယီ password",
-    "roles": "Role များ",
+    "role": "Role",
+    "permissions": "Permission များ",
     "save": "သိမ်းရန်",
     "cancel": "ပယ်ဖျက်ရန်",
+    "edit_subtitle": "ဤ user ကို ပြင်ဆင်ပါ။",
     "errors": {
       "email_required": "Email လိုအပ်ပါသည်။",
       "email_invalid": "Email လိပ်စာ မှန်ကန်ရပါမည်။",
       "full_name": "အမည်အပြည့် လိုအပ်ပါသည်။",
+      "role": "Role တစ်ခု ရွေးပါ။",
       "password": "Password သည် အနည်းဆုံး စာလုံး ၈ လုံး ရှိရမည်ဖြစ်ပြီး စာလုံးအကြီး ၁ လုံး၊ စာလုံးအသေး ၁ လုံးနှင့် ဂဏန်း ၁ လုံး ပါရမည်။"
     }
   },
@@ -48,9 +51,14 @@
     "profile": "Profile",
     "profile_description": "ဤ user ၏ အမည်နှင့် email။",
     "access": "အသုံးပြုခွင့်",
-    "access_description": "Role များက ဤ user လုပ်နိုင်သည်များကို ဆုံးဖြတ်သည်။",
+    "access_description": "သတ်မှတ်ထားသော role က ဤ user လုပ်နိုင်သည်များကို ဆုံးဖြတ်သည်။",
     "danger": "User ပိတ်ရန်",
     "danger_description": "User သည် platform သို့ ချက်ချင်း ဝင်မရတော့ပါ။"
   },
-  "self_roles_hint": "ကိုယ့် role များကို ပြောင်း၍ မရပါ။"
+  "self_roles_hint": "ကိုယ့် role များကို ပြောင်း၍ မရပါ။",
+  "last_login_at": "နောက်ဆုံး ဝင်ရောက်သည့်အချိန်",
+  "permissions": {
+    "empty": "Permission များကို ကြည့်ရန် role တစ်ခု ရွေးပါ။",
+    "none": "ဤ role တွင် permission မရှိပါ။"
+  }
 }

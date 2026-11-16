@@ -1,7 +1,9 @@
+import { useState } from "react"
 import { PlusIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router"
 
+import { ConfirmDialog } from "@/components/common/confirm-dialog"
 import { FilterBar } from "@/components/common/filter-bar"
 import { FilterSelect } from "@/components/common/filter-select"
 import { ListCard } from "@/components/common/list-card"
@@ -12,9 +14,18 @@ import { Pagination } from "@/components/common/pagination"
 import { SearchBox } from "@/components/common/search-box"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { Button } from "@/components/ui/button"
+import { isHighImpactOrganizationStatus } from "@/features/organizations/components/organization-status-menu"
 import { OrganizationTable } from "@/features/organizations/components/organization-table"
 import { useOrganizationListParams } from "@/features/organizations/hooks/use-organization-list-params"
-import { useOrganizationsQuery } from "@/shared/queries/organization.query"
+import {
+  useOrganizationsQuery,
+  useUpdateOrganizationStatusMutation,
+} from "@/shared/queries/organization.query"
+
+import type {
+  Organization,
+  OrganizationStatus,
+} from "@/shared/services/organization.service"
 
 export function OrganizationListPage() {
   const { t } = useTranslation("organizations")
@@ -22,7 +33,15 @@ export function OrganizationListPage() {
   const navigate = useNavigate()
   const params = useOrganizationListParams()
   const organizationsQuery = useOrganizationsQuery(params.listParams)
+  const statusMutation = useUpdateOrganizationStatusMutation()
+  const [statusTarget, setStatusTarget] = useState<{
+    organization: Organization
+    status: OrganizationStatus
+  } | null>(null)
   const items = organizationsQuery.data?.items ?? []
+  const statusLabel = statusTarget
+    ? tCommon(`status.${statusTarget.status.toLowerCase()}`)
+    : ""
   const isUnfilteredEmpty =
     organizationsQuery.isSuccess &&
     !params.hasFilters &&
@@ -44,7 +63,7 @@ export function OrganizationListPage() {
 
   function renderBody() {
     if (organizationsQuery.isPending) {
-      return <TableSkeleton columns={6} />
+      return <TableSkeleton columns={7} />
     }
 
     if (isUnfilteredEmpty) {
@@ -72,7 +91,14 @@ export function OrganizationListPage() {
       )
     }
 
-    return <OrganizationTable data={items} />
+    return (
+      <OrganizationTable
+        data={items}
+        onChangeStatus={(organization, status) =>
+          setStatusTarget({ organization, status })
+        }
+      />
+    )
   }
 
   return (
@@ -106,6 +132,44 @@ export function OrganizationListPage() {
       >
         {renderBody()}
       </ListCard>
+      <ConfirmDialog
+        open={statusTarget !== null}
+        title={t("status_change.title", { status: statusLabel })}
+        description={t("status_change.description", {
+          name: statusTarget?.organization.displayName ?? "",
+          status: statusLabel,
+        })}
+        confirmLabel={t("status_change.confirm")}
+        confirmVariant={
+          statusTarget && isHighImpactOrganizationStatus(statusTarget.status)
+            ? "destructive"
+            : "default"
+        }
+        isPending={statusMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open) {
+            setStatusTarget(null)
+          }
+        }}
+        onConfirm={() => {
+          if (!statusTarget) {
+            return
+          }
+
+          statusMutation.mutate(
+            {
+              id: statusTarget.organization.id,
+              input: {
+                status: statusTarget.status,
+                confirmation: true,
+              },
+            },
+            {
+              onSuccess: () => setStatusTarget(null),
+            }
+          )
+        }}
+      />
     </MotionStack>
   )
 }

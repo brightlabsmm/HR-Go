@@ -2,10 +2,15 @@
   "title": "Roles",
   "columns": {
     "code": "Code",
-    "name": "Name"
+    "name": "Name",
+    "action": "Action"
   },
   "form": {
-    "permissions": "Permissions"
+    "name": "Name",
+    "code": "Code",
+    "description": "Description",
+    "permissions": "Permissions",
+    "system": "System"
   },
   "empty": {
     "title": "No roles yet",
@@ -42,6 +47,16 @@
   "system_subtitle": "Built-in platform roles and their permissions.",
   "catalog_subtitle": "Roles available in this organization and what each one can do.",
   "catalog_heading": "Available roles",
-  "compare_heading": "Compare permissions",
-  "managed_hint": "Roles are managed by the platform. Contact an administrator to change them."
+  "managed_hint": "Roles are managed by the platform. Contact an administrator to change them.",
+  "not_found": "Role not found.",
+  "detail": {
+    "title": "Role"
+  },
+  "sections": {
+    "identity": "Identity",
+    "permissions": "Permissions"
+  },
+  "permissions": {
+    "none": "This role has no permissions."
+  }
 }

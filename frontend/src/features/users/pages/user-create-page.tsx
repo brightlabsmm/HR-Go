@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router"
 import { z } from "zod"
@@ -14,6 +14,7 @@ import { FormSkeleton } from "@/components/common/form-skeleton"
 import { FormPasswordInput } from "@/components/common/form/form-password-input"
 import { FormTextInput } from "@/components/common/form/form-text-input"
 import { Button } from "@/components/ui/button"
+import { RolePermissionReview } from "@/features/users/components/role-permission-review"
 import { RolePicker } from "@/features/users/components/role-picker"
 import { PASSWORD_PATTERN } from "@/constants/timezones"
 import { useRolesQuery } from "@/shared/queries/role.query"
@@ -34,7 +35,7 @@ export function UserCreatePage() {
           .min(1, t("form.errors.email_required"))
           .email(t("form.errors.email_invalid")),
         password: z.string().regex(PASSWORD_PATTERN, t("form.errors.password")),
-        roleIds: z.array(z.string()),
+        roleId: z.string().min(1, t("form.errors.role")),
       }),
     [t]
   )
@@ -45,10 +46,13 @@ export function UserCreatePage() {
       fullName: "",
       email: "",
       password: "",
-      roleIds: [],
+      roleId: "",
     },
   })
   const isPending = createMutation.isPending
+  const selectedRoleId = useWatch({ control, name: "roleId" })
+  const selectedRole =
+    rolesQuery.data?.find((role) => role.id === selectedRoleId) ?? null
   const roleOptions = (rolesQuery.data ?? []).map((role) => ({
     value: role.id,
     label: role.roleName,
@@ -65,7 +69,7 @@ export function UserCreatePage() {
               fullName: values.fullName.trim(),
               email: values.email.trim(),
               password: values.password,
-              roleIds: values.roleIds,
+              roleIds: [values.roleId],
             })
             void navigate("/users")
           } catch (error) {
@@ -107,13 +111,21 @@ export function UserCreatePage() {
           {rolesQuery.isPending ? (
             <FormSkeleton fields={1} />
           ) : (
-            <RolePicker
-              control={control}
-              name="roleIds"
-              label={t("form.roles")}
-              options={roleOptions}
-              disabled={isPending}
-            />
+            <div className="flex flex-col gap-6">
+              <RolePicker
+                control={control}
+                name="roleId"
+                label={t("form.role")}
+                options={roleOptions}
+                disabled={isPending}
+              />
+              <div className="flex flex-col gap-3">
+                <p className="text-small-1 font-medium text-foreground">
+                  {t("form.permissions")}
+                </p>
+                <RolePermissionReview role={selectedRole} />
+              </div>
+            </div>
           )}
         </FormSection>
         <FormActions>

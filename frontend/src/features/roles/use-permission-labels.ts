@@ -25,10 +25,16 @@ export function usePermissionLabels() {
   const { t } = useTranslation("roles")
 
   return {
-    resourceLabel: (resource: string) =>
-      t(`resources.${resource.replaceAll(".", "_")}`, {
-        defaultValue: resource.replaceAll(".", " / ").replaceAll("_", " "),
-      }),
+    resourceLabel: (resource: string) => {
+      const key = resource.replaceAll(".", "_")
+      const short = resource.split(".").at(-1) ?? resource
+
+      return t(`resources.${key}`, {
+        defaultValue: t(`resources.${short}`, {
+          defaultValue: resource.replaceAll(".", " / ").replaceAll("_", " "),
+        }),
+      })
+    },
     actionLabel: (action: string) => {
       const key = action.replaceAll(".", "_")
       return t(`actions.${key}`, {

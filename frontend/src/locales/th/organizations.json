@@ -8,6 +8,7 @@
   "columns": {
     "code": "รหัส",
     "name": "ชื่อ",
+    "email": "อีเมล",
     "country": "ประเทศ",
     "status": "สถานะ",
     "actions": "การดำเนินการ"
@@ -15,6 +16,7 @@
   "detail": {
     "title": "องค์กร"
   },
+  "updated_at": "อัปเดตเมื่อ",
   "form": {
     "create_title": "องค์กรใหม่",
     "create_subtitle": "สร้างบัญชีองค์กรลูกค้า",
@@ -22,13 +24,13 @@
     "code_placeholder": "001",
     "legal_name": "ชื่อตามกฎหมาย",
     "display_name": "ชื่อที่แสดง",
-    "status": "สถานะ",
     "country": "ประเทศ",
     "phone": "โทรศัพท์",
     "email": "อีเมล",
     "address": "ที่อยู่",
-    "reason": "เหตุผลของสถานะ",
     "create": "สร้างองค์กร",
+    "edit_title": "แก้ไของค์กร",
+    "edit_subtitle": "อัปเดตองค์กรนี้",
     "save": "บันทึก",
     "cancel": "ยกเลิก",
     "errors": {
@@ -47,9 +49,13 @@
     "identity_description": "ชื่อและการระบุองค์กรนี้",
     "contact": "การติดต่อ",
     "contact_description": "ช่องทางติดต่อองค์กรนี้",
-    "status": "สถานะวงจรชีวิต",
-    "status_description": "เปลี่ยนสถานะองค์กร ระบบจะบันทึกเหตุผล",
     "overview": "ภาพรวม"
   },
-  "created_at": "สร้างเมื่อ"
+  "created_at": "สร้างเมื่อ",
+  "status_change": {
+    "menu": "เปลี่ยนสถานะ",
+    "title": "เปลี่ยนสถานะเป็น {{status}}?",
+    "description": "ระบบจะตั้งค่า {{name}} เป็น {{status}} การเปลี่ยนแปลงมีผลทันที",
+    "confirm": "เปลี่ยนสถานะ"
+  }
 }

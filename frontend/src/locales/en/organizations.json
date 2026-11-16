@@ -8,6 +8,7 @@
   "columns": {
     "code": "Code",
     "name": "Name",
+    "email": "Email",
     "country": "Country",
     "status": "Status",
     "actions": "Actions"
@@ -15,6 +16,7 @@
   "detail": {
     "title": "Organization"
   },
+  "updated_at": "Updated",
   "form": {
     "create_title": "New organization",
     "create_subtitle": "Create a customer organization account.",
@@ -22,13 +24,13 @@
     "code_placeholder": "001",
     "legal_name": "Legal name",
     "display_name": "Display name",
-    "status": "Status",
     "country": "Country",
     "phone": "Phone",
     "email": "Email",
     "address": "Address",
-    "reason": "Status reason",
     "create": "Create organization",
+    "edit_title": "Edit organization",
+    "edit_subtitle": "Update this organization.",
     "save": "Save",
     "cancel": "Cancel",
     "errors": {
@@ -47,9 +49,13 @@
     "identity_description": "How this organization is named and identified.",
     "contact": "Contact",
     "contact_description": "Where people can reach this organization.",
-    "status": "Lifecycle status",
-    "status_description": "Change the organization status. A reason is recorded with the transition.",
     "overview": "Overview"
   },
-  "created_at": "Created"
+  "created_at": "Created",
+  "status_change": {
+    "menu": "Change status",
+    "title": "Change status to {{status}}?",
+    "description": "This will set {{name}} to {{status}}. The change takes effect immediately.",
+    "confirm": "Change status"
+  }
 }
