@@ -10,6 +10,7 @@ import (
 
 	"hrgo/backend/internal/modules/workspace/branch/models"
 	"hrgo/backend/internal/modules/workspace/branch/request"
+	"hrgo/backend/internal/shared/codeformat"
 )
 
 type Repository interface {
@@ -29,7 +30,47 @@ func New(db *gorm.DB) Repository {
 }
 
 func (r *repository) Create(ctx context.Context, b *models.Branch) error {
-	return r.db.WithContext(ctx).Create(b).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		format := codeformat.DefaultBranchCodeFormat
+
+		var settingVal string
+		err := tx.Table("organization_settings").
+			Select("setting_value").
+			Where("organization_id = ? AND setting_key = ?", b.OrganizationID, codeformat.SettingKeyBranchCodeFormat).
+			Scan(&settingVal).Error
+		if err == nil && strings.TrimSpace(settingVal) != "" {
+			format = strings.TrimSpace(settingVal)
+		} else {
+			_ = tx.Exec(`
+				INSERT INTO organization_settings (organization_id, setting_key, setting_value)
+				VALUES (?, ?, ?)
+				ON CONFLICT (organization_id, setting_key) DO NOTHING
+			`, b.OrganizationID, codeformat.SettingKeyBranchCodeFormat, codeformat.DefaultBranchCodeFormat).Error
+		}
+
+		var count int64
+		if err := tx.Model(&models.Branch{}).Where("organization_id = ?", b.OrganizationID).Count(&count).Error; err != nil {
+			return err
+		}
+
+		seq := int(count) + 1
+		for {
+			candidate := codeformat.Format(format, seq, codeformat.DefaultBranchCodeFormat)
+			var existingCount int64
+			if err := tx.Model(&models.Branch{}).
+				Where("organization_id = ? AND LOWER(code) = LOWER(?)", b.OrganizationID, candidate).
+				Count(&existingCount).Error; err != nil {
+				return err
+			}
+			if existingCount == 0 {
+				b.Code = candidate
+				break
+			}
+			seq++
+		}
+
+		return tx.Create(b).Error
+	})
 }
 
 func (r *repository) FindByID(ctx context.Context, orgID, id string) (*models.Branch, error) {

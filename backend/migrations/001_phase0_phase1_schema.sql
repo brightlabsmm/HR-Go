@@ -21,6 +21,19 @@ CREATE TABLE IF NOT EXISTS organizations (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_organizations_code_lower ON organizations (LOWER(code));
 CREATE INDEX IF NOT EXISTS idx_organizations_status ON organizations (status);
 
+-- 1b. Organization Settings
+CREATE TABLE IF NOT EXISTS organization_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES organizations (id) ON DELETE CASCADE,
+    setting_key VARCHAR(100) NOT NULL,
+    setting_value TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_organization_settings_org_key UNIQUE (organization_id, setting_key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_organization_settings_org ON organization_settings (organization_id);
+
 -- 2. Countries (System lookup)
 CREATE TABLE IF NOT EXISTS countries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

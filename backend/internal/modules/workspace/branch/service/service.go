@@ -29,32 +29,23 @@ func New(repo repository.Repository) Service {
 }
 
 func (s *service) Create(ctx context.Context, orgID string, req request.CreateBranchRequest) (*response.BranchResponse, *apperrors.Error) {
-	code := strings.TrimSpace(req.BranchCode)
-	existing, err := s.repo.FindByCode(ctx, orgID, code)
-	if err != nil {
-		return nil, apperrors.Internal()
-	}
-	if existing != nil {
-		return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
-			{Field: "branchCode", Message: "Branch code already exists in this organization."},
-		})
-	}
-
-	if req.ParentID != nil && *req.ParentID != "" {
-		parent, err := s.repo.FindByID(ctx, orgID, *req.ParentID)
+	var parentID *string
+	if req.ParentID != nil && strings.TrimSpace(*req.ParentID) != "" {
+		pid := strings.TrimSpace(*req.ParentID)
+		parent, err := s.repo.FindByID(ctx, orgID, pid)
 		if err != nil {
 			return nil, apperrors.Internal()
 		}
 		if parent == nil {
 			return nil, apperrors.BadRequest("Parent branch not found in this organization.")
 		}
+		parentID = &pid
 	}
 
 	branch := &models.Branch{
 		OrganizationID: orgID,
-		ParentID:       req.ParentID,
-		Code:           code,
-		Name:           req.BranchName,
+		ParentID:       parentID,
+		Name:           strings.TrimSpace(req.BranchName),
 		Address:        req.Address,
 		Status:         "ACTIVE",
 	}

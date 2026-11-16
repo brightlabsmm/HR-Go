@@ -19,3 +19,16 @@ type Organization struct {
 func (Organization) TableName() string {
 	return "organizations"
 }
+
+type OrganizationSetting struct {
+	ID             string `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	OrganizationID string `gorm:"not null;index"`
+	SettingKey     string `gorm:"not null"`
+	SettingValue   string `gorm:"not null"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+func (OrganizationSetting) TableName() string {
+	return "organization_settings"
+}
