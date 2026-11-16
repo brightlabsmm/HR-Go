@@ -52,6 +52,12 @@
     "overview": "概览"
   },
   "created_at": "创建时间",
+  "status_actions": {
+    "activate": "启用",
+    "suspend": "暂停",
+    "archive": "归档",
+    "reactivate": "重新启用"
+  },
   "status_change": {
     "menu": "更改状态",
     "title": "将状态改为{{status}}？",

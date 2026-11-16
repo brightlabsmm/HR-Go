@@ -775,13 +775,15 @@ Success: `200 OK` with the updated organization.
 
 Rules:
 
-- Validate the requested transition against the approved lifecycle transition matrix.
-- Require explicit confirmation for high-impact transitions.
+- Validate the requested transition against the approved lifecycle transition matrix:
+  - `PENDING` -> `ACTIVE` (Activate)
+  - `ACTIVE` -> `SUSPENDED` (Suspend), `ARCHIVED` (Archive)
+  - `SUSPENDED` -> `ACTIVE` (Reactivate), `ARCHIVED` (Archive)
+  - `ARCHIVED` -> `ACTIVE` (Reactivate)
+- Require explicit confirmation (`confirmation: true`) for high-impact transitions (`SUSPENDED`, `ARCHIVED`).
 - Do not assume all transitions are allowed.
 - Record actor, previous status, new status, reason (if collected), and timestamp.
 - Return `409` for an invalid transition and `403` if the user lacks permission.
-
-**Decision required:** The SRS says transitions require approval but does not define the transition matrix, approval workflow, or whether approval is performed inside or outside this API. Those details must be approved before the endpoint is finalized.
 
 ### 7.6 Organization settings
 
