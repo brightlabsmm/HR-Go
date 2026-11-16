@@ -52,6 +52,12 @@
     "overview": "အနှစ်ချုပ်"
   },
   "created_at": "ဖန်တီးသည့်ရက်",
+  "status_actions": {
+    "activate": "ဖွင့်ရန်",
+    "suspend": "ယာယီရပ်ဆိုင်းရန်",
+    "archive": "သိမ်းဆည်းရန်",
+    "reactivate": "ပြန်လည်ဖွင့်ရန်"
+  },
   "status_change": {
     "menu": "အခြေအနေ ပြောင်းရန်",
     "title": "အခြေအနေကို {{status}} သို့ ပြောင်းမလား။",

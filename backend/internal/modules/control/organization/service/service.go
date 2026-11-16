@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"hrgo/backend/internal/modules/control/organization/mapper"
@@ -131,6 +132,23 @@ func (s *service) Update(ctx context.Context, id string, req request.UpdateOrgan
 	return &res, nil
 }
 
+var allowedStatusTransitions = map[string]map[string]bool{
+	"PENDING": {
+		"ACTIVE": true,
+	},
+	"ACTIVE": {
+		"SUSPENDED": true,
+		"ARCHIVED":  true,
+	},
+	"SUSPENDED": {
+		"ACTIVE":   true,
+		"ARCHIVED": true,
+	},
+	"ARCHIVED": {
+		"ACTIVE": true,
+	},
+}
+
 func (s *service) UpdateStatus(ctx context.Context, id string, req request.UpdateStatusRequest) (*response.OrganizationResponse, *apperrors.Error) {
 	org, err := s.repo.FindByID(ctx, id)
 	if err != nil {
@@ -140,10 +158,12 @@ func (s *service) UpdateStatus(ctx context.Context, id string, req request.Updat
 		return nil, apperrors.NotFound("Organization not found")
 	}
 
-	target := strings.ToUpper(req.Status)
-	allowed := map[string]bool{"PENDING": true, "ACTIVE": true, "SUSPENDED": true, "ARCHIVED": true}
-	if !allowed[target] {
-		return nil, apperrors.Conflict("Invalid organization status transition to " + target)
+	current := strings.ToUpper(strings.TrimSpace(org.Status))
+	target := strings.ToUpper(strings.TrimSpace(req.Status))
+
+	validTargets, exists := allowedStatusTransitions[current]
+	if !exists || !validTargets[target] {
+		return nil, apperrors.Conflict(fmt.Sprintf("Invalid organization status transition from %s to %s", current, target))
 	}
 
 	if (target == "SUSPENDED" || target == "ARCHIVED") && !req.Confirmation {

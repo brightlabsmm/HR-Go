@@ -1283,7 +1283,7 @@ paths:
     post:
       tags: [Control - Organizations]
       summary: Transition organization lifecycle status
-      description: Execute an approved organization lifecycle status transition (`PENDING`, `ACTIVE`, `SUSPENDED`, `ARCHIVED`). Requires `platform.organization.status.update`.
+      description: Execute an approved organization lifecycle status transition (`PENDING` -> `ACTIVE`; `ACTIVE` -> `SUSPENDED`, `ARCHIVED`; `SUSPENDED` -> `ACTIVE`, `ARCHIVED`; `ARCHIVED` -> `ACTIVE`). Requires `platform.organization.status.update`.
       security:
         - BearerAuth: []
       parameters:

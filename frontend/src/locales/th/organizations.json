@@ -52,6 +52,12 @@
     "overview": "ภาพรวม"
   },
   "created_at": "สร้างเมื่อ",
+  "status_actions": {
+    "activate": "เปิดใช้งาน",
+    "suspend": "ระงับชั่วคราว",
+    "archive": "เก็บถาวร",
+    "reactivate": "เปิดใช้งานอีกครั้ง"
+  },
   "status_change": {
     "menu": "เปลี่ยนสถานะ",
     "title": "เปลี่ยนสถานะเป็น {{status}}?",

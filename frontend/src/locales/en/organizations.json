@@ -52,6 +52,12 @@
     "overview": "Overview"
   },
   "created_at": "Created",
+  "status_actions": {
+    "activate": "Activate",
+    "suspend": "Suspend",
+    "archive": "Archive",
+    "reactivate": "Reactivate"
+  },
   "status_change": {
     "menu": "Change status",
     "title": "Change status to {{status}}?",
