@@ -8,6 +8,7 @@ on:
       - prod
     paths:
       - "backend/**"
+      - "frontend/**"
       - ".github/workflows/**"
   pull_request:
     branches:
@@ -16,6 +17,7 @@ on:
       - prod
     paths:
       - "backend/**"
+      - "frontend/**"
       - ".github/workflows/**"
   workflow_dispatch:
 
@@ -27,9 +29,42 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    name: Detect changed areas
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.backend == 'true' }}
+      frontend: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.frontend == 'true' }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Filter changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - "backend/**"
+              - ".github/workflows/**"
+            frontend:
+              - "frontend/**"
+              - ".github/workflows/**"
+
   ci:
     name: Server CI
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
     uses: ./.github/workflows/server-ci.yaml
+
+  frontend-ci:
+    name: Frontend CI
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    uses: ./.github/workflows/frontend-ci.yaml
 
   push-ghcr:
     name: Push GHCR Image
