@@ -10,11 +10,12 @@ HRGo is a cloud-based HR management platform designed to help organizations mana
 
 | Path | Description | Status |
 |---|---|---|
-| [`backend/`](backend/) | Backend API (Go, Gin, GORM, PostgreSQL, Dockerfile, Docker Compose) | Scaffolded |
-| [`docs/`](docs/) | Project rules and documentation (`docs/rules/`) | Active |
+| [`backend/`](backend/) | Backend API (Go, Gin, GORM, PostgreSQL, Dockerfile, Docker Compose) | Active (Phase 0–1 modules) |
+| [`frontend/`](frontend/) | Web application (Vite, React, TypeScript) with separate platform and organization portals | Active (Phase 0–1 screens) |
+| [`docs/`](docs/) | API contract and OpenAPI specification (`docs/api/`) | Active |
+| [`.claude/`](.claude/) | Claude Code rules (`.claude/rules/`) and skills (`.claude/skills/`) | Active |
 | [`images/`](images/) | Project images and branding assets | Active |
-| [`.github/workflows/`](.github/workflows/) | Backend CI, GHCR image push, and Render deploy workflows | Active |
-| `frontend/` | Web application (Vite, React, TypeScript) | Planned (not yet added) |
+| [`.github/workflows/`](.github/workflows/) | Backend CI, GHCR image push, and dev/staging/prod/Render deploy workflows | Active |
 | `mobile/` | Employee mobile application (Expo, React Native) | Planned (not yet added) |
 
 ## Technology Stack
@@ -82,7 +83,14 @@ Install the following tools before starting development:
 
 ## Web Application
 
-The web application is built with React, TypeScript, and Vite.
+The web application is built with React, TypeScript, and Vite. One codebase builds two portals, selected by `VITE_PORTAL` through the Vite mode:
+
+| Portal | Audience | Dev command | Build command |
+|---|---|---|---|
+| `organization` (default) | Organization users: branches, departments, positions, roles | `yarn dev` (or `yarn dev:org`) | `yarn build:org` |
+| `platform` | Platform administrators: organizations, platform users, roles | `yarn dev:platform` | `yarn build:platform` |
+
+The UI is localized with `react-i18next` (`en`, `my`, `th`, `zh` files under `frontend/src/locales/`).
 
 ### Installation
 
@@ -109,7 +117,7 @@ http://localhost:5173
 Configure the backend API URL in the frontend `.env` file:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8080
+VITE_API_BASE_URL=http://localhost:8080/api/v1
 ```
 
 ### Available Commands
@@ -123,6 +131,9 @@ yarn preview
 
 # Lint
 yarn lint
+
+# Tests (Vitest)
+yarn test
 
 # Type checking
 yarn typecheck
@@ -197,16 +208,24 @@ The backend uses a Spring Boot–style separation between production code (`cmd/
 ```text
 backend/
 ├── cmd/
-│   └── server/                  # HTTP server entrypoint (main.go)
+│   ├── server/                  # HTTP server entrypoint (main.go)
+│   ├── migrate/                 # Applies migrations/*.sql in order
+│   └── seed/                    # Seeds the superadmin and sample data
 ├── internal/
-│   ├── bootstrap/               # Gin engine wiring, middleware chain, /health & /ready probes
+│   ├── apidocs/                 # Embedded OpenAPI spec, served at /openapi.yaml and /docs
+│   ├── bootstrap/               # Gin engine wiring, middleware chain, /health & /ready probes, route registration
 │   ├── config/                  # Environment configuration loader
 │   ├── database/                # PostgreSQL / GORM connection and ping helpers
 │   ├── logging/                 # Structured log/slog logger setup
 │   ├── middleware/              # Request ID, recovery, request logger, CORS, security headers, body limit
+│   ├── modules/
+│   │   ├── control/             # Platform-admin modules: auth, organization, role, user
+│   │   └── workspace/           # Organization modules: auth, branch, department, position, role
 │   └── shared/
 │       ├── errors/              # Transport-safe application error types
-│       └── responses/           # Standard JSON response envelopes
+│       ├── responses/           # Standard JSON response envelopes
+│       └── security/            # JWT issuing/validation, password hashing, auth and permission middleware
+├── migrations/                  # Hand-written SQL migrations (001_phase0_phase1_schema.sql)
 ├── test/
 │   └── unit/                    # Unit tests mirroring internal/ (external *_test packages)
 ├── .env.example
@@ -214,10 +233,10 @@ backend/
 └── Dockerfile
 ```
 
-When feature modules are added under `internal/modules/<module_name>/`, each module follows this package structure (only creating packages the module actually uses):
+Each feature module lives under `internal/modules/<control|workspace>/<module_name>/` and follows this package structure (only creating packages the module actually uses):
 
 ```text
-internal/modules/<module_name>/
+internal/modules/<control|workspace>/<module_name>/
 ├── handler/
 ├── mapper/
 ├── models/
@@ -235,7 +254,8 @@ internal/modules/<module_name>/
 - Environment configuration and PostgreSQL connection pooling
 - Health (`/health`) and readiness (`/ready`) probes
 - Standard JSON success/error response envelopes
-- Feature modules (`internal/modules/*` — to be added per phase)
+- Platform and organization authentication with JWT, plus permission-based route guards
+- Feature modules under `internal/modules/control` (organization, platform user, role) and `internal/modules/workspace` (branch, department, position, role), scoped per organization
 
 ### Running the Backend
 
@@ -272,9 +292,10 @@ docker compose up --build
 
 ## Current Status
 
-- **Backend:** Base Go + Gin server scaffold is in place (`cmd/server`, `internal/bootstrap`, `internal/config`, `internal/database`, `internal/logging`, `internal/middleware`, `internal/shared/errors`, `internal/shared/responses`), along with unit tests under `backend/test/unit/`, `backend/Dockerfile`, `backend/docker-compose.yml`, and backend CI/CD workflows (`.github/workflows/`). Feature modules (`internal/modules/*`) and database migrations are not implemented yet.
-- **Rules & Docs:** Coding, documentation, and localization rules are stored in `.cursor/rules/` and `docs/rules/`.
-- **Web & Mobile:** `frontend/` and `mobile/` have not been initialized in this repository yet.
+- **Backend:** The Go + Gin server runs with shared infrastructure (config, logging, middleware, probes, security) and Phase 0–1 feature modules: platform auth, organizations, platform users and roles under `internal/modules/control`, and workspace auth, branches, departments, positions and roles under `internal/modules/workspace`. The schema and permission seed are in `backend/migrations/001_phase0_phase1_schema.sql`, and the OpenAPI spec is served at `/docs`. Unit tests under `backend/test/unit/` currently cover shared infrastructure only; feature modules have no tests yet. `backend/Dockerfile`, `backend/docker-compose.yml`, and backend CI/CD workflows (`.github/workflows/`) are in place.
+- **Web:** `frontend/` is a Vite + React + TypeScript app with platform and organization portals, sign-in, account, organization, user, role, branch, department and position screens, and English, Myanmar, Thai and Chinese locale files. There is no frontend CI workflow yet.
+- **Mobile:** `mobile/` has not been initialized in this repository yet.
+- **Rules & Docs:** Coding, documentation, and localization rules are in `.claude/rules/`, reusable task skills are in `.claude/skills/`, and the API contract and OpenAPI spec are in `docs/api/`.
 
 ---
 
@@ -284,4 +305,5 @@ docker compose up --build
 
 | Date | Time | Author | Change |
 |---|---|---|---|
+| 2026-11-16 | 15:45 | MinThiha | Updated the repository structure, web application, backend structure, and current status sections to reflect the existing frontend and backend feature modules. |
 | 2026-11-12 | 11:18 | thanthtooaung-coding | Updated README structure, backend scaffold details, and reset change logs with the Time column. |
