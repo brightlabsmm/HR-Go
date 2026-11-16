@@ -87,18 +87,18 @@ function PhoneNumberControl({
   const selected =
     dialCodes.find((code) => code.phoneCode === phoneCode) ?? dialCodes[0]
 
-  useEffect(() => {
+  // Sync local state when the form value changes from outside (reset, load).
+  // Done during render instead of in an effect to avoid a cascading re-render.
+  // Keep local digits (including a leading 0) while the composed E.164 value is unchanged.
+  const [syncedValue, setSyncedValue] = useState(value)
+  if (value !== syncedValue) {
+    setSyncedValue(value)
     const current = national ? (toE164Phone(national, phoneCode) ?? "") : ""
-    if ((value || "") === current) {
-      return
+    if ((value || "") !== current) {
+      setPhoneCode(parsed.phoneCode)
+      setNational(parsed.national)
     }
-
-    const next = splitPhone(value, phoneCodes, defaultPhoneCode)
-    setPhoneCode(next.phoneCode)
-    setNational(next.national)
-    // Keep local digits (including a leading 0) while the composed E.164 value is unchanged.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync from the form value, not from typing
-  }, [defaultPhoneCode, phoneCodes, value])
+  }
 
   useEffect(() => {
     if (hasPickedCode.current || national !== "" || phoneCode === defaultPhoneCode) {
