@@ -12,10 +12,8 @@ import { ProfileSummaryCard } from "@/components/common/profile-summary-card"
 import { StatusBadge } from "@/components/common/status-badge"
 import { Button } from "@/components/ui/button"
 import { OrganizationDetailHeader } from "@/features/organizations/components/organization-detail-header"
-import {
-  isHighImpactOrganizationStatus,
-  OrganizationStatusMenu,
-} from "@/features/organizations/components/organization-status-menu"
+import { OrganizationStatusButtons } from "@/features/organizations/components/organization-status-buttons"
+import { isHighImpactOrganizationStatus } from "@/features/organizations/components/organization-status-menu"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import {
   useOrganizationQuery,
@@ -75,7 +73,7 @@ export function OrganizationDetailPage() {
               {tCommon("actions.edit")}
             </Button>
             {canChangeStatus && organization ? (
-              <OrganizationStatusMenu
+              <OrganizationStatusButtons
                 organization={organization}
                 onSelect={(status) => setStatusTarget(status)}
               />
