@@ -96,16 +96,11 @@ export function UserListPage() {
       cell: ({ getValue }) => <StatusBadge status={getValue()} />,
     }),
     column.accessor("roles", {
-      header: t("columns.roles"),
-      cell: ({ getValue }) => (
-        <div className="flex flex-wrap gap-1">
-          {getValue().map((role) => (
-            <ToneBadge key={role.roleCode} tone="brand">
-              {role.roleName}
-            </ToneBadge>
-          ))}
-        </div>
-      ),
+      header: t("columns.role"),
+      cell: ({ getValue }) => {
+        const role = getValue()[0]
+        return role ? <ToneBadge tone="brand">{role.roleName}</ToneBadge> : "—"
+      },
     }),
     column.display({
       id: "actions",
@@ -113,7 +108,7 @@ export function UserListPage() {
       meta: { align: "end" },
       cell: ({ row }) => (
         <DataTableActions
-          onEdit={() => void navigate(`/users/${row.original.id}`)}
+          onEdit={() => void navigate(`/users/${row.original.id}/edit`)}
           onDelete={
             meQuery.data?.id === row.original.id
               ? undefined

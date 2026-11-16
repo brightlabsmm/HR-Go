@@ -15,6 +15,7 @@ interface ConfirmDialogProps {
   title: string
   description: string
   confirmLabel?: string
+  confirmVariant?: "default" | "destructive"
   isPending?: boolean
   onOpenChange: (open: boolean) => void
   onConfirm: () => void
@@ -25,6 +26,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
+  confirmVariant = "destructive",
   isPending = false,
   onOpenChange,
   onConfirm,
@@ -49,7 +51,7 @@ export function ConfirmDialog({
           </Button>
           <Button
             type="button"
-            variant="destructive"
+            variant={confirmVariant}
             loading={isPending}
             onClick={onConfirm}
           >

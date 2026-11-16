@@ -21,6 +21,16 @@ export function useRolesQuery() {
   })
 }
 
+export function useRoleQuery(id: string) {
+  const rolesQuery = useRolesQuery()
+  const role = rolesQuery.data?.find((item) => item.id === id)
+
+  return {
+    ...rolesQuery,
+    data: role,
+  }
+}
+
 export function usePermissionsQuery(scope?: "PLATFORM" | "ORG") {
   const accessToken = useAuthStore((state) => state.accessToken)
 

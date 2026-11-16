@@ -44,6 +44,7 @@ export function AccountPage() {
       <div className="grid items-start gap-12 lg:grid-cols-[18.75rem_minmax(0,1fr)]">
         <ProfileSummaryCard
           isLoading={isPending}
+          avatarSize="xl"
           title={fullName}
           subtitle={user?.email ?? user?.employeeCode}
           initials={getInitials(...fullName.split(" "))}

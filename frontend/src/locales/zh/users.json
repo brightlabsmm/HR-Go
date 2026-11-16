@@ -7,13 +7,13 @@
   "not_found": "未找到用户。",
   "columns": {
     "status": "状态",
-    "roles": "角色",
+    "role": "角色",
     "actions": "操作",
     "name": "姓名"
   },
   "create": {
     "title": "新建平台用户",
-    "subtitle": "创建平台用户并分配初始角色。",
+    "subtitle": "创建平台用户并分配一个角色。",
     "submit": "创建用户"
   },
   "detail": {
@@ -30,13 +30,16 @@
     "email": "邮箱",
     "full_name": "全名",
     "password": "临时密码",
-    "roles": "角色",
+    "role": "角色",
+    "permissions": "权限",
     "save": "保存",
     "cancel": "取消",
+    "edit_subtitle": "更新该用户。",
     "errors": {
       "email_required": "请填写邮箱。",
       "email_invalid": "请输入有效邮箱。",
       "full_name": "请填写全名。",
+      "role": "请选择一个角色。",
       "password": "密码至少 8 位，且包含 1 个大写字母、1 个小写字母和 1 个数字。"
     }
   },
@@ -48,9 +51,14 @@
     "profile": "资料",
     "profile_description": "该用户的姓名和邮箱。",
     "access": "权限",
-    "access_description": "角色决定该用户可以查看和执行的操作。",
+    "access_description": "所分配的角色决定该用户可以查看和执行的操作。",
     "danger": "停用用户",
     "danger_description": "该用户会立即失去平台访问权限。"
   },
-  "self_roles_hint": "不能修改自己的角色。"
+  "self_roles_hint": "不能修改自己的角色。",
+  "last_login_at": "上次登录",
+  "permissions": {
+    "empty": "选择角色以查看其权限。",
+    "none": "该角色没有任何权限。"
+  }
 }

@@ -1,203 +1,115 @@
-import { useMemo, useState } from "react"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { PencilIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router"
-import { z } from "zod"
 
-import { applyApiFieldErrors } from "@/app/api/feedback"
-import { ConfirmDialog } from "@/components/common/confirm-dialog"
-import { FormActions } from "@/components/common/form-actions"
-import { FormFieldGrid } from "@/components/common/form-field-grid"
-import { FormPageHeader } from "@/components/common/form-page-header"
-import { FormSection, formStackClassName } from "@/components/common/form-section"
+import { DetailList } from "@/components/common/detail-list"
 import { FormSkeleton } from "@/components/common/form-skeleton"
-import { FormTextInput } from "@/components/common/form/form-text-input"
+import { MotionStack } from "@/components/common/motion-stack"
 import { NotFoundState } from "@/components/common/not-found-state"
+import { ProfileSummaryCard } from "@/components/common/profile-summary-card"
 import { StatusBadge } from "@/components/common/status-badge"
+import { ToneBadge } from "@/components/common/tone-badge"
 import { Button } from "@/components/ui/button"
-import { RolePicker } from "@/features/users/components/role-picker"
-import { useCurrentUserQuery } from "@/shared/queries/auth.query"
+import { RolePermissionReview } from "@/features/users/components/role-permission-review"
+import { UserDetailHeader } from "@/features/users/components/user-detail-header"
 import { useRolesQuery } from "@/shared/queries/role.query"
-import {
-  useDeactivateUserMutation,
-  useReactivateUserMutation,
-  useReplaceUserRolesMutation,
-  useUpdateUserMutation,
-  useUserQuery,
-} from "@/shared/queries/user.query"
+import { useUserQuery } from "@/shared/queries/user.query"
+import { formatDateTime } from "@/util/format-date"
+import { getInitials } from "@/util/initials"
 
 export function UserDetailPage() {
-  const { t } = useTranslation("users")
+  const { t, i18n } = useTranslation("users")
+  const { t: tCommon } = useTranslation("common")
   const navigate = useNavigate()
   const { id = "" } = useParams()
   const userQuery = useUserQuery(id)
-  const meQuery = useCurrentUserQuery()
   const rolesQuery = useRolesQuery()
-  const updateMutation = useUpdateUserMutation()
-  const rolesMutation = useReplaceUserRolesMutation()
-  const deactivateMutation = useDeactivateUserMutation()
-  const reactivateMutation = useReactivateUserMutation()
-  const [confirmDeactivate, setConfirmDeactivate] = useState(false)
-  const target = userQuery.data
-  const isLoading = userQuery.isPending
-  const isPending = updateMutation.isPending || rolesMutation.isPending
-  const isSelf = meQuery.data?.id === id
-  const isInactive = target?.status.toUpperCase() === "INACTIVE"
-  const schema = useMemo(
-    () =>
-      z.object({
-        fullName: z.string().trim().min(1, t("form.errors.full_name")),
-        email: z.string().trim().email(t("form.errors.email_invalid")),
-        roleIds: z.array(z.string()),
-      }),
-    [t]
-  )
-  type FormValues = z.infer<typeof schema>
-  const roleIds = (target?.roles ?? [])
-    .map((role) => rolesQuery.data?.find((item) => item.roleCode === role.roleCode)?.id)
-    .filter((value): value is string => Boolean(value))
-  const { control, handleSubmit, setError } = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    values: {
-      fullName: target?.fullName ?? "",
-      email: target?.email ?? "",
-      roleIds,
-    },
-  })
-  const roleOptions = (rolesQuery.data ?? []).map((role) => ({
-    value: role.id,
-    label: role.roleName,
-    description: role.description ?? role.roleCode,
-  }))
+  const user = userQuery.data
+  const assignedRole =
+    rolesQuery.data?.find(
+      (role) => role.roleCode === user?.roles[0]?.roleCode
+    ) ?? null
+  const roleName = assignedRole?.roleName ?? user?.roles[0]?.roleName
 
-  if (!target && userQuery.isFetched) {
+  if (!user && userQuery.isFetched) {
     return (
       <NotFoundState backTo="/users" backLabel={t("title")} description={t("not_found")} />
     )
   }
 
+  const name = user?.fullName ?? ""
+  const profileItems = [
+    { label: t("form.full_name"), value: user?.fullName },
+    { label: t("form.email"), value: user?.email },
+    {
+      label: t("last_login_at"),
+      value: user ? formatDateTime(user.lastLoginAt, i18n.language) : null,
+    },
+  ]
+  const roleBadge = roleName ? (
+    <ToneBadge tone="brand">{roleName}</ToneBadge>
+  ) : null
+
   return (
-    <section className="flex flex-col pb-6">
-      <form
-        className={formStackClassName}
-        onSubmit={handleSubmit(async (values) => {
-          try {
-            await updateMutation.mutateAsync({
-              id,
-              input: {
-                fullName: values.fullName.trim(),
-                email: values.email.trim(),
-              },
-            })
-            if (!isSelf) {
-              await rolesMutation.mutateAsync({ id, roleIds: values.roleIds })
-            }
-            void navigate("/users")
-          } catch (error) {
-            applyApiFieldErrors(error, setError)
-          }
-        })}
-      >
-        <FormPageHeader
-          title={target?.fullName || t("detail.title")}
-          subtitle={target?.email ?? t("sections.profile_description")}
-          aside={target ? <StatusBadge status={target.status} /> : null}
-        />
-        <FormSection legend={t("sections.profile")}>
-          {isLoading ? (
-            <FormSkeleton fields={2} columns={2} />
-          ) : (
-            <FormFieldGrid>
-              <FormTextInput
-                control={control}
-                name="fullName"
-                label={t("form.full_name")}
-                disabled={isPending}
-              />
-              <FormTextInput
-                control={control}
-                name="email"
-                type="email"
-                label={t("form.email")}
-                disabled={isPending}
-              />
-            </FormFieldGrid>
-          )}
-        </FormSection>
-        <FormSection legend={t("sections.access")}>
-          {isLoading || rolesQuery.isPending ? (
-            <FormSkeleton fields={1} />
-          ) : (
-            <RolePicker
-              control={control}
-              name="roleIds"
-              label={t("form.roles")}
-              options={roleOptions}
-              disabled={isSelf || isPending}
-            />
-          )}
-        </FormSection>
-        <FormActions>
+    <MotionStack className="flex flex-col gap-8 pb-2">
+      <UserDetailHeader
+        userId={id}
+        actions={
           <Button
             type="button"
             variant="outline"
-            disabled={isPending}
-            onClick={() => void navigate("/users")}
+            onClick={() => void navigate(`/users/${id}/edit`)}
           >
-            {t("form.cancel")}
+            <PencilIcon className="size-4" />
+            {tCommon("actions.edit")}
           </Button>
-          <Button type="submit" loading={isPending} disabled={isLoading}>
-            {t("form.save")}
-          </Button>
-        </FormActions>
-      </form>
-
-      <FormSection
-        legend={t("sections.danger")}
-        description={t("sections.danger_description")}
-        tone="danger"
-      >
-        <div className="flex justify-end">
-          {isInactive ? (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isLoading || isSelf}
-              loading={reactivateMutation.isPending}
-              onClick={() => reactivateMutation.mutate(id)}
-            >
-              {t("detail.reactivate")}
-            </Button>
+        }
+      />
+      <div className="grid items-start gap-12 lg:grid-cols-[18.75rem_minmax(0,1fr)]">
+        <ProfileSummaryCard
+          isLoading={userQuery.isPending}
+          avatarSize="xl"
+          title={name}
+          subtitle={user?.email}
+          initials={getInitials(...name.split(" "))}
+          badges={
+            user ? (
+              <>
+                <StatusBadge status={user.status} />
+                {roleBadge}
+              </>
+            ) : null
+          }
+        />
+        <div className="flex min-w-0 flex-col gap-8">
+          {userQuery.isPending ? (
+            <FormSkeleton fields={4} columns={2} />
           ) : (
-            <Button
-              type="button"
-              variant="destructive"
-              disabled={isLoading || isSelf}
-              onClick={() => setConfirmDeactivate(true)}
-            >
-              {t("detail.deactivate")}
-            </Button>
+            <>
+              <section className="border-t border-hair pt-6">
+                <h2 className="mb-6 text-body-2 font-semibold text-foreground">
+                  {t("sections.profile")}
+                </h2>
+                <DetailList columns={2} items={profileItems} />
+              </section>
+              <section className="border-t border-hair pt-6">
+                <h2 className="mb-6 text-body-2 font-semibold text-foreground">
+                  {t("sections.access")}
+                </h2>
+                <div className="flex flex-col gap-8">
+                  <DetailList items={[{ label: t("form.role"), value: roleBadge }]} />
+                  <div className="flex flex-col gap-3">
+                    <h3 className="text-small-1 font-medium text-foreground">
+                      {t("form.permissions")}
+                    </h3>
+                    <RolePermissionReview role={assignedRole} />
+                  </div>
+                </div>
+              </section>
+            </>
           )}
         </div>
-      </FormSection>
-
-      <ConfirmDialog
-        open={confirmDeactivate}
-        title={t("deactivate.title")}
-        description={t("deactivate.description")}
-        confirmLabel={t("deactivate.confirm")}
-        isPending={deactivateMutation.isPending}
-        onOpenChange={setConfirmDeactivate}
-        onConfirm={() => {
-          deactivateMutation.mutate(id, {
-            onSuccess: () => {
-              setConfirmDeactivate(false)
-              void navigate("/users")
-            },
-          })
-        }}
-      />
-    </section>
+      </div>
+    </MotionStack>
   )
 }

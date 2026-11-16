@@ -25,7 +25,8 @@ interface DataTableProps<TData extends RowData> {
   onRowClick?: (row: TData) => void
 }
 
-const INTERACTIVE_SELECTOR = "a, button, input, select, textarea, label, [role='checkbox']"
+const INTERACTIVE_SELECTOR =
+  "a, button, input, select, textarea, label, [role='checkbox'], [role='menuitem'], [data-slot='dropdown-menu-trigger']"
 
 function alignClass(align: "start" | "end" | undefined) {
   return align === "end" ? "text-right" : undefined

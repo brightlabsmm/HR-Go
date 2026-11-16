@@ -1,27 +1,22 @@
-import { useState } from "react"
 import { motion } from "framer-motion"
 import { InfoIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
+import { useNavigate } from "react-router"
 
 import { MotionStack } from "@/components/common/motion-stack"
 import { PageEmptyState } from "@/components/common/page-empty-state"
 import { PageHeader } from "@/components/common/page-header"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { RoleCatalog } from "@/features/roles/components/role-catalog"
-import { RoleCompareMatrix } from "@/features/roles/components/role-compare-matrix"
 import { useMotionVariants } from "@/shared/hooks/use-motion-variants"
 import { useRolesQuery } from "@/shared/queries/role.query"
 
 export function RoleOverviewPage() {
   const { t } = useTranslation("roles")
   const { staggerItem } = useMotionVariants()
+  const navigate = useNavigate()
   const rolesQuery = useRolesQuery()
   const roles = rolesQuery.data ?? []
-  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null)
-
-  function handleSelectRole(roleId: string) {
-    setSelectedRoleId((current) => (current === roleId ? null : roleId))
-  }
 
   function renderBody() {
     if (rolesQuery.isPending) {
@@ -35,14 +30,11 @@ export function RoleOverviewPage() {
     }
 
     return (
-      <>
-        <RoleCatalog
-          roles={roles}
-          selectedRoleId={selectedRoleId}
-          onSelectRole={handleSelectRole}
-        />
-        <RoleCompareMatrix roles={roles} selectedRoleId={selectedRoleId} />
-      </>
+      <RoleCatalog
+        roles={roles}
+        selectedRoleId={null}
+        onSelectRole={(roleId) => void navigate(`/roles/${roleId}`)}
+      />
     )
   }
 
