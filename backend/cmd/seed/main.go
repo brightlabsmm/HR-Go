@@ -8,6 +8,7 @@ import (
 
 	"hrgo/backend/internal/config"
 	"hrgo/backend/internal/database"
+	"hrgo/backend/internal/shared/codeformat"
 	"hrgo/backend/internal/shared/security"
 )
 
@@ -60,6 +61,15 @@ func main() {
 			log.Fatalf("create org error: %v", err)
 		}
 	}
+
+	_ = db.Exec(`
+		INSERT INTO organization_settings (organization_id, setting_key, setting_value)
+		VALUES (?, ?, ?), (?, ?, ?)
+		ON CONFLICT (organization_id, setting_key) DO NOTHING
+	`,
+		orgID, codeformat.SettingKeyBranchCodeFormat, codeformat.DefaultBranchCodeFormat,
+		orgID, codeformat.SettingKeyDepartmentCodeFormat, codeformat.DefaultDepartmentCodeFormat,
+	)
 
 	// 3. Ensure Employee Identity
 	var empID string

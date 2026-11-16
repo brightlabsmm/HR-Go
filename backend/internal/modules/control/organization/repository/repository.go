@@ -10,6 +10,7 @@ import (
 
 	"hrgo/backend/internal/modules/control/organization/models"
 	"hrgo/backend/internal/modules/control/organization/request"
+	"hrgo/backend/internal/shared/codeformat"
 )
 
 type Repository interface {
@@ -29,7 +30,26 @@ func New(db *gorm.DB) Repository {
 }
 
 func (r *repository) Create(ctx context.Context, org *models.Organization) error {
-	return r.db.WithContext(ctx).Create(org).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(org).Error; err != nil {
+			return err
+		}
+
+		defaultSettings := []models.OrganizationSetting{
+			{
+				OrganizationID: org.ID,
+				SettingKey:     codeformat.SettingKeyBranchCodeFormat,
+				SettingValue:   codeformat.DefaultBranchCodeFormat,
+			},
+			{
+				OrganizationID: org.ID,
+				SettingKey:     codeformat.SettingKeyDepartmentCodeFormat,
+				SettingValue:   codeformat.DefaultDepartmentCodeFormat,
+			},
+		}
+
+		return tx.Create(&defaultSettings).Error
+	})
 }
 
 func (r *repository) FindByID(ctx context.Context, id string) (*models.Organization, error) {

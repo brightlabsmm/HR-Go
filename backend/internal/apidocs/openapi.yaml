@@ -495,7 +495,7 @@ components:
           example: null
         branchCode:
           type: string
-          example: YGN-01
+          example: BR-0001
         branchName:
           type: string
           example: Yangon Main Branch
@@ -515,11 +515,8 @@ components:
 
     CreateBranchRequest:
       type: object
-      required: [branchCode, branchName]
+      required: [branchName]
       properties:
-        branchCode:
-          type: string
-          example: MDY-01
         branchName:
           type: string
           example: Mandalay Branch
@@ -560,7 +557,7 @@ components:
           example: null
         departmentCode:
           type: string
-          example: HR
+          example: DEPT-0001
         departmentName:
           type: string
           example: Human Resources
@@ -577,11 +574,8 @@ components:
 
     CreateDepartmentRequest:
       type: object
-      required: [departmentCode, departmentName]
+      required: [departmentName]
       properties:
-        departmentCode:
-          type: string
-          example: ENG
         departmentName:
           type: string
           example: Engineering

@@ -1,7 +1,6 @@
 package request
 
 type CreateDepartmentRequest struct {
-	DepartmentCode string  `json:"departmentCode" binding:"required"`
 	DepartmentName string  `json:"departmentName" binding:"required"`
 	BranchID       *string `json:"branchId"`
 }

@@ -29,32 +29,23 @@ func New(repo repository.Repository) Service {
 }
 
 func (s *service) Create(ctx context.Context, orgID string, req request.CreateDepartmentRequest) (*response.DepartmentResponse, *apperrors.Error) {
-	code := strings.TrimSpace(req.DepartmentCode)
-	existing, err := s.repo.FindByCode(ctx, orgID, code)
-	if err != nil {
-		return nil, apperrors.Internal()
-	}
-	if existing != nil {
-		return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
-			{Field: "departmentCode", Message: "Department code already exists in this organization."},
-		})
-	}
-
-	if req.BranchID != nil && *req.BranchID != "" {
-		exists, err := s.repo.BranchExists(ctx, orgID, *req.BranchID)
+	var branchID *string
+	if req.BranchID != nil && strings.TrimSpace(*req.BranchID) != "" {
+		bid := strings.TrimSpace(*req.BranchID)
+		exists, err := s.repo.BranchExists(ctx, orgID, bid)
 		if err != nil {
 			return nil, apperrors.Internal()
 		}
 		if !exists {
 			return nil, apperrors.BadRequest("Branch not found in this organization.")
 		}
+		branchID = &bid
 	}
 
 	dept := &models.Department{
 		OrganizationID: orgID,
-		BranchID:       req.BranchID,
-		Code:           code,
-		Name:           req.DepartmentName,
+		BranchID:       branchID,
+		Name:           strings.TrimSpace(req.DepartmentName),
 		Status:         "ACTIVE",
 	}
 

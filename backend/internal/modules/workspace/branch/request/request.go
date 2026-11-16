@@ -1,7 +1,6 @@
 package request
 
 type CreateBranchRequest struct {
-	BranchCode string  `json:"branchCode" binding:"required"`
 	BranchName string  `json:"branchName" binding:"required"`
 	ParentID   *string `json:"parentId"`
 	Address    string  `json:"address"`
