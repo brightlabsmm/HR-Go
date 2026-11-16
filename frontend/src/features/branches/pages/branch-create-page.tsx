@@ -25,7 +25,6 @@ export function BranchCreatePage() {
 
   async function handleCreate(values: BranchFormValues) {
     await createMutation.mutateAsync({
-      branchCode: values.branchCode.trim(),
       branchName: values.branchName.trim(),
       parentId: values.parentId === "none" ? null : values.parentId,
       address: optionalText(values.address),

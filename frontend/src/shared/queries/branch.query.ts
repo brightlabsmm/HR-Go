@@ -66,7 +66,7 @@ export function useUpdateBranchMutation() {
       input,
     }: {
       id: string
-      input: Partial<Omit<BranchInput, "branchCode">>
+      input: Partial<BranchInput>
     }) => updateBranch(id, input),
     onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: branchKeys.all })

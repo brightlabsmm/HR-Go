@@ -5,7 +5,6 @@ import { useTranslation } from "react-i18next"
 import { z } from "zod"
 
 import { applyApiFieldErrors } from "@/app/api/feedback"
-import { FormCodeInput } from "@/components/common/form/form-code-input"
 import { FormSelectInput } from "@/components/common/form/form-select-input"
 import { FormTextInput } from "@/components/common/form/form-text-input"
 import { FormTextareaInput } from "@/components/common/form/form-textarea-input"
@@ -14,25 +13,20 @@ import { FormFieldGrid } from "@/components/common/form-field-grid"
 import { FormPageHeader } from "@/components/common/form-page-header"
 import { FormSection, formStackClassName } from "@/components/common/form-section"
 import { Button } from "@/components/ui/button"
-import { BRANCH_CODE_PREFIX } from "@/constants/codes"
-import { joinCodePrefix, stripCodePrefix } from "@/util/code-prefix"
 
 export const BRANCH_FORM_DEFAULTS = {
-  branchCode: "",
   branchName: "",
   parentId: "none",
   address: "",
 } as const
 
 export type BranchFormValues = {
-  branchCode: string
   branchName: string
   parentId: string
   address: string
 }
 
 const FORM_ERROR_FIELDS = new Set<string>([
-  "branchCode",
   "branchName",
   "parentId",
   "address",
@@ -52,7 +46,6 @@ interface BranchFormProps {
 
 export function BranchForm({
   isPending = false,
-  isEdit = false,
   parentOptions = [],
   defaultValues,
   submitLabel,
@@ -66,7 +59,6 @@ export function BranchForm({
   const schema = useMemo(
     () =>
       z.object({
-        branchCode: z.string().trim().min(1, t("form.errors.code_required")),
         branchName: z.string().trim().min(1, t("form.errors.name_required")),
         parentId: z.string(),
         address: z.string(),
@@ -78,10 +70,6 @@ export function BranchForm({
     defaultValues: {
       ...BRANCH_FORM_DEFAULTS,
       ...defaultValues,
-      branchCode: stripCodePrefix(
-        BRANCH_CODE_PREFIX,
-        defaultValues?.branchCode ?? BRANCH_FORM_DEFAULTS.branchCode
-      ),
     },
   })
 
@@ -90,10 +78,7 @@ export function BranchForm({
       className={formStackClassName}
       onSubmit={handleSubmit(async (values) => {
         try {
-          await onSubmit({
-            ...values,
-            branchCode: joinCodePrefix(BRANCH_CODE_PREFIX, values.branchCode),
-          })
+          await onSubmit(values)
         } catch (error) {
           applyApiFieldErrors(error, setError, FORM_ERROR_FIELDS)
         }
@@ -106,15 +91,6 @@ export function BranchForm({
 
       <FormSection legend={t("form.information")}>
         <FormFieldGrid>
-          <FormCodeInput
-            control={control}
-            name="branchCode"
-            prefix={BRANCH_CODE_PREFIX}
-            label={t("form.code")}
-            placeholder={t("form.code_placeholder")}
-            required
-            disabled={isEdit || isPending}
-          />
           <FormTextInput
             control={control}
             name="branchName"

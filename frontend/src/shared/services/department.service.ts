@@ -26,7 +26,6 @@ export interface DepartmentListParams {
 }
 
 export interface DepartmentInput {
-  departmentCode: string
   departmentName: string
   branchId?: string | null
 }
@@ -59,7 +58,7 @@ export function createDepartment(input: DepartmentInput) {
 
 export function updateDepartment(
   id: string,
-  input: Partial<Omit<DepartmentInput, "departmentCode">>
+  input: Partial<DepartmentInput>
 ) {
   return unwrap<Department>(
     apiClient.patch(workspacePath(`/departments/${id}`), compactParams(input))

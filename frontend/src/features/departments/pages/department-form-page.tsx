@@ -7,7 +7,6 @@ import { z } from "zod"
 
 import { applyApiFieldErrors } from "@/app/api/feedback"
 import { FormSkeleton } from "@/components/common/form-skeleton"
-import { FormCodeInput } from "@/components/common/form/form-code-input"
 import { FormSelectInput } from "@/components/common/form/form-select-input"
 import { FormTextInput } from "@/components/common/form/form-text-input"
 import { FormActions } from "@/components/common/form-actions"
@@ -16,8 +15,6 @@ import { FormPageHeader } from "@/components/common/form-page-header"
 import { FormSection, formStackClassName } from "@/components/common/form-section"
 import { NotFoundState } from "@/components/common/not-found-state"
 import { Button } from "@/components/ui/button"
-import { DEPARTMENT_CODE_PREFIX } from "@/constants/codes"
-import { joinCodePrefix, stripCodePrefix } from "@/util/code-prefix"
 import { useBranchesQuery } from "@/shared/queries/branch.query"
 import {
   useCreateDepartmentMutation,
@@ -39,7 +36,6 @@ export function DepartmentFormPage() {
   const schema = useMemo(
     () =>
       z.object({
-        departmentCode: z.string().trim().min(1, t("form.errors.code")),
         departmentName: z.string().trim().min(1, t("form.errors.name")),
         branchId: z.string(),
       }),
@@ -50,10 +46,6 @@ export function DepartmentFormPage() {
   const { control, handleSubmit, setError } = useForm<FormValues>({
     resolver: zodResolver(schema),
     values: {
-      departmentCode: stripCodePrefix(
-        DEPARTMENT_CODE_PREFIX,
-        department?.departmentCode ?? ""
-      ),
       departmentName: department?.departmentName ?? "",
       branchId: department?.branchId ?? "none",
     },
@@ -91,10 +83,6 @@ export function DepartmentFormPage() {
               })
             } else {
               await createMutation.mutateAsync({
-                departmentCode: joinCodePrefix(
-                  DEPARTMENT_CODE_PREFIX,
-                  values.departmentCode
-                ),
                 departmentName: values.departmentName.trim(),
                 branchId,
               })
@@ -110,15 +98,6 @@ export function DepartmentFormPage() {
             <FormSkeleton fields={2} columns={2} />
           ) : (
             <FormFieldGrid>
-              <FormCodeInput
-                control={control}
-                name="departmentCode"
-                prefix={DEPARTMENT_CODE_PREFIX}
-                required
-                label={t("form.code")}
-                placeholder={t("form.code_placeholder")}
-                disabled={isEdit || isPending}
-              />
               <FormTextInput
                 control={control}
                 name="departmentName"
@@ -130,7 +109,6 @@ export function DepartmentFormPage() {
                 control={control}
                 name="branchId"
                 label={t("form.branch")}
-                className="md:col-span-2"
                 options={branchOptions}
                 disabled={isPending}
               />

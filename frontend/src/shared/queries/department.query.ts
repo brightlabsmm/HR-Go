@@ -60,7 +60,7 @@ export function useUpdateDepartmentMutation() {
       input,
     }: {
       id: string
-      input: Partial<Omit<DepartmentInput, "departmentCode">>
+      input: Partial<DepartmentInput>
     }) => updateDepartment(id, input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: departmentKeys.all })
