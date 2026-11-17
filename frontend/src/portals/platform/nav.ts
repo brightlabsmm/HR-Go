@@ -44,7 +44,7 @@ export const PLATFORM_NAV: PortalNavItem[] = [
     groupKey: "nav_groups.access",
     icon: KeyRoundIcon,
     matchPrefix: "/permissions",
-    permission: "platform.permission.read",
+    permissions: ["platform.permission.read"],
   },
   {
     to: "/account",
