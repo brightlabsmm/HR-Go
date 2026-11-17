@@ -13,7 +13,9 @@ import { FormSection, formStackClassName } from "@/components/common/form-sectio
 import { FormPasswordInput } from "@/components/common/form/form-password-input"
 import { FormTextInput } from "@/components/common/form/form-text-input"
 import { NotFoundState } from "@/components/common/not-found-state"
+import { StayAfterCreateCheckbox } from "@/components/common/stay-after-create-checkbox"
 import { Button } from "@/components/ui/button"
+import { useStayAfterCreate } from "@/shared/hooks/use-stay-after-create"
 import {
   useCreateOrganizationAdminAccountMutation,
   useOrganizationQuery,
@@ -28,6 +30,8 @@ export function OrganizationCreateAdminPage() {
   const organizationQuery = useOrganizationQuery(id)
   const createMutation = useCreateOrganizationAdminAccountMutation()
   const showToast = useToastStore((state) => state.show)
+  const { stayAfterCreate, setStayAfterCreate, finishCreate } =
+    useStayAfterCreate(`/organizations/${id}`)
 
   const schema = useMemo(
     () =>
@@ -58,7 +62,7 @@ export function OrganizationCreateAdminPage() {
 
   type FormValues = z.infer<typeof schema>
 
-  const { control, handleSubmit, setError } = useForm<FormValues>({
+  const { control, handleSubmit, setError, reset } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       firstName: "",
@@ -97,7 +101,15 @@ export function OrganizationCreateAdminPage() {
         variant: "success",
       })
 
-      void navigate(`/organizations/${id}`)
+      finishCreate(() =>
+        reset({
+          firstName: "",
+          lastName: "",
+          email: "",
+          employeeCode: "",
+          password: "",
+        })
+      )
     } catch (error) {
       applyApiFieldErrors(error, setError)
     }
@@ -152,7 +164,15 @@ export function OrganizationCreateAdminPage() {
         </FormFieldGrid>
       </FormSection>
 
-      <FormActions>
+      <FormActions
+        start={
+          <StayAfterCreateCheckbox
+            checked={stayAfterCreate}
+            onCheckedChange={setStayAfterCreate}
+            disabled={createMutation.isPending}
+          />
+        }
+      >
         <Button
           type="button"
           variant="outline"

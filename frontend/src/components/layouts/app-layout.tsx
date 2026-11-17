@@ -3,9 +3,16 @@ import { AnimatePresence, motion } from "framer-motion"
 import { useTranslation } from "react-i18next"
 import { Navigate, Outlet, useLocation } from "react-router"
 
+import { NoPermissionCard } from "@/components/common/no-permission-card"
 import { Header } from "@/components/core/header"
 import { Sidebar } from "@/components/core/sidebar"
+import {
+  canAccessNavItem,
+  findActiveNavItem,
+  visiblePortalNav,
+} from "@/portals/nav"
 import { useMotionVariants } from "@/shared/hooks/use-motion-variants"
+import { usePermissions } from "@/shared/hooks/use-permissions"
 import { useAuthStore } from "@/shared/stores/auth.store"
 
 export function AppLayout() {
@@ -14,10 +21,20 @@ export function AppLayout() {
   const { fadeIn, pageTransition } = useMotionVariants()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const accessToken = useAuthStore((state) => state.accessToken)
+  const { can, user, isPending } = usePermissions()
 
   if (!accessToken) {
     return <Navigate to="/login" replace />
   }
+
+  const activeItem = findActiveNavItem(location.pathname)
+  const allowedItems = visiblePortalNav(can, Boolean(user))
+  const fallbackItem = allowedItems[0]
+  const isModuleBlocked =
+    !isPending &&
+    Boolean(user) &&
+    activeItem !== undefined &&
+    !canAccessNavItem(activeItem, can, true)
 
   return (
     <div className="flex h-svh overflow-hidden bg-background">
@@ -51,7 +68,16 @@ export function AppLayout() {
               animate="visible"
               variants={pageTransition}
             >
-              <Outlet />
+              {isModuleBlocked ? (
+                <NoPermissionCard
+                  backTo={fallbackItem?.to ?? "/account"}
+                  backLabel={
+                    fallbackItem ? t(fallbackItem.labelKey) : t("nav.account")
+                  }
+                />
+              ) : (
+                <Outlet />
+              )}
             </motion.div>
           </div>
         </main>

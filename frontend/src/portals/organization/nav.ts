@@ -16,7 +16,12 @@ export const ORGANIZATION_NAV: PortalNavItem[] = [
     groupKey: "nav_groups.structure",
     icon: GitBranchIcon,
     matchPrefix: "/branches",
-    permission: "org.branch.read",
+    permissions: [
+      "org.branch.read",
+      "org.branch.create",
+      "org.branch.update",
+      "org.branch.deactivate",
+    ],
   },
   {
     to: "/departments",
@@ -24,7 +29,12 @@ export const ORGANIZATION_NAV: PortalNavItem[] = [
     groupKey: "nav_groups.structure",
     icon: NetworkIcon,
     matchPrefix: "/departments",
-    permission: "org.department.read",
+    permissions: [
+      "org.department.read",
+      "org.department.create",
+      "org.department.update",
+      "org.department.deactivate",
+    ],
   },
   {
     to: "/positions",
@@ -32,7 +42,12 @@ export const ORGANIZATION_NAV: PortalNavItem[] = [
     groupKey: "nav_groups.structure",
     icon: BriefcaseIcon,
     matchPrefix: "/positions",
-    permission: "org.position.read",
+    permissions: [
+      "org.position.read",
+      "org.position.create",
+      "org.position.update",
+      "org.position.deactivate",
+    ],
   },
   {
     to: "/roles",
@@ -40,7 +55,7 @@ export const ORGANIZATION_NAV: PortalNavItem[] = [
     groupKey: "nav_groups.people",
     icon: ShieldIcon,
     matchPrefix: "/roles",
-    permission: "org.role.read",
+    permissions: ["org.role.read", "org.role.assign"],
   },
   {
     to: "/account",

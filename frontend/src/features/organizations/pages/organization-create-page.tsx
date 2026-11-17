@@ -6,6 +6,7 @@ import { useNavigate } from "react-router"
 import { z } from "zod"
 
 import { applyApiFieldErrors } from "@/app/api/feedback"
+import { ForbiddenState } from "@/components/common/forbidden-state"
 import { FormCodeInput } from "@/components/common/form/form-code-input"
 import { FormTextInput } from "@/components/common/form/form-text-input"
 import { FormTextareaInput } from "@/components/common/form/form-textarea-input"
@@ -13,8 +14,11 @@ import { FormActions } from "@/components/common/form-actions"
 import { FormFieldGrid } from "@/components/common/form-field-grid"
 import { FormPageHeader } from "@/components/common/form-page-header"
 import { FormSection, formStackClassName } from "@/components/common/form-section"
+import { StayAfterCreateCheckbox } from "@/components/common/stay-after-create-checkbox"
 import { Button } from "@/components/ui/button"
 import { ORGANIZATION_CODE_PREFIX } from "@/constants/codes"
+import { usePermissions } from "@/shared/hooks/use-permissions"
+import { useStayAfterCreate } from "@/shared/hooks/use-stay-after-create"
 import { useCreateOrganizationMutation } from "@/shared/queries/organization.query"
 import { joinCodePrefix } from "@/util/code-prefix"
 
@@ -24,6 +28,9 @@ export function OrganizationCreatePage() {
   const { t } = useTranslation("organizations")
   const navigate = useNavigate()
   const createMutation = useCreateOrganizationMutation()
+  const { can, isPending: isPermissionsPending } = usePermissions()
+  const { stayAfterCreate, setStayAfterCreate, finishCreate } =
+    useStayAfterCreate("/")
   const isPending = createMutation.isPending
   const schema = useMemo(
     () =>
@@ -45,7 +52,7 @@ export function OrganizationCreatePage() {
 
   type FormValues = z.infer<typeof schema>
 
-  const { control, handleSubmit, setError } = useForm<FormValues>({
+  const { control, handleSubmit, setError, reset } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       organizationCode: "",
@@ -61,6 +68,10 @@ export function OrganizationCreatePage() {
   function optionalText(value: string) {
     const trimmed = value.trim()
     return trimmed === "" ? undefined : trimmed
+  }
+
+  if (!isPermissionsPending && !can("platform.organization.create")) {
+    return <ForbiddenState backTo="/" backLabel={t("title")} />
   }
 
   return (
@@ -85,7 +96,17 @@ export function OrganizationCreatePage() {
               country: optionalText(values.country),
               address: optionalText(values.address),
             })
-            void navigate("/")
+            finishCreate(() =>
+              reset({
+                organizationCode: "",
+                legalName: "",
+                displayName: "",
+                contactEmail: "",
+                contactPhone: "",
+                country: "",
+                address: "",
+              })
+            )
           } catch (error) {
             applyApiFieldErrors(error, setError)
           }
@@ -155,7 +176,15 @@ export function OrganizationCreatePage() {
             />
           </FormFieldGrid>
         </FormSection>
-        <FormActions>
+        <FormActions
+          start={
+            <StayAfterCreateCheckbox
+              checked={stayAfterCreate}
+              onCheckedChange={setStayAfterCreate}
+              disabled={isPending}
+            />
+          }
+        >
           <Button
             type="button"
             variant="outline"

@@ -15,15 +15,17 @@ import { FormFieldGrid } from "@/components/common/form-field-grid"
 import { FormPageHeader } from "@/components/common/form-page-header"
 import { FormSection, formStackClassName } from "@/components/common/form-section"
 import { NotFoundState } from "@/components/common/not-found-state"
+import { StayAfterCreateCheckbox } from "@/components/common/stay-after-create-checkbox"
 import { Button } from "@/components/ui/button"
 import { POSITION_CODE_PREFIX } from "@/constants/codes"
-import { joinCodePrefix, stripCodePrefix } from "@/util/code-prefix"
+import { useStayAfterCreate } from "@/shared/hooks/use-stay-after-create"
 import { useDepartmentsQuery } from "@/shared/queries/department.query"
 import {
   useCreatePositionMutation,
   usePositionQuery,
   useUpdatePositionMutation,
 } from "@/shared/queries/position.query"
+import { joinCodePrefix, stripCodePrefix } from "@/util/code-prefix"
 
 export function PositionFormPage() {
   const { t } = useTranslation("positions")
@@ -34,6 +36,8 @@ export function PositionFormPage() {
   const departmentsQuery = useDepartmentsQuery({ status: "active", limit: 100 })
   const createMutation = useCreatePositionMutation()
   const updateMutation = useUpdatePositionMutation()
+  const { stayAfterCreate, setStayAfterCreate, finishCreate } =
+    useStayAfterCreate("/positions")
   const isPending = createMutation.isPending || updateMutation.isPending
   const isLoading = isEdit && positionQuery.isPending
   const schema = useMemo(
@@ -47,7 +51,7 @@ export function PositionFormPage() {
   )
   type FormValues = z.infer<typeof schema>
   const position = positionQuery.data
-  const { control, handleSubmit, setError } = useForm<FormValues>({
+  const { control, handleSubmit, setError, reset } = useForm<FormValues>({
     resolver: zodResolver(schema),
     values: {
       positionCode: stripCodePrefix(
@@ -96,6 +100,14 @@ export function PositionFormPage() {
                 positionName: values.positionName.trim(),
                 departmentId,
               })
+              finishCreate(() =>
+                reset({
+                  positionCode: "",
+                  positionName: "",
+                  departmentId: "none",
+                })
+              )
+              return
             }
             void navigate("/positions")
           } catch (error) {
@@ -135,7 +147,17 @@ export function PositionFormPage() {
             </FormFieldGrid>
           )}
         </FormSection>
-        <FormActions>
+        <FormActions
+          start={
+            isEdit ? undefined : (
+              <StayAfterCreateCheckbox
+                checked={stayAfterCreate}
+                onCheckedChange={setStayAfterCreate}
+                disabled={isPending}
+              />
+            )
+          }
+        >
           <Button
             type="button"
             variant="outline"
