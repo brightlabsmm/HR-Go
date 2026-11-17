@@ -1,4 +1,4 @@
-name: Server Pipeline
+name: CI / CD Pipeline
 
 on:
   push:
@@ -15,17 +15,13 @@ on:
       - dev
       - staging
       - prod
-    paths:
-      - "backend/**"
-      - "frontend/**"
-      - ".github/workflows/**"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: server-${{ github.ref }}
+  group: ci-cd-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -56,21 +52,18 @@ jobs:
 
   ci:
     name: Server CI
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
     uses: ./.github/workflows/server-ci.yaml
 
   frontend-ci:
     name: Frontend CI
-    needs: changes
-    if: needs.changes.outputs.frontend == 'true'
     uses: ./.github/workflows/frontend-ci.yaml
 
   push-ghcr:
     name: Push GHCR Image
-    needs: ci
+    needs: [changes, ci]
     if: >-
       github.event_name == 'push' &&
+      needs.changes.outputs.backend == 'true' &&
       (github.ref == 'refs/heads/dev' ||
        github.ref == 'refs/heads/staging' ||
        github.ref == 'refs/heads/prod')
@@ -81,21 +74,21 @@ jobs:
 
   deploy-dev:
     name: Deploy Dev
-    needs: [ci, push-ghcr]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    needs: [changes, ci, push-ghcr]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && needs.changes.outputs.backend == 'true'
     uses: ./.github/workflows/deploy-dev.yaml
     secrets: inherit
 
   deploy-staging:
     name: Deploy Staging
-    needs: [ci, push-ghcr]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    needs: [changes, ci, push-ghcr]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging' && needs.changes.outputs.backend == 'true'
     uses: ./.github/workflows/deploy-staging.yaml
     secrets: inherit
 
   deploy-prod:
     name: Deploy Prod
-    needs: [ci, push-ghcr]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
+    needs: [changes, ci, push-ghcr]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/prod' && needs.changes.outputs.backend == 'true'
     uses: ./.github/workflows/deploy-prod.yaml
     secrets: inherit
