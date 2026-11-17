@@ -119,6 +119,7 @@ export function DepartmentListPage() {
       meta: { align: "end" },
       cell: ({ row }) => (
         <DataTableActions
+          onView={() => void navigate(`/departments/${row.original.id}`)}
           onEdit={() => void navigate(`/departments/${row.original.id}/edit`)}
           onDelete={() => setTarget(row.original)}
         />

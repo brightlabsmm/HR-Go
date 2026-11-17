@@ -1,6 +1,7 @@
 package security
 
 import (
+	"context"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -13,14 +14,23 @@ const (
 	KeyClaims = "auth_claims"
 )
 
+// OrgStatusChecker checks the live status of an organization.
+type OrgStatusChecker func(ctx context.Context, orgID string) (string, error)
+
 // Middleware provides authentication and authorization guards.
 type Middleware struct {
-	tokens *TokenManager
+	tokens           *TokenManager
+	orgStatusChecker OrgStatusChecker
 }
 
 // NewMiddleware creates security middleware.
 func NewMiddleware(tokens *TokenManager) *Middleware {
 	return &Middleware{tokens: tokens}
+}
+
+// SetOrgStatusChecker sets the callback for validating organization status.
+func (m *Middleware) SetOrgStatusChecker(checker OrgStatusChecker) {
+	m.orgStatusChecker = checker
 }
 
 // RequirePlatform enforces that the request has a valid PLATFORM JWT.
@@ -46,6 +56,16 @@ func (m *Middleware) RequireWorkspace() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+
+		if m.orgStatusChecker != nil {
+			status, err := m.orgStatusChecker(c.Request.Context(), claims.OrganizationID)
+			if err != nil || status != "ACTIVE" {
+				responses.Fail(c, apperrors.Unauthorized("Organization is not active or has been suspended."))
+				c.Abort()
+				return
+			}
+		}
+
 		c.Set(KeyClaims, claims)
 		c.Next()
 	}
