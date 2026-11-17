@@ -4,19 +4,20 @@ type CreateOrganizationRequest struct {
 	OrganizationCode string `json:"organizationCode" binding:"required"`
 	LegalName        string `json:"legalName" binding:"required"`
 	DisplayName      string `json:"displayName" binding:"required"`
-	ContactEmail     string `json:"contactEmail"`
-	ContactPhone     string `json:"contactPhone"`
-	Country          string `json:"country"`
-	Address          string `json:"address"`
+	ContactEmail     string `json:"contactEmail" binding:"required,email"`
+	ContactPhone     string `json:"contactPhone" binding:"required"`
+	Country          string `json:"country" binding:"required"`
+	Address          string `json:"address" binding:"required"`
 }
 
 type UpdateOrganizationRequest struct {
-	LegalName    *string `json:"legalName"`
-	DisplayName  *string `json:"displayName"`
-	ContactEmail *string `json:"contactEmail"`
-	ContactPhone *string `json:"contactPhone"`
-	Country      *string `json:"country"`
-	Address      *string `json:"address"`
+	OrganizationCode *string `json:"organizationCode"`
+	LegalName        *string `json:"legalName"`
+	DisplayName      *string `json:"displayName"`
+	ContactEmail     *string `json:"contactEmail"`
+	ContactPhone     *string `json:"contactPhone"`
+	Country          *string `json:"country"`
+	Address          *string `json:"address"`
 }
 
 type UpdateStatusRequest struct {

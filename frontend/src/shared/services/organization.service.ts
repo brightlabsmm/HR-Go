@@ -32,13 +32,14 @@ export interface CreateOrganizationInput {
   organizationCode: string
   legalName: string
   displayName: string
-  contactEmail?: string
-  contactPhone?: string
-  country?: string
-  address?: string
+  contactEmail: string
+  contactPhone: string
+  country: string
+  address: string
 }
 
 export interface UpdateOrganizationInput {
+  organizationCode?: string
   legalName?: string
   displayName?: string
   contactEmail?: string

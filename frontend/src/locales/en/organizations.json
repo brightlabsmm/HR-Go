@@ -21,7 +21,7 @@
     "create_title": "New organization",
     "create_subtitle": "Create a customer organization account.",
     "code": "Organization code",
-    "code_placeholder": "001",
+    "code_placeholder": "ORG-001",
     "legal_name": "Legal name",
     "display_name": "Display name",
     "country": "Country",
@@ -37,7 +37,11 @@
       "code": "Code is required.",
       "legal_name": "Legal name is required.",
       "display_name": "Display name is required.",
-      "email": "Email must be a valid email address."
+      "email": "Email must be a valid email address.",
+      "email_required": "Email is required.",
+      "phone_required": "Phone number is required.",
+      "country_required": "Country is required.",
+      "address_required": "Address is required."
     }
   },
   "empty": {
