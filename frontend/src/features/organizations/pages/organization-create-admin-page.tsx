@@ -79,8 +79,6 @@ export function OrganizationCreateAdminPage() {
     )
   }
 
-  const organization = organizationQuery.data
-
   async function onSubmit(values: FormValues) {
     try {
       await createMutation.mutateAsync({
