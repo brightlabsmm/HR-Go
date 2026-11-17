@@ -14,7 +14,10 @@ import { Pagination } from "@/components/common/pagination"
 import { SearchBox } from "@/components/common/search-box"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { Button } from "@/components/ui/button"
-import { isHighImpactOrganizationStatus } from "@/features/organizations/components/organization-status-menu"
+import {
+  getStatusDialogContent,
+  isHighImpactOrganizationStatus,
+} from "@/features/organizations/components/organization-status-menu"
 import { OrganizationTable } from "@/features/organizations/components/organization-table"
 import { useOrganizationListParams } from "@/features/organizations/hooks/use-organization-list-params"
 import { usePermissions } from "@/shared/hooks/use-permissions"
@@ -42,9 +45,6 @@ export function OrganizationListPage() {
     status: OrganizationStatus
   } | null>(null)
   const items = organizationsQuery.data?.items ?? []
-  const statusLabel = statusTarget
-    ? tCommon(`status.${statusTarget.status.toLowerCase()}`)
-    : ""
   const isUnfilteredEmpty =
     organizationsQuery.isSuccess &&
     !params.hasFilters &&
@@ -135,44 +135,55 @@ export function OrganizationListPage() {
       >
         {renderBody()}
       </ListCard>
-      <ConfirmDialog
-        open={statusTarget !== null}
-        title={t("status_change.title", { status: statusLabel })}
-        description={t("status_change.description", {
-          name: statusTarget?.organization.displayName ?? "",
-          status: statusLabel,
-        })}
-        confirmLabel={t("status_change.confirm")}
-        confirmVariant={
-          statusTarget && isHighImpactOrganizationStatus(statusTarget.status)
-            ? "destructive"
-            : "default"
-        }
-        isPending={statusMutation.isPending}
-        onOpenChange={(open) => {
-          if (!open) {
-            setStatusTarget(null)
-          }
-        }}
-        onConfirm={() => {
-          if (!statusTarget) {
-            return
-          }
+      {(() => {
+        const dialogContent =
+          statusTarget
+            ? getStatusDialogContent(
+                statusTarget.organization.status,
+                statusTarget.status,
+                statusTarget.organization.displayName,
+                t
+              )
+            : null
 
-          statusMutation.mutate(
-            {
-              id: statusTarget.organization.id,
-              input: {
-                status: statusTarget.status,
-                confirmation: true,
-              },
-            },
-            {
-              onSuccess: () => setStatusTarget(null),
+        return (
+          <ConfirmDialog
+            open={statusTarget !== null}
+            title={dialogContent?.title ?? ""}
+            description={dialogContent?.description ?? ""}
+            confirmLabel={dialogContent?.confirmLabel ?? t("status_change.confirm")}
+            confirmVariant={
+              statusTarget && isHighImpactOrganizationStatus(statusTarget.status)
+                ? "destructive"
+                : "default"
             }
-          )
-        }}
-      />
+            isPending={statusMutation.isPending}
+            onOpenChange={(open) => {
+              if (!open) {
+                setStatusTarget(null)
+              }
+            }}
+            onConfirm={() => {
+              if (!statusTarget) {
+                return
+              }
+
+              statusMutation.mutate(
+                {
+                  id: statusTarget.organization.id,
+                  input: {
+                    status: statusTarget.status,
+                    confirmation: true,
+                  },
+                },
+                {
+                  onSuccess: () => setStatusTarget(null),
+                }
+              )
+            }}
+          />
+        )
+      })()}
     </MotionStack>
   )
 }

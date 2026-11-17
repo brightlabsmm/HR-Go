@@ -18,6 +18,7 @@ type ReplaceRolesRequest struct {
 
 type ListUsersQuery struct {
 	Q        string `form:"q"`
+	Status   string `form:"status"`
 	Page     int    `form:"page,default=1"`
 	PageSize int    `form:"pageSize,default=20"`
 }

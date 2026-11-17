@@ -2087,3 +2087,52 @@ paths:
           $ref: "#/components/responses/NotFound"
         "422":
           $ref: "#/components/responses/ValidationError"
+
+  /api/v1/workspace/organization:
+    get:
+      tags:
+        - Workspace Organization
+      summary: Get current organization profile and settings
+      description: Returns the authenticated workspace user's organization profile, contact info, and settings.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Organization details and settings
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    patch:
+      tags:
+        - Workspace Organization
+      summary: Update organization profile and settings
+      description: Updates display name, contact information, and code format settings.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName:
+                  type: string
+                contactEmail:
+                  type: string
+                contactPhone:
+                  type: string
+                country:
+                  type: string
+                address:
+                  type: string
+                branchCodeFormat:
+                  type: string
+                departmentCodeFormat:
+                  type: string
+      responses:
+        "200":
+          description: Updated organization profile and settings
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"

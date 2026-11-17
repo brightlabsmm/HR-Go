@@ -1,5 +1,6 @@
 import {
   BriefcaseIcon,
+  Building2Icon,
   GitBranchIcon,
   NetworkIcon,
   ShieldIcon,
@@ -56,6 +57,13 @@ export const ORGANIZATION_NAV: PortalNavItem[] = [
     icon: ShieldIcon,
     matchPrefix: "/roles",
     permissions: ["org.role.read", "org.role.assign"],
+  },
+  {
+    to: "/settings",
+    labelKey: "nav.organization_settings",
+    groupKey: "nav_groups.organization",
+    icon: Building2Icon,
+    matchPrefix: "/settings",
   },
   {
     to: "/account",

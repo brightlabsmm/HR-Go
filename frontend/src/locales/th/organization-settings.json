@@ -1,0 +1,35 @@
+{
+  "title": "การตั้งค่าองค์กร",
+  "subtitle": "จัดการโปรไฟล์ ข้อมูลติดต่อ และการตั้งค่าขององค์กรของคุณ",
+  "sections": {
+    "identity": "ข้อมูลทั่วไป",
+    "identity_description": "ข้อมูลทั่วไปเกี่ยวกับองค์กรของคุณ",
+    "contact": "ข้อมูลติดต่อ",
+    "contact_description": "ข้อมูลการติดต่อองค์กรของคุณ",
+    "code_formats": "รูปแบบรหัส",
+    "code_formats_description": "กำหนดรูปแบบการสร้างรหัสอัตโนมัติสำหรับสาขาและแผนก"
+  },
+  "fields": {
+    "code": "รหัสองค์กร",
+    "legal_name": "ชื่อจดทะเบียน",
+    "display_name": "ชื่อที่แสดง",
+    "email": "อีเมลติดต่อ",
+    "phone": "เบอร์โทรศัพท์",
+    "country": "ประเทศ",
+    "address": "ที่อยู่",
+    "branch_code_format": "รูปแบบรหัสสาขา",
+    "branch_code_format_placeholder": "BR-{0000}",
+    "department_code_format": "รูปแบบรหัสแผนก",
+    "department_code_format_placeholder": "DEPT-{0000}"
+  },
+  "errors": {
+    "display_name_required": "จำเป็นต้องระบุชื่อที่แสดง",
+    "email_required": "จำเป็นต้องระบุอีเมล",
+    "email_invalid": "กรุณาระบุอีเมลที่ถูกต้อง",
+    "phone_required": "จำเป็นต้องระบุเบอร์โทรศัพท์",
+    "country_required": "จำเป็นต้องระบุประเทศ",
+    "address_required": "จำเป็นต้องระบุที่อยู่"
+  },
+  "save": "บันทึกการเปลี่ยนแปลง",
+  "save_success": "อัปเดตการตั้งค่าองค์กรเรียบร้อยแล้ว"
+}

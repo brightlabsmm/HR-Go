@@ -11,6 +11,7 @@ import enCommon from "@/locales/en/common.json"
 import enDepartments from "@/locales/en/departments.json"
 import enHome from "@/locales/en/home.json"
 import enOrganizations from "@/locales/en/organizations.json"
+import enOrganizationSettings from "@/locales/en/organization-settings.json"
 import enPositions from "@/locales/en/positions.json"
 import enRoles from "@/locales/en/roles.json"
 import enUsers from "@/locales/en/users.json"
@@ -21,6 +22,7 @@ import myCommon from "@/locales/my/common.json"
 import myDepartments from "@/locales/my/departments.json"
 import myHome from "@/locales/my/home.json"
 import myOrganizations from "@/locales/my/organizations.json"
+import myOrganizationSettings from "@/locales/my/organization-settings.json"
 import myPositions from "@/locales/my/positions.json"
 import myRoles from "@/locales/my/roles.json"
 import myUsers from "@/locales/my/users.json"
@@ -31,6 +33,7 @@ import thCommon from "@/locales/th/common.json"
 import thDepartments from "@/locales/th/departments.json"
 import thHome from "@/locales/th/home.json"
 import thOrganizations from "@/locales/th/organizations.json"
+import thOrganizationSettings from "@/locales/th/organization-settings.json"
 import thPositions from "@/locales/th/positions.json"
 import thRoles from "@/locales/th/roles.json"
 import thUsers from "@/locales/th/users.json"
@@ -41,6 +44,7 @@ import zhCommon from "@/locales/zh/common.json"
 import zhDepartments from "@/locales/zh/departments.json"
 import zhHome from "@/locales/zh/home.json"
 import zhOrganizations from "@/locales/zh/organizations.json"
+import zhOrganizationSettings from "@/locales/zh/organization-settings.json"
 import zhPositions from "@/locales/zh/positions.json"
 import zhRoles from "@/locales/zh/roles.json"
 import zhUsers from "@/locales/zh/users.json"
@@ -52,6 +56,7 @@ const resources = {
     home: enHome,
     branches: enBranches,
     organizations: enOrganizations,
+    organization_settings: enOrganizationSettings,
     departments: enDepartments,
     positions: enPositions,
     users: enUsers,
@@ -64,6 +69,7 @@ const resources = {
     home: thHome,
     branches: thBranches,
     organizations: thOrganizations,
+    organization_settings: thOrganizationSettings,
     departments: thDepartments,
     positions: thPositions,
     users: thUsers,
@@ -76,6 +82,7 @@ const resources = {
     home: zhHome,
     branches: zhBranches,
     organizations: zhOrganizations,
+    organization_settings: zhOrganizationSettings,
     departments: zhDepartments,
     positions: zhPositions,
     users: zhUsers,
@@ -88,6 +95,7 @@ const resources = {
     home: myHome,
     branches: myBranches,
     organizations: myOrganizations,
+    organization_settings: myOrganizationSettings,
     departments: myDepartments,
     positions: myPositions,
     users: myUsers,

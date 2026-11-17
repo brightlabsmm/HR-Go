@@ -170,6 +170,7 @@ export function PositionListPage() {
         data={rows}
         getRowId={(position) => position.id}
         label={t("title")}
+        onRowClick={(position) => void navigate(`/positions/${position.id}`)}
       />
     )
   }

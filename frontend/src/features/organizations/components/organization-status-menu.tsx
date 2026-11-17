@@ -76,6 +76,65 @@ export function getAvailableStatusTransitions(
   return ORGANIZATION_STATUS_TRANSITIONS[normalized] ?? []
 }
 
+export function getStatusDialogContent(
+  currentStatus: string,
+  targetStatus: OrganizationStatus,
+  name: string,
+  t: (key: string, options?: Record<string, unknown>) => string
+) {
+  const normCurrent = toOrganizationStatus(currentStatus)
+  const transition = normCurrent
+    ? ORGANIZATION_STATUS_TRANSITIONS[normCurrent]?.find((tr) => tr.status === targetStatus)
+    : null
+  const action =
+    transition?.action ?? (targetStatus === "ACTIVE" ? "activate" : targetStatus.toLowerCase())
+
+  switch (action) {
+    case "activate":
+      return {
+        title: t("status_confirm.activate_title", { name, defaultValue: `Activate ${name}?` }),
+        description: t("status_confirm.activate_description", {
+          name,
+          defaultValue: `This will set ${name} to Active. The change takes effect immediately.`,
+        }),
+        confirmLabel: t("status_actions.activate", { defaultValue: "Activate" }),
+      }
+    case "reactivate":
+      return {
+        title: t("status_confirm.reactivate_title", { name, defaultValue: `Reactivate ${name}?` }),
+        description: t("status_confirm.reactivate_description", {
+          name,
+          defaultValue: `This will reactivate ${name} and restore workspace access.`,
+        }),
+        confirmLabel: t("status_actions.reactivate", { defaultValue: "Reactivate" }),
+      }
+    case "suspend":
+      return {
+        title: t("status_confirm.suspend_title", { name, defaultValue: `Suspend ${name}?` }),
+        description: t("status_confirm.suspend_description", {
+          name,
+          defaultValue: `This will suspend ${name}. Workspace users will be logged out and unable to access the organization.`,
+        }),
+        confirmLabel: t("status_actions.suspend", { defaultValue: "Suspend" }),
+      }
+    case "archive":
+      return {
+        title: t("status_confirm.archive_title", { name, defaultValue: `Archive ${name}?` }),
+        description: t("status_confirm.archive_description", {
+          name,
+          defaultValue: `This will archive ${name}.`,
+        }),
+        confirmLabel: t("status_actions.archive", { defaultValue: "Archive" }),
+      }
+    default:
+      return {
+        title: t("status_change.title", { status: targetStatus }),
+        description: t("status_change.description", { name, status: targetStatus }),
+        confirmLabel: t("status_change.confirm"),
+      }
+  }
+}
+
 export function OrganizationStatusMenu({
   organization,
   onSelect,

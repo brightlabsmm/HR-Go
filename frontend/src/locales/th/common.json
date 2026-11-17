@@ -10,6 +10,7 @@
     "roles": "บทบาท",
     "permissions": "สิทธิ์",
     "positions": "ตำแหน่ง",
+    "organization_settings": "การตั้งค่าองค์กร",
     "account": "บัญชีของฉัน"
   },
   "header": {
