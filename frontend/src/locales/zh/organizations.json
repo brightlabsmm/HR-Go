@@ -21,7 +21,7 @@
     "create_title": "新建组织",
     "create_subtitle": "创建客户组织账户。",
     "code": "组织代码",
-    "code_placeholder": "001",
+    "code_placeholder": "ORG-001",
     "legal_name": "法定名称",
     "display_name": "显示名称",
     "country": "国家",
@@ -37,7 +37,11 @@
       "code": "请填写代码。",
       "legal_name": "请填写法定名称。",
       "display_name": "请填写显示名称。",
-      "email": "请输入有效邮箱。"
+      "email": "请输入有效邮箱。",
+      "email_required": "请填写邮箱。",
+      "phone_required": "请填写电话号码。",
+      "country_required": "请填写国家。",
+      "address_required": "请填写地址。"
     }
   },
   "empty": {

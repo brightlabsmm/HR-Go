@@ -23,9 +23,14 @@ func ToWorkspaceUserProfile(acc *models.OrganizationAccount, perms []string) res
 		fullName = acc.Identifier
 	}
 
+	orgName := strings.TrimSpace(acc.Organization.DisplayName)
+	if orgName == "" {
+		orgName = strings.TrimSpace(acc.Organization.LegalName)
+	}
+
 	return response.WorkspaceUserProfile{
 		OrganizationID:   acc.OrganizationID,
-		OrganizationCode: acc.Organization.Code,
+		OrganizationName: orgName,
 		AccountID:        acc.ID,
 		EmployeeID:       acc.EmployeeID,
 		EmployeeCode:     acc.Employee.EmployeeCode,

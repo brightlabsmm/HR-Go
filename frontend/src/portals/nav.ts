@@ -18,3 +18,27 @@ export function isNavItemActive(item: PortalNavItem, pathname: string) {
 export function findActiveNavItem(pathname: string) {
   return PORTAL_NAV.find((item) => isNavItemActive(item, pathname))
 }
+
+export function canAccessNavItem(
+  item: PortalNavItem,
+  can: (code: string) => boolean,
+  hasUser: boolean
+) {
+  const required = item.permissions ?? []
+  if (required.length === 0) {
+    return true
+  }
+
+  if (!hasUser) {
+    return false
+  }
+
+  return required.every((code) => can(code))
+}
+
+export function visiblePortalNav(
+  can: (code: string) => boolean,
+  hasUser: boolean
+) {
+  return PORTAL_NAV.filter((item) => canAccessNavItem(item, can, hasUser))
+}

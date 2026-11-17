@@ -31,7 +31,7 @@ export function AccountPage() {
     : [
         { label: t("name"), value: fullName },
         { label: t("employee_code"), value: user?.employeeCode },
-        { label: t("organization"), value: user?.organizationCode },
+        { label: t("organization"), value: user?.organizationName },
         {
           label: t("roles"),
           value: user?.roles.map((role) => role.roleName).join(", "),

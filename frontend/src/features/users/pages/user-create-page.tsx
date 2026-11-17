@@ -6,6 +6,7 @@ import { useNavigate } from "react-router"
 import { z } from "zod"
 
 import { applyApiFieldErrors } from "@/app/api/feedback"
+import { ForbiddenState } from "@/components/common/forbidden-state"
 import { FormActions } from "@/components/common/form-actions"
 import { FormFieldGrid } from "@/components/common/form-field-grid"
 import { FormPageHeader } from "@/components/common/form-page-header"
@@ -13,16 +14,22 @@ import { FormSection, formStackClassName } from "@/components/common/form-sectio
 import { FormSkeleton } from "@/components/common/form-skeleton"
 import { FormPasswordInput } from "@/components/common/form/form-password-input"
 import { FormTextInput } from "@/components/common/form/form-text-input"
+import { StayAfterCreateCheckbox } from "@/components/common/stay-after-create-checkbox"
 import { Button } from "@/components/ui/button"
 import { RolePermissionReview } from "@/features/users/components/role-permission-review"
 import { RolePicker } from "@/features/users/components/role-picker"
 import { PASSWORD_PATTERN } from "@/constants/timezones"
+import { usePermissions } from "@/shared/hooks/use-permissions"
+import { useStayAfterCreate } from "@/shared/hooks/use-stay-after-create"
 import { useRolesQuery } from "@/shared/queries/role.query"
 import { useCreateUserMutation } from "@/shared/queries/user.query"
 
 export function UserCreatePage() {
   const { t } = useTranslation("users")
   const navigate = useNavigate()
+  const { can, isPending: isPermissionsPending } = usePermissions()
+  const { stayAfterCreate, setStayAfterCreate, finishCreate } =
+    useStayAfterCreate("/users")
   const rolesQuery = useRolesQuery()
   const createMutation = useCreateUserMutation()
   const schema = useMemo(
@@ -40,7 +47,7 @@ export function UserCreatePage() {
     [t]
   )
   type FormValues = z.infer<typeof schema>
-  const { control, handleSubmit, setError } = useForm<FormValues>({
+  const { control, handleSubmit, setError, reset } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       fullName: "",
@@ -59,6 +66,10 @@ export function UserCreatePage() {
     description: role.description ?? role.roleCode,
   }))
 
+  if (!isPermissionsPending && !can("platform.user.create")) {
+    return <ForbiddenState backTo="/users" backLabel={t("title")} />
+  }
+
   return (
     <section className="pb-6">
       <form
@@ -71,7 +82,14 @@ export function UserCreatePage() {
               password: values.password,
               roleIds: [values.roleId],
             })
-            void navigate("/users")
+            finishCreate(() =>
+              reset({
+                fullName: "",
+                email: "",
+                password: "",
+                roleId: "",
+              })
+            )
           } catch (error) {
             applyApiFieldErrors(error, setError)
           }
@@ -128,7 +146,15 @@ export function UserCreatePage() {
             </div>
           )}
         </FormSection>
-        <FormActions>
+        <FormActions
+          start={
+            <StayAfterCreateCheckbox
+              checked={stayAfterCreate}
+              onCheckedChange={setStayAfterCreate}
+              disabled={isPending}
+            />
+          }
+        >
           <Button
             type="button"
             variant="outline"

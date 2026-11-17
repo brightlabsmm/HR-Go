@@ -7,5 +7,5 @@ export interface PortalNavItem {
   groupKey: string
   icon: LucideIcon
   matchPrefix?: string
-  permission?: string
+  permissions?: string[]
 }

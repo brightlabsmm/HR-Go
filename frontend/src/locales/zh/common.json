@@ -43,7 +43,8 @@
     "clear_search": "清除搜索",
     "no_results": "未找到结果",
     "phone_code": "国家区号",
-    "phone_placeholder": "912345678"
+    "phone_placeholder": "912345678",
+    "stay_after_create": "保存后留在此页以继续新增"
   },
   "status": {
     "active": "启用",
@@ -78,6 +79,7 @@
   },
   "errors": {
     "generic": "出错了。",
+    "forbidden": "你没有执行此操作的权限。",
     "network": "无法连接服务器。",
     "page_title": "出错了",
     "page_description": "无法加载此页面。请刷新重试，或返回首页。",
@@ -114,9 +116,15 @@
   "states": {
     "not_found_title": "未找到相关内容",
     "not_found_description": "内容可能已被删除，或链接不正确。",
+    "page_not_found_code": "404",
+    "page_not_found_title": "找不到页面",
+    "page_not_found_description": "该页面不存在。请检查链接，或返回首页。",
     "no_results_title": "没有匹配的结果",
     "no_results_description": "请尝试调整或清除筛选条件。",
-    "loading": "加载中…"
+    "loading": "加载中…",
+    "forbidden_title": "没有访问权限",
+    "forbidden_description": "你的角色不允许执行此操作。",
+    "forbidden_action": "前往{{page}}"
   },
   "brand": {
     "headline_organization": "在一个地方管理所有人事工作",

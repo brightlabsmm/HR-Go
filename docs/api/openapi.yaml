@@ -336,7 +336,7 @@ components:
 
     CreateOrganizationRequest:
       type: object
-      required: [organizationCode, legalName, displayName]
+      required: [organizationCode, legalName, displayName, contactEmail, contactPhone, country, address]
       properties:
         organizationCode:
           type: string
@@ -364,6 +364,9 @@ components:
     UpdateOrganizationRequest:
       type: object
       properties:
+        organizationCode:
+          type: string
+          example: ORG-002
         legalName:
           type: string
           example: Golden Myanmar Enterprise Co., Ltd.
@@ -492,9 +495,9 @@ components:
         organizationId:
           type: string
           example: 9c1b2a3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
-        organizationCode:
+        organizationName:
           type: string
-          example: ORG-001
+          example: Acme Corporation
         accountId:
           type: string
           example: 7a6b5c4d-3e2f-1a0b-9c8d-7e6f5a4b3c2d

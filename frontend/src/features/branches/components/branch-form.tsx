@@ -12,7 +12,9 @@ import { FormActions } from "@/components/common/form-actions"
 import { FormFieldGrid } from "@/components/common/form-field-grid"
 import { FormPageHeader } from "@/components/common/form-page-header"
 import { FormSection, formStackClassName } from "@/components/common/form-section"
+import { StayAfterCreateCheckbox } from "@/components/common/stay-after-create-checkbox"
 import { Button } from "@/components/ui/button"
+import { useStayAfterCreate } from "@/shared/hooks/use-stay-after-create"
 
 export const BRANCH_FORM_DEFAULTS = {
   branchName: "",
@@ -40,22 +42,27 @@ interface BranchFormProps {
   submitLabel?: string
   title?: string
   subtitle?: string
+  listPath?: string
   onCancel: () => void
   onSubmit: (values: BranchFormValues) => Promise<void>
 }
 
 export function BranchForm({
   isPending = false,
+  isEdit = false,
   parentOptions = [],
   defaultValues,
   submitLabel,
   title,
   subtitle,
+  listPath = "/",
   onCancel,
   onSubmit,
 }: BranchFormProps) {
   const { t } = useTranslation("branches")
   const { t: tCommon } = useTranslation("common")
+  const { stayAfterCreate, setStayAfterCreate, finishCreate } =
+    useStayAfterCreate(listPath)
   const schema = useMemo(
     () =>
       z.object({
@@ -65,7 +72,7 @@ export function BranchForm({
       }),
     [t]
   )
-  const { control, handleSubmit, setError } = useForm<BranchFormValues>({
+  const { control, handleSubmit, setError, reset } = useForm<BranchFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       ...BRANCH_FORM_DEFAULTS,
@@ -79,6 +86,9 @@ export function BranchForm({
       onSubmit={handleSubmit(async (values) => {
         try {
           await onSubmit(values)
+          if (!isEdit) {
+            finishCreate(() => reset({ ...BRANCH_FORM_DEFAULTS }))
+          }
         } catch (error) {
           applyApiFieldErrors(error, setError, FORM_ERROR_FIELDS)
         }
@@ -117,7 +127,17 @@ export function BranchForm({
         </FormFieldGrid>
       </FormSection>
 
-      <FormActions>
+      <FormActions
+        start={
+          isEdit ? undefined : (
+            <StayAfterCreateCheckbox
+              checked={stayAfterCreate}
+              onCheckedChange={setStayAfterCreate}
+              disabled={isPending}
+            />
+          )
+        }
+      >
         <Button
           type="button"
           variant="outline"

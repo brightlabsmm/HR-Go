@@ -9,7 +9,7 @@ type RoleAssignment struct {
 
 type WorkspaceUserProfile struct {
 	OrganizationID   string           `json:"organizationId"`
-	OrganizationCode string           `json:"organizationCode"`
+	OrganizationName string           `json:"organizationName"`
 	AccountID        string           `json:"accountId"`
 	EmployeeID       string           `json:"employeeId"`
 	EmployeeCode     string           `json:"employeeCode"`

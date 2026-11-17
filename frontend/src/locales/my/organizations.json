@@ -21,7 +21,7 @@
     "create_title": "အဖွဲ့အစည်းအသစ်",
     "create_subtitle": "Customer အဖွဲ့အစည်း account တစ်ခု ဖန်တီးပါ။",
     "code": "အဖွဲ့အစည်းကုဒ်",
-    "code_placeholder": "001",
+    "code_placeholder": "ORG-001",
     "legal_name": "တရားဝင်အမည်",
     "display_name": "ပြသမည့်အမည်",
     "country": "နိုင်ငံ",
@@ -37,7 +37,11 @@
       "code": "ကုဒ် လိုအပ်ပါသည်။",
       "legal_name": "တရားဝင်အမည် လိုအပ်ပါသည်။",
       "display_name": "ပြသမည့်အမည် လိုအပ်ပါသည်။",
-      "email": "Email လိပ်စာ မှန်ကန်ရပါမည်။"
+      "email": "Email လိပ်စာ မှန်ကန်ရပါမည်။",
+      "email_required": "Email လိုအပ်ပါသည်။",
+      "phone_required": "ဖုန်းနံပါတ် လိုအပ်ပါသည်။",
+      "country_required": "နိုင်ငံ လိုအပ်ပါသည်။",
+      "address_required": "လိပ်စာ လိုအပ်ပါသည်။"
     }
   },
   "empty": {

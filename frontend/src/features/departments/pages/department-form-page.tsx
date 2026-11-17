@@ -14,7 +14,9 @@ import { FormFieldGrid } from "@/components/common/form-field-grid"
 import { FormPageHeader } from "@/components/common/form-page-header"
 import { FormSection, formStackClassName } from "@/components/common/form-section"
 import { NotFoundState } from "@/components/common/not-found-state"
+import { StayAfterCreateCheckbox } from "@/components/common/stay-after-create-checkbox"
 import { Button } from "@/components/ui/button"
+import { useStayAfterCreate } from "@/shared/hooks/use-stay-after-create"
 import { useBranchesQuery } from "@/shared/queries/branch.query"
 import {
   useCreateDepartmentMutation,
@@ -31,6 +33,8 @@ export function DepartmentFormPage() {
   const branchesQuery = useBranchesQuery({ status: "active", limit: 100 })
   const createMutation = useCreateDepartmentMutation()
   const updateMutation = useUpdateDepartmentMutation()
+  const { stayAfterCreate, setStayAfterCreate, finishCreate } =
+    useStayAfterCreate("/departments")
   const isPending = createMutation.isPending || updateMutation.isPending
   const isLoading = isEdit && departmentQuery.isPending
   const schema = useMemo(
@@ -43,7 +47,7 @@ export function DepartmentFormPage() {
   )
   type FormValues = z.infer<typeof schema>
   const department = departmentQuery.data
-  const { control, handleSubmit, setError } = useForm<FormValues>({
+  const { control, handleSubmit, setError, reset } = useForm<FormValues>({
     resolver: zodResolver(schema),
     values: {
       departmentName: department?.departmentName ?? "",
@@ -86,6 +90,13 @@ export function DepartmentFormPage() {
                 departmentName: values.departmentName.trim(),
                 branchId,
               })
+              finishCreate(() =>
+                reset({
+                  departmentName: "",
+                  branchId: "none",
+                })
+              )
+              return
             }
             void navigate("/departments")
           } catch (error) {
@@ -115,7 +126,17 @@ export function DepartmentFormPage() {
             </FormFieldGrid>
           )}
         </FormSection>
-        <FormActions>
+        <FormActions
+          start={
+            isEdit ? undefined : (
+              <StayAfterCreateCheckbox
+                checked={stayAfterCreate}
+                onCheckedChange={setStayAfterCreate}
+                disabled={isPending}
+              />
+            )
+          }
+        >
           <Button
             type="button"
             variant="outline"

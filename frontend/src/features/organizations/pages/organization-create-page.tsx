@@ -6,17 +6,18 @@ import { useNavigate } from "react-router"
 import { z } from "zod"
 
 import { applyApiFieldErrors } from "@/app/api/feedback"
-import { FormCodeInput } from "@/components/common/form/form-code-input"
+import { ForbiddenState } from "@/components/common/forbidden-state"
 import { FormTextInput } from "@/components/common/form/form-text-input"
 import { FormTextareaInput } from "@/components/common/form/form-textarea-input"
 import { FormActions } from "@/components/common/form-actions"
 import { FormFieldGrid } from "@/components/common/form-field-grid"
 import { FormPageHeader } from "@/components/common/form-page-header"
 import { FormSection, formStackClassName } from "@/components/common/form-section"
+import { StayAfterCreateCheckbox } from "@/components/common/stay-after-create-checkbox"
 import { Button } from "@/components/ui/button"
-import { ORGANIZATION_CODE_PREFIX } from "@/constants/codes"
+import { usePermissions } from "@/shared/hooks/use-permissions"
+import { useStayAfterCreate } from "@/shared/hooks/use-stay-after-create"
 import { useCreateOrganizationMutation } from "@/shared/queries/organization.query"
-import { joinCodePrefix } from "@/util/code-prefix"
 
 const CODE_PATTERN = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/
 
@@ -24,28 +25,44 @@ export function OrganizationCreatePage() {
   const { t } = useTranslation("organizations")
   const navigate = useNavigate()
   const createMutation = useCreateOrganizationMutation()
+  const { can, isPending: isPermissionsPending } = usePermissions()
+  const { stayAfterCreate, setStayAfterCreate, finishCreate } =
+    useStayAfterCreate("/")
   const isPending = createMutation.isPending
   const schema = useMemo(
     () =>
       z.object({
-        organizationCode: z.string().trim().regex(CODE_PATTERN, t("form.errors.code")),
+        organizationCode: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.code"))
+          .regex(CODE_PATTERN, t("form.errors.code")),
         legalName: z.string().trim().min(1, t("form.errors.legal_name")),
         displayName: z.string().trim().min(1, t("form.errors.display_name")),
         contactEmail: z
           .string()
           .trim()
-          .email(t("form.errors.email"))
-          .or(z.literal("")),
-        contactPhone: z.string(),
-        country: z.string(),
-        address: z.string(),
+          .min(1, t("form.errors.email_required", "Email is required."))
+          .email(t("form.errors.email")),
+        contactPhone: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.phone_required", "Phone number is required.")),
+        country: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.country_required", "Country is required.")),
+        address: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.address_required", "Address is required.")),
       }),
     [t]
   )
 
   type FormValues = z.infer<typeof schema>
 
-  const { control, handleSubmit, setError } = useForm<FormValues>({
+  const { control, handleSubmit, setError, reset } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       organizationCode: "",
@@ -58,9 +75,8 @@ export function OrganizationCreatePage() {
     },
   })
 
-  function optionalText(value: string) {
-    const trimmed = value.trim()
-    return trimmed === "" ? undefined : trimmed
+  if (!isPermissionsPending && !can("platform.organization.create")) {
+    return <ForbiddenState backTo="/" backLabel={t("title")} />
   }
 
   return (
@@ -74,18 +90,25 @@ export function OrganizationCreatePage() {
         onSubmit={handleSubmit(async (values) => {
           try {
             await createMutation.mutateAsync({
-              organizationCode: joinCodePrefix(
-                ORGANIZATION_CODE_PREFIX,
-                values.organizationCode
-              ),
+              organizationCode: values.organizationCode.trim(),
               legalName: values.legalName.trim(),
               displayName: values.displayName.trim(),
-              contactEmail: optionalText(values.contactEmail),
-              contactPhone: optionalText(values.contactPhone),
-              country: optionalText(values.country),
-              address: optionalText(values.address),
+              contactEmail: values.contactEmail.trim(),
+              contactPhone: values.contactPhone.trim(),
+              country: values.country.trim(),
+              address: values.address.trim(),
             })
-            void navigate("/")
+            finishCreate(() =>
+              reset({
+                organizationCode: "",
+                legalName: "",
+                displayName: "",
+                contactEmail: "",
+                contactPhone: "",
+                country: "",
+                address: "",
+              })
+            )
           } catch (error) {
             applyApiFieldErrors(error, setError)
           }
@@ -96,10 +119,9 @@ export function OrganizationCreatePage() {
           description={t("sections.identity_description")}
         >
           <FormFieldGrid>
-            <FormCodeInput
+            <FormTextInput
               control={control}
               name="organizationCode"
-              prefix={ORGANIZATION_CODE_PREFIX}
               required
               label={t("form.code")}
               placeholder={t("form.code_placeholder")}
@@ -131,31 +153,43 @@ export function OrganizationCreatePage() {
               control={control}
               name="contactEmail"
               type="email"
+              required
               label={t("form.email")}
               disabled={isPending}
             />
             <FormTextInput
               control={control}
               name="contactPhone"
+              required
               label={t("form.phone")}
               disabled={isPending}
             />
             <FormTextInput
               control={control}
               name="country"
+              required
               label={t("form.country")}
               disabled={isPending}
             />
             <FormTextareaInput
               control={control}
               name="address"
+              required
               label={t("form.address")}
               className="md:col-span-2"
               disabled={isPending}
             />
           </FormFieldGrid>
         </FormSection>
-        <FormActions>
+        <FormActions
+          start={
+            <StayAfterCreateCheckbox
+              checked={stayAfterCreate}
+              onCheckedChange={setStayAfterCreate}
+              disabled={isPending}
+            />
+          }
+        >
           <Button
             type="button"
             variant="outline"

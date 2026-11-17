@@ -15,7 +15,7 @@ import { isPlatformPortal } from "@/app/portal"
 import { Logo } from "@/assets/icons/logo"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { isNavItemActive, PORTAL_NAV } from "@/portals/nav"
+import { isNavItemActive, visiblePortalNav } from "@/portals/nav"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import { useCurrentUserQuery } from "@/shared/queries/auth.query"
 import { useUiStore } from "@/shared/stores/ui.store"
@@ -104,7 +104,7 @@ function SidebarWorkspaceCard({ isCollapsed }: { isCollapsed: boolean }) {
     : (user?.fullName ?? t("app_name"))
   const subtitle = isPlatform
     ? t("portal.platform")
-    : user?.organizationCode
+    : user?.organizationName
 
   return (
     <div
@@ -138,13 +138,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { can, user } = usePermissions()
   const isCollapsed = useUiStore((state) => state.isSidebarCollapsed)
   const toggleSidebarCollapsed = useUiStore((state) => state.toggleSidebarCollapsed)
-  const items = PORTAL_NAV.filter((item) => {
-    if (!item.permission || !user) {
-      return true
-    }
-
-    return can(item.permission)
-  })
+  const items = visiblePortalNav(can, Boolean(user))
   const groups = groupNavItems(items)
 
   return (
@@ -203,18 +197,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <PanelLeftCloseIcon className="size-4.5" />
           )}
         </Button>
-      </div>
-
-      <div className={cn("mt-3.5 px-2", isCollapsed && "md:flex md:justify-center md:px-0")}>
-        <span
-          className="inline-flex items-center gap-1.5 text-small-2 font-medium text-muted-foreground"
-          title={t(isPlatformPortal() ? "portal.platform" : "portal.organization")}
-        >
-          <i className="inline-block size-1.5 rounded-full bg-primary" aria-hidden />
-          <span className={cn(isCollapsed && "md:sr-only")}>
-            {t(isPlatformPortal() ? "portal.platform" : "portal.organization")}
-          </span>
-        </span>
       </div>
 
       <nav
