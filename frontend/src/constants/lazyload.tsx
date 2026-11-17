@@ -20,6 +20,10 @@ export const BranchCreatePage = pageLoader(
   () => import("@/features/branches/pages/branch-create-page"),
   "BranchCreatePage"
 )
+export const BranchDetailPage = pageLoader(
+  () => import("@/features/branches/pages/branch-detail-page"),
+  "BranchDetailPage"
+)
 export const BranchEditPage = pageLoader(
   () => import("@/features/branches/pages/branch-edit-page"),
   "BranchEditPage"
@@ -27,6 +31,10 @@ export const BranchEditPage = pageLoader(
 export const DepartmentListPage = pageLoader(
   () => import("@/features/departments/pages/department-list-page"),
   "DepartmentListPage"
+)
+export const DepartmentDetailPage = pageLoader(
+  () => import("@/features/departments/pages/department-detail-page"),
+  "DepartmentDetailPage"
 )
 export const DepartmentFormPage = pageLoader(
   () => import("@/features/departments/pages/department-form-page"),

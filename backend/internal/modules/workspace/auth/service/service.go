@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"strings"
 
 	"hrgo/backend/internal/modules/workspace/auth/mapper"
 	"hrgo/backend/internal/modules/workspace/auth/models"
@@ -33,6 +34,10 @@ func (s *service) Login(ctx context.Context, req request.LoginRequest) (*respons
 	}
 	if acc == nil || !security.CheckPassword(acc.PasswordHash, req.Password) {
 		return nil, apperrors.Unauthorized("Invalid employee identifier or password.")
+	}
+
+	if acc.Organization.Status != "ACTIVE" {
+		return nil, apperrors.Forbidden("Organization is " + strings.ToLower(acc.Organization.Status) + ". Sign in is disabled.")
 	}
 
 	if acc.Status != "ACTIVE" {

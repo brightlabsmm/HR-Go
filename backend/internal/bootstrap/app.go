@@ -74,6 +74,13 @@ func NewEngine(deps Dependencies) *gin.Engine {
 
 	tokenManager := security.NewTokenManager(deps.Config.JWTSecret)
 	secMiddleware := security.NewMiddleware(tokenManager)
+	if deps.DB != nil {
+		secMiddleware.SetOrgStatusChecker(func(ctx context.Context, orgID string) (string, error) {
+			var status string
+			err := deps.DB.WithContext(ctx).Table("organizations").Select("status").Where("id = ?", orgID).Scan(&status).Error
+			return status, err
+		})
+	}
 
 	// Ensure Superadmin platform user if DB is present
 	if deps.DB != nil {

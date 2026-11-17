@@ -26,6 +26,7 @@ type Organization struct {
 	Code        string
 	LegalName   string `gorm:"column:legal_name"`
 	DisplayName string `gorm:"column:display_name"`
+	Status      string `gorm:"column:status"`
 }
 
 func (Organization) TableName() string {

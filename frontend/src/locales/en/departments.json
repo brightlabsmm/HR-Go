@@ -1,5 +1,6 @@
 {
   "title": "Departments",
+  "not_found": "Department not found.",
   "subtitle": "Organize departments, optionally by branch.",
   "add": "Add department",
   "all_status": "All status",

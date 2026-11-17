@@ -1,5 +1,6 @@
 {
   "title": "部门",
+  "not_found": "未找到部门。",
   "subtitle": "管理部门，可选关联分支。",
   "add": "添加部门",
   "all_status": "全部状态",
