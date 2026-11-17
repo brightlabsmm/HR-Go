@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button"
 import { isHighImpactOrganizationStatus } from "@/features/organizations/components/organization-status-menu"
 import { OrganizationTable } from "@/features/organizations/components/organization-table"
 import { useOrganizationListParams } from "@/features/organizations/hooks/use-organization-list-params"
+import { usePermissions } from "@/shared/hooks/use-permissions"
 import {
   useOrganizationsQuery,
   useUpdateOrganizationStatusMutation,
@@ -33,6 +34,8 @@ export function OrganizationListPage() {
   const navigate = useNavigate()
   const params = useOrganizationListParams()
   const organizationsQuery = useOrganizationsQuery(params.listParams)
+  const { can } = usePermissions()
+  const canCreate = can("platform.organization.create")
   const statusMutation = useUpdateOrganizationStatusMutation()
   const [statusTarget, setStatusTarget] = useState<{
     organization: Organization
@@ -54,12 +57,12 @@ export function OrganizationListPage() {
     { value: "archived", label: tCommon("status.archived") },
   ]
 
-  const addButton = (
+  const addButton = canCreate ? (
     <Button type="button" onClick={() => void navigate("/organizations/new")}>
       <PlusIcon className="size-4" />
       {t("add")}
     </Button>
-  )
+  ) : null
 
   function renderBody() {
     if (organizationsQuery.isPending) {

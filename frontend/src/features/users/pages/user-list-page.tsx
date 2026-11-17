@@ -21,6 +21,7 @@ import { TableSkeleton } from "@/components/common/table-skeleton"
 import { ToneBadge } from "@/components/common/tone-badge"
 import { Button } from "@/components/ui/button"
 import { PAGE_PARAM, PAGE_SIZE_PARAM } from "@/constants/pagination"
+import { usePermissions } from "@/shared/hooks/use-permissions"
 import { useCurrentUserQuery } from "@/shared/queries/auth.query"
 import {
   useDeactivateUserMutation,
@@ -50,6 +51,10 @@ export function UserListPage() {
     status,
   })
   const meQuery = useCurrentUserQuery()
+  const { can } = usePermissions()
+  const canCreate = can("platform.user.create")
+  const canUpdate = can("platform.user.update")
+  const canDeactivate = can("platform.user.deactivate")
   const deactivateMutation = useDeactivateUserMutation()
   const [target, setTarget] = useState<PlatformUser | null>(null)
   const users = usersQuery.data?.items ?? []
@@ -108,23 +113,27 @@ export function UserListPage() {
       meta: { align: "end" },
       cell: ({ row }) => (
         <DataTableActions
-          onEdit={() => void navigate(`/users/${row.original.id}/edit`)}
+          onEdit={
+            canUpdate
+              ? () => void navigate(`/users/${row.original.id}/edit`)
+              : undefined
+          }
           onDelete={
-            meQuery.data?.id === row.original.id
-              ? undefined
-              : () => setTarget(row.original)
+            canDeactivate && meQuery.data?.id !== row.original.id
+              ? () => setTarget(row.original)
+              : undefined
           }
         />
       ),
     }),
   ])
 
-  const addButton = (
+  const addButton = canCreate ? (
     <Button type="button" onClick={() => void navigate("/users/new")}>
       <PlusIcon className="size-4" />
       {t("add")}
     </Button>
-  )
+  ) : null
 
   function renderBody() {
     if (usersQuery.isPending) {

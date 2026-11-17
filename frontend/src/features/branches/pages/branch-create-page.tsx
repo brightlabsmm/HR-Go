@@ -29,7 +29,6 @@ export function BranchCreatePage() {
       parentId: values.parentId === "none" ? null : values.parentId,
       address: optionalText(values.address),
     })
-    void navigate("/")
   }
 
   return (

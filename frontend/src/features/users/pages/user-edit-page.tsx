@@ -7,6 +7,7 @@ import { z } from "zod"
 
 import { applyApiFieldErrors } from "@/app/api/feedback"
 import { ConfirmDialog } from "@/components/common/confirm-dialog"
+import { ForbiddenState } from "@/components/common/forbidden-state"
 import { FormActions } from "@/components/common/form-actions"
 import { FormFieldGrid } from "@/components/common/form-field-grid"
 import { FormSection, formStackClassName } from "@/components/common/form-section"
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button"
 import { RolePermissionReview } from "@/features/users/components/role-permission-review"
 import { RolePicker } from "@/features/users/components/role-picker"
 import { UserDetailHeader } from "@/features/users/components/user-detail-header"
+import { usePermissions } from "@/shared/hooks/use-permissions"
 import { useCurrentUserQuery } from "@/shared/queries/auth.query"
 import { useRolesQuery } from "@/shared/queries/role.query"
 import {
@@ -33,6 +35,7 @@ export function UserEditPage() {
   const { id = "" } = useParams()
   const userQuery = useUserQuery(id)
   const meQuery = useCurrentUserQuery()
+  const { can, isPending: isPermissionsPending } = usePermissions()
   const rolesQuery = useRolesQuery()
   const updateMutation = useUpdateUserMutation()
   const rolesMutation = useReplaceUserRolesMutation()
@@ -80,6 +83,10 @@ export function UserEditPage() {
     return (
       <NotFoundState backTo="/users" backLabel={t("title")} description={t("not_found")} />
     )
+  }
+
+  if (!isPermissionsPending && !can("platform.user.update")) {
+    return <ForbiddenState backTo="/users" backLabel={t("title")} />
   }
 
   return (

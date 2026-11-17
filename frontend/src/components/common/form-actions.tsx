@@ -6,21 +6,26 @@ import { useMotionVariants } from "@/shared/hooks/use-motion-variants"
 
 interface FormActionsProps {
   className?: string
+  start?: ReactNode
   children: ReactNode
 }
 
-export function FormActions({ className, children }: FormActionsProps) {
+export function FormActions({ className, start, children }: FormActionsProps) {
   const { staggerItem } = useMotionVariants()
 
   return (
     <motion.div
       variants={staggerItem}
       className={cn(
-        "flex flex-wrap items-center justify-end gap-3 border-t border-hair pt-6",
+        "flex flex-wrap items-center gap-3 border-t border-hair pt-6",
+        start ? "justify-between" : "justify-end",
         className
       )}
     >
-      {children}
+      {start}
+      <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+        {children}
+      </div>
     </motion.div>
   )
 }

@@ -10,7 +10,12 @@ export const PLATFORM_NAV: PortalNavItem[] = [
     groupKey: "nav_groups.tenants",
     icon: Building2Icon,
     matchPrefix: "/organizations",
-    permission: "platform.organization.read",
+    permissions: [
+      "platform.organization.read",
+      "platform.organization.create",
+      "platform.organization.update",
+      "platform.organization.status.update",
+    ],
   },
   {
     to: "/users",
@@ -18,7 +23,12 @@ export const PLATFORM_NAV: PortalNavItem[] = [
     groupKey: "nav_groups.access",
     icon: UsersIcon,
     matchPrefix: "/users",
-    permission: "platform.user.read",
+    permissions: [
+      "platform.user.read",
+      "platform.user.create",
+      "platform.user.update",
+      "platform.user.deactivate",
+    ],
   },
   {
     to: "/roles",
@@ -26,7 +36,7 @@ export const PLATFORM_NAV: PortalNavItem[] = [
     groupKey: "nav_groups.access",
     icon: ShieldIcon,
     matchPrefix: "/roles",
-    permission: "platform.role.read",
+    permissions: ["platform.role.read", "platform.role.assign"],
   },
   {
     to: "/account",

@@ -46,6 +46,10 @@ export function getApiErrorMessage(
     return networkErrorMessage()
   }
 
+  if (error.code === API_ERROR_CODES.FORBIDDEN || error.status === 403) {
+    return i18n.t("errors.forbidden", { ns: "common" })
+  }
+
   if (
     (error.code === API_ERROR_CODES.VALIDATION_ERROR || error.status === 422) &&
     error.details.length > 0

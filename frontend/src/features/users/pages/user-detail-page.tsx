@@ -12,6 +12,7 @@ import { ToneBadge } from "@/components/common/tone-badge"
 import { Button } from "@/components/ui/button"
 import { RolePermissionReview } from "@/features/users/components/role-permission-review"
 import { UserDetailHeader } from "@/features/users/components/user-detail-header"
+import { usePermissions } from "@/shared/hooks/use-permissions"
 import { useRolesQuery } from "@/shared/queries/role.query"
 import { useUserQuery } from "@/shared/queries/user.query"
 import { formatDateTime } from "@/util/format-date"
@@ -23,6 +24,8 @@ export function UserDetailPage() {
   const navigate = useNavigate()
   const { id = "" } = useParams()
   const userQuery = useUserQuery(id)
+  const { can } = usePermissions()
+  const canUpdate = can("platform.user.update")
   const rolesQuery = useRolesQuery()
   const user = userQuery.data
   const assignedRole =
@@ -55,14 +58,16 @@ export function UserDetailPage() {
       <UserDetailHeader
         userId={id}
         actions={
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => void navigate(`/users/${id}/edit`)}
-          >
-            <PencilIcon className="size-4" />
-            {tCommon("actions.edit")}
-          </Button>
+          canUpdate ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void navigate(`/users/${id}/edit`)}
+            >
+              <PencilIcon className="size-4" />
+              {tCommon("actions.edit")}
+            </Button>
+          ) : null
         }
       />
       <div className="grid items-start gap-12 lg:grid-cols-[18.75rem_minmax(0,1fr)]">
