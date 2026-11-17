@@ -701,16 +701,16 @@ export function RolePermissionGrantEditor({
         </div>
 
         {/* Filter Bar with Scope Switcher, Grouping Dropdown & Right-aligned Search/Actions */}
-        <div className="rounded-lg border border-border bg-surface p-3 shadow-xs">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="rounded-lg border border-border bg-surface p-2 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             {/* Left Tools: Scope Tabs + Grouping Dropdown */}
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex items-center gap-2">
               {/* Scope Tabs */}
-              <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/20 p-1">
+              <div className="flex items-center gap-0.5 rounded-md border border-border bg-muted/20 p-0.5">
                 <button
                   type="button"
                   onClick={() => setScopeTab("ALL")}
-                  className={`cursor-pointer rounded-md px-2.5 py-1 text-small-2 font-medium transition-all ${
+                  className={`cursor-pointer rounded px-2 py-0.5 text-xs font-medium transition-all ${
                     scopeTab === "ALL"
                       ? "bg-surface text-foreground shadow-xs"
                       : "text-muted-foreground hover:text-foreground"
@@ -721,30 +721,30 @@ export function RolePermissionGrantEditor({
                 <button
                   type="button"
                   onClick={() => setScopeTab("PLATFORM")}
-                  className={`flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-small-2 font-medium transition-all ${
+                  className={`flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-all ${
                     scopeTab === "PLATFORM"
                       ? "bg-surface text-foreground shadow-xs"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <LayersIcon className="size-3.5 text-primary" />
+                  <LayersIcon className="size-3 text-primary" />
                   <span>{t("scopes.platform", { defaultValue: "Platform" })}</span>
-                  <span className="text-[11px] text-muted-foreground font-normal">
+                  <span className="text-[10px] text-muted-foreground font-normal">
                     ({platformSelectedCount}/{totalPlatformCount})
                   </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setScopeTab("ORG")}
-                  className={`flex cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-small-2 font-medium transition-all ${
+                  className={`flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-all ${
                     scopeTab === "ORG"
                       ? "bg-surface text-foreground shadow-xs"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <Building2Icon className="size-3.5 text-muted-foreground" />
+                  <Building2Icon className="size-3 text-muted-foreground" />
                   <span>{t("scopes.org", { defaultValue: "Organization" })}</span>
-                  <span className="text-[11px] text-muted-foreground font-normal">
+                  <span className="text-[10px] text-muted-foreground font-normal">
                     ({orgSelectedCount}/{totalOrgCount})
                   </span>
                 </button>
@@ -756,19 +756,19 @@ export function RolePermissionGrantEditor({
                 value={effectiveGroupFilter}
                 label={t("columns.grouping", { defaultValue: "Grouping" })}
                 onValueChange={setActiveGroupFilter}
-                className="h-8.5 w-40 text-small-2 data-[size=default]:h-8.5"
+                className="!h-7 w-32 sm:w-36 text-xs data-[size=default]:!h-7 [&>button]:!h-7 [&>button]:text-xs [&>button]:px-2"
               />
             </div>
 
-            {/* Right Tools: Search + Expand/Select Actions (Moved to Top Right) */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Right Tools: Search + Expand/Select Actions */}
+            <div className="flex items-center gap-1.5">
               <SearchBox
                 value={search}
                 onValueChange={setSearch}
                 placeholder={t("search_placeholder", {
                   defaultValue: "Search permissions...",
                 })}
-                className="w-44 sm:w-52"
+                className="!h-7 w-32 sm:w-40 text-xs [&>div]:!pl-2 [&>div]:!pr-1.5 [&_svg]:!size-3 [&_input]:!text-xs [&_input]:!h-7"
               />
 
               <Button
@@ -776,7 +776,7 @@ export function RolePermissionGrantEditor({
                 variant="outline"
                 size="xs"
                 onClick={isAllExpanded ? handleCollapseAll : handleExpandAll}
-                className="h-8.5 gap-1 text-small-2"
+                className="!h-7 gap-1 px-2 text-xs"
               >
                 {isAllExpanded ? (
                   <>
@@ -795,7 +795,7 @@ export function RolePermissionGrantEditor({
                 variant="outline"
                 size="xs"
                 onClick={handleSelectAllFiltered}
-                className="h-8.5 text-small-2"
+                className="!h-7 px-2 text-xs"
               >
                 {t("select_all", { defaultValue: "Select all" })}
               </Button>
@@ -804,7 +804,7 @@ export function RolePermissionGrantEditor({
                 variant="outline"
                 size="xs"
                 onClick={handleDeselectAllFiltered}
-                className="h-8.5 text-small-2"
+                className="!h-7 px-2 text-xs"
               >
                 {t("deselect_all", { defaultValue: "Deselect all" })}
               </Button>
