@@ -3,6 +3,7 @@ import { ShieldCheckIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router"
 
+import { isPlatformPortal } from "@/app/portal"
 import { MotionStack } from "@/components/common/motion-stack"
 import { PageEmptyState } from "@/components/common/page-empty-state"
 import { PageHeader } from "@/components/common/page-header"
@@ -51,9 +52,13 @@ export function RoleListPage() {
   return (
     <MotionStack className="flex h-full min-h-0 flex-col gap-8 pb-10">
       <PageHeader
-        title={t("system_title", { defaultValue: "Platform roles" })}
-        description={t("system_subtitle", {
-          defaultValue: "Built-in platform roles and their permissions.",
+        title={t(isPlatformPortal() ? "system_title" : "title", {
+          defaultValue: isPlatformPortal() ? "Platform roles" : "Roles",
+        })}
+        description={t(isPlatformPortal() ? "system_subtitle" : "catalog_subtitle", {
+          defaultValue: isPlatformPortal()
+            ? "Built-in platform roles and their permissions."
+            : "Roles available in this organization and what each one can do.",
         })}
       />
 

@@ -27,7 +27,7 @@ func (r *repository) ListRoles(ctx context.Context, orgID string) ([]models.OrgR
 	var roles []models.OrgRole
 	err := r.db.WithContext(ctx).
 		Preload("Permissions", func(db *gorm.DB) *gorm.DB {
-			return db.Order("module ASC, resource ASC, action ASC")
+			return db.Order("grouping ASC, resource ASC, action ASC")
 		}).
 		Where("organization_id IS NULL OR organization_id = ?", orgID).
 		Order("is_system DESC, name ASC").
