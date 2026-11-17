@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useMemo, useState } from "react"
 import { ShieldCheckIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router"
@@ -18,21 +18,23 @@ export function RoleListPage() {
   const rolesQuery = useRolesQuery()
   const permissionsQuery = usePermissionsQuery()
 
-  const roles = rolesQuery.data ?? []
-  const allPermissions = permissionsQuery.data?.items ?? []
+  const roles = useMemo(() => rolesQuery.data ?? [], [rolesQuery.data])
+  const allPermissions = useMemo(
+    () => permissionsQuery.data?.items ?? [],
+    [permissionsQuery.data?.items]
+  )
 
   const queryRoleId = searchParams.get("roleId")
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null)
 
-  // Default to queryRoleId, or first role when loaded
-  useEffect(() => {
-    if (roles.length > 0) {
-      if (queryRoleId && roles.some((r) => r.id === queryRoleId)) {
-        setSelectedRoleId(queryRoleId)
-      } else if (!selectedRoleId || !roles.some((r) => r.id === selectedRoleId)) {
-        setSelectedRoleId(roles[0].id)
-      }
+  const activeRoleId = useMemo(() => {
+    if (queryRoleId && roles.some((r) => r.id === queryRoleId)) {
+      return queryRoleId
     }
+    if (selectedRoleId && roles.some((r) => r.id === selectedRoleId)) {
+      return selectedRoleId
+    }
+    return roles[0]?.id ?? null
   }, [roles, queryRoleId, selectedRoleId])
 
   function handleSelectRole(roleId: string) {
@@ -44,7 +46,7 @@ export function RoleListPage() {
     })
   }
 
-  const selectedRole = roles.find((r) => r.id === selectedRoleId) ?? null
+  const selectedRole = roles.find((r) => r.id === activeRoleId) ?? null
 
   return (
     <MotionStack className="flex h-full min-h-0 flex-col gap-8 pb-10">
@@ -74,7 +76,7 @@ export function RoleListPage() {
 
             <div className="flex flex-col gap-2.5">
               {roles.map((role) => {
-                const isSelected = role.id === selectedRoleId
+                const isSelected = role.id === activeRoleId
 
                 return (
                   <button

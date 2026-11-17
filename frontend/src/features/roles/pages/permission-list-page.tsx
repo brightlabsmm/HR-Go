@@ -29,7 +29,10 @@ export function PermissionListPage() {
   const [search, setSearch] = useState<string>("")
 
   const permissionsQuery = usePermissionsQuery()
-  const rawPermissions = permissionsQuery.data?.items ?? []
+  const rawPermissions = useMemo(
+    () => permissionsQuery.data?.items ?? [],
+    [permissionsQuery.data?.items]
+  )
 
   const availableGroupings = useMemo(() => {
     const set = new Set<string>()

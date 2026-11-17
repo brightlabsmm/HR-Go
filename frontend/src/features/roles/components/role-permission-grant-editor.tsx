@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react"
+import { Fragment, useMemo, useState } from "react"
 import {
   Building2Icon,
   CheckIcon,
@@ -84,15 +84,6 @@ export function RolePermissionGrantEditor({
   // Access section list expansion state (expanded by default)
   const [isAccessExpanded, setIsAccessExpanded] = useState<boolean>(true)
 
-  // Sync state when selected role changes
-  useEffect(() => {
-    setSelectedIds(new Set(role.permissions.map((p) => p.id)))
-    setSearch("")
-    setActiveGroupFilter("all")
-    setScopeTab("ALL")
-    setExpandedGroups(new Set()) // hide first
-  }, [role.id, role.permissions])
-
   // Initial role permission IDs set for dirty check
   const initialIds = useMemo(() => {
     return new Set(role.permissions.map((p) => p.id))
@@ -106,11 +97,46 @@ export function RolePermissionGrantEditor({
     return false
   }, [selectedIds, initialIds])
 
+  // All available unique groupings based on scopeTab
+  const availableGroupings = useMemo(() => {
+    const currentList =
+      scopeTab === "PLATFORM"
+        ? allPermissions.filter((p) => resolvePermissionScope(p) === "PLATFORM")
+        : scopeTab === "ORG"
+        ? allPermissions.filter((p) => resolvePermissionScope(p) === "ORG")
+        : allPermissions
+
+    const set = new Set<string>()
+    for (const p of currentList) {
+      set.add(resolvePermissionGrouping(p))
+    }
+    return [...set].sort((a, b) => a.localeCompare(b))
+  }, [allPermissions, scopeTab])
+
+  // Grouping options for dropdown filter
+  const groupingItems: FilterSelectItem[] = useMemo(() => {
+    return [
+      {
+        value: "all",
+        label: t("filters.all_groupings", { defaultValue: "All groupings" }),
+      },
+      ...availableGroupings.map((grp) => ({
+        value: grp,
+        label: groupingLabel(grp),
+      })),
+    ]
+  }, [availableGroupings, groupingLabel, t])
+
+  // Derived effective group filter (falls back to "all" if grouping not in current scope)
+  const effectiveGroupFilter = availableGroupings.includes(activeGroupFilter)
+    ? activeGroupFilter
+    : "all"
+
   // Filter available permissions for the grant section
   const filteredGrantPermissions = useMemo(() => {
     return allPermissions.filter((p) => {
       const grouping = resolvePermissionGrouping(p)
-      if (activeGroupFilter !== "all" && grouping !== activeGroupFilter) {
+      if (effectiveGroupFilter !== "all" && grouping !== effectiveGroupFilter) {
         return false
       }
       if (!search.trim()) return true
@@ -126,7 +152,7 @@ export function RolePermissionGrantEditor({
         grp.includes(term)
       )
     })
-  }, [allPermissions, activeGroupFilter, search, permissionLabel])
+  }, [allPermissions, effectiveGroupFilter, search, permissionLabel])
 
   // Split permissions by scope
   const platformGrantPermissions = useMemo(() => {
@@ -153,55 +179,6 @@ export function RolePermissionGrantEditor({
       permissions: sortPermissions(g.permissions),
     }))
   }, [orgGrantPermissions])
-
-  // All available unique groupings
-  const availableGroupings = useMemo(() => {
-    const currentList =
-      scopeTab === "PLATFORM"
-        ? platformGrantPermissions
-        : scopeTab === "ORG"
-        ? orgGrantPermissions
-        : allPermissions
-
-    const set = new Set<string>()
-    for (const p of currentList) {
-      set.add(resolvePermissionGrouping(p))
-    }
-    return [...set].sort((a, b) => a.localeCompare(b))
-  }, [allPermissions, scopeTab, platformGrantPermissions, orgGrantPermissions])
-
-  // Grouping options for dropdown filter
-  const groupingItems: FilterSelectItem[] = useMemo(() => {
-    return [
-      {
-        value: "all",
-        label: t("filters.all_groupings", { defaultValue: "All groupings" }),
-      },
-      ...availableGroupings.map((grp) => ({
-        value: grp,
-        label: groupingLabel(grp),
-      })),
-    ]
-  }, [availableGroupings, groupingLabel, t])
-
-  // Reset active group filter if current grouping is not in the active scope
-  useEffect(() => {
-    if (activeGroupFilter !== "all" && !availableGroupings.includes(activeGroupFilter)) {
-      setActiveGroupFilter("all")
-    }
-  }, [availableGroupings, activeGroupFilter])
-
-  // Auto-expand matching groups when searching or selecting a grouping filter
-  useEffect(() => {
-    if (search.trim()) {
-      const next = new Set<string>()
-      for (const g of platformGrantGroups) next.add(`PLATFORM:${g.grouping}`)
-      for (const g of orgGrantGroups) next.add(`ORG:${g.grouping}`)
-      setExpandedGroups(next)
-    } else if (activeGroupFilter !== "all") {
-      setExpandedGroups(new Set([`PLATFORM:${activeGroupFilter}`, `ORG:${activeGroupFilter}`]))
-    }
-  }, [search, activeGroupFilter, platformGrantGroups, orgGrantGroups])
 
   // Currently granted permissions for the Access section (directly listed)
   const currentAccessPermissions = useMemo(() => {
@@ -398,7 +375,10 @@ export function RolePermissionGrantEditor({
           <tbody>
             {groups.map((group) => {
               const groupKey = `${scope}:${group.grouping}`
-              const isExpanded = expandedGroups.has(groupKey)
+              const isExpanded =
+                Boolean(search.trim()) ||
+                (effectiveGroupFilter !== "all" && group.grouping === effectiveGroupFilter) ||
+                expandedGroups.has(groupKey)
               const groupCheckedCount = group.permissions.filter((p) =>
                 selectedIds.has(p.id)
               ).length
@@ -773,7 +753,7 @@ export function RolePermissionGrantEditor({
               {/* Grouping Filter Dropdown */}
               <FilterSelect
                 items={groupingItems}
-                value={activeGroupFilter}
+                value={effectiveGroupFilter}
                 label={t("columns.grouping", { defaultValue: "Grouping" })}
                 onValueChange={setActiveGroupFilter}
                 className="h-8.5 w-40 text-small-2 data-[size=default]:h-8.5"
