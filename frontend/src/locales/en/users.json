@@ -6,10 +6,11 @@
   "all_status": "All status",
   "not_found": "User not found.",
   "columns": {
+    "name": "Name",
+    "email": "Email",
     "status": "Status",
     "role": "Role",
-    "actions": "Actions",
-    "name": "Name"
+    "actions": "Actions"
   },
   "create": {
     "title": "New platform user",

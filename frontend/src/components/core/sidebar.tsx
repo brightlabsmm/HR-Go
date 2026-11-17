@@ -99,9 +99,8 @@ function SidebarWorkspaceCard({ isCollapsed }: { isCollapsed: boolean }) {
     )
   }
 
-  const title = isPlatform
-    ? t("sidebar.platform_admin")
-    : (user?.fullName ?? t("app_name"))
+  const title =
+    user?.fullName ?? (isPlatform ? t("sidebar.platform_admin") : t("app_name"))
   const subtitle = isPlatform
     ? t("portal.platform")
     : user?.organizationName

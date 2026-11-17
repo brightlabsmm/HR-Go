@@ -92,8 +92,12 @@ export function UserListPage() {
     column.display({
       id: "name",
       header: t("columns.name"),
-      cell: ({ row }) => (
-        <IdentityCell name={row.original.fullName} secondary={row.original.email} />
+      cell: ({ row }) => <IdentityCell name={row.original.fullName} />,
+    }),
+    column.accessor("email", {
+      header: t("columns.email"),
+      cell: ({ getValue }) => (
+        <span className="text-small-1 text-foreground">{getValue() ?? "—"}</span>
       ),
     }),
     column.accessor("status", {
@@ -137,7 +141,7 @@ export function UserListPage() {
 
   function renderBody() {
     if (usersQuery.isPending) {
-      return <TableSkeleton columns={4} />
+      return <TableSkeleton columns={5} />
     }
 
     if (isUnfilteredEmpty) {
