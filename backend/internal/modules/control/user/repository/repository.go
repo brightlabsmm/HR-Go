@@ -94,6 +94,9 @@ func (r *repository) List(ctx context.Context, q request.ListUsersQuery) ([]mode
 		like := "%" + strings.ToLower(term) + "%"
 		db = db.Where("LOWER(full_name) LIKE ? OR LOWER(email) LIKE ?", like, like)
 	}
+	if status := strings.TrimSpace(q.Status); status != "" {
+		db = db.Where("status = ?", strings.ToUpper(status))
+	}
 
 	var total int64
 	if err := db.Count(&total).Error; err != nil {

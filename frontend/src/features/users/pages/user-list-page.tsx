@@ -33,6 +33,15 @@ import type { PlatformUser } from "@/shared/services/user.service"
 
 const column = createDataTableColumns<PlatformUser>()
 const FILTER_KEYS = ["search", "status"] as const
+const STATUSES = ["active", "inactive"] as const
+
+function parseStatus(value: string | null) {
+  const lower = value?.toLowerCase()
+  if (lower && STATUSES.includes(lower as (typeof STATUSES)[number])) {
+    return lower
+  }
+  return undefined
+}
 
 export function UserListPage() {
   const { t } = useTranslation("users")
@@ -42,7 +51,7 @@ export function UserListPage() {
   const page = parsePageParam(searchParams.get(PAGE_PARAM))
   const limit = parsePageSizeParam(searchParams.get(PAGE_SIZE_PARAM))
   const search = searchParams.get("search") ?? ""
-  const status = searchParams.get("status") ?? undefined
+  const status = parseStatus(searchParams.get("status"))
   const hasFilters = FILTER_KEYS.some((key) => searchParams.has(key))
   const usersQuery = useUsersQuery({
     page,
