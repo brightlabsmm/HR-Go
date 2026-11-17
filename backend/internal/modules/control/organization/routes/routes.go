@@ -16,5 +16,7 @@ func Register(rg *gin.RouterGroup, h *handler.Handler, sec *security.Middleware)
 		group.GET("/:organizationId", sec.RequirePermission("platform.organization.read"), h.GetByID)
 		group.PATCH("/:organizationId", sec.RequirePermission("platform.organization.update"), h.Update)
 		group.POST("/:organizationId/status", sec.RequirePermission("platform.organization.status.update"), h.UpdateStatus)
+		group.POST("/:organizationId/admin-account", sec.RequirePermission("platform.organization.update"), h.CreateAdminAccount)
+		group.GET("/:organizationId/admin-accounts", sec.RequirePermission("platform.organization.read"), h.ListAdminAccounts)
 	}
 }

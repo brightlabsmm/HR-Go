@@ -49,7 +49,31 @@
     "identity_description": "How this organization is named and identified.",
     "contact": "Contact",
     "contact_description": "Where people can reach this organization.",
-    "overview": "Overview"
+    "overview": "Overview",
+    "administrators": "Organization Administrators",
+    "no_administrators": "No administrator accounts created yet."
+  },
+  "create_admin": {
+    "title": "Create Admin Account",
+    "subtitle": "Create an organization administrator employee and login account.",
+    "first_name": "First name",
+    "last_name": "Last name",
+    "email": "Email",
+    "employee_code": "Employee Code / Identifier",
+    "employee_code_placeholder": "e.g. EMP-001",
+    "employee_code_hint": "This code will be used as both the employee record code and the login ID.",
+    "password": "Password",
+    "submit": "Create Admin Account",
+    "success": "Admin account created successfully. Login identifier: {{identifier}}",
+    "errors": {
+      "first_name_required": "First name is required.",
+      "last_name_required": "Last name is required.",
+      "employee_code_required": "Employee code / identifier is required.",
+      "password_required": "Password must be at least 8 characters."
+    }
+  },
+  "actions": {
+    "create_admin": "Create Admin Account"
   },
   "created_at": "Created",
   "status_actions": {

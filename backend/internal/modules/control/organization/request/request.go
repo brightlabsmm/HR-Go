@@ -25,6 +25,14 @@ type UpdateStatusRequest struct {
 	Confirmation bool   `json:"confirmation"`
 }
 
+type CreateAdminAccountRequest struct {
+	FirstName    string  `json:"firstName" binding:"required"`
+	LastName     string  `json:"lastName" binding:"required"`
+	Email        *string `json:"email"`
+	EmployeeCode string  `json:"employeeCode" binding:"required"`
+	Password     string  `json:"password" binding:"required"`
+}
+
 type ListOrganizationsQuery struct {
 	Q                string `form:"q"`
 	OrganizationCode string `form:"organizationCode"`

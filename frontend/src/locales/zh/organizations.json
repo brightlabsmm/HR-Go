@@ -49,7 +49,31 @@
     "identity_description": "该组织的名称与标识。",
     "contact": "联系方式",
     "contact_description": "联系该组织的方式。",
-    "overview": "概览"
+    "overview": "概览",
+    "administrators": "组织管理员",
+    "no_administrators": "尚未创建管理员账户。"
+  },
+  "create_admin": {
+    "title": "创建管理员账户",
+    "subtitle": "创建组织管理员员工及登录账户。",
+    "first_name": "名字",
+    "last_name": "姓氏",
+    "email": "电子邮箱",
+    "employee_code": "员工编号 / 登录标识",
+    "employee_code_placeholder": "例如 EMP-001",
+    "employee_code_hint": "该编号将同时用作员工编号与登录账号。",
+    "password": "密码",
+    "submit": "创建管理员账户",
+    "success": "管理员账户创建成功。登录标识: {{identifier}}",
+    "errors": {
+      "first_name_required": "必须填写名字。",
+      "last_name_required": "必须填写姓氏。",
+      "employee_code_required": "必须填写员工编号/标识。",
+      "password_required": "密码至少需要8个字符。"
+    }
+  },
+  "actions": {
+    "create_admin": "创建管理员账户"
   },
   "created_at": "创建时间",
   "status_actions": {

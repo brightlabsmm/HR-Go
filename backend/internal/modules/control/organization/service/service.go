@@ -11,6 +11,7 @@ import (
 	"hrgo/backend/internal/modules/control/organization/request"
 	"hrgo/backend/internal/modules/control/organization/response"
 	apperrors "hrgo/backend/internal/shared/errors"
+	"hrgo/backend/internal/shared/security"
 )
 
 type Service interface {
@@ -19,6 +20,8 @@ type Service interface {
 	List(ctx context.Context, query request.ListOrganizationsQuery) ([]response.OrganizationResponse, int, int, int64, *apperrors.Error)
 	Update(ctx context.Context, id string, req request.UpdateOrganizationRequest) (*response.OrganizationResponse, *apperrors.Error)
 	UpdateStatus(ctx context.Context, id string, req request.UpdateStatusRequest) (*response.OrganizationResponse, *apperrors.Error)
+	CreateAdminAccount(ctx context.Context, orgID string, req request.CreateAdminAccountRequest) (*response.AdminAccountResponse, *apperrors.Error)
+	ListAdminAccounts(ctx context.Context, orgID string) ([]response.AdminAccountResponse, *apperrors.Error)
 }
 
 type service struct {
@@ -177,4 +180,92 @@ func (s *service) UpdateStatus(ctx context.Context, id string, req request.Updat
 
 	res := mapper.ToOrganizationResponse(org)
 	return &res, nil
+}
+
+func (s *service) CreateAdminAccount(ctx context.Context, orgID string, req request.CreateAdminAccountRequest) (*response.AdminAccountResponse, *apperrors.Error) {
+	org, err := s.repo.FindByID(ctx, orgID)
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+	if org == nil {
+		return nil, apperrors.NotFound("Organization not found")
+	}
+
+	code := strings.TrimSpace(req.EmployeeCode)
+	if code == "" {
+		return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "employeeCode", Message: "Employee code / identifier is required."},
+		})
+	}
+
+	existingEmp, err := s.repo.FindEmployeeByCode(ctx, orgID, code)
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+	if existingEmp != nil {
+		return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "employeeCode", Message: "Employee code is already in use in this organization."},
+		})
+	}
+
+	existingAcc, err := s.repo.FindAccountByIdentifier(ctx, orgID, code)
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+	if existingAcc != nil {
+		return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "employeeCode", Message: "Login identifier is already in use in this organization."},
+		})
+	}
+
+	hash, err := security.HashPassword(req.Password)
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+
+	email := ""
+	if req.Email != nil {
+		email = strings.TrimSpace(*req.Email)
+	}
+
+	emp := &models.EmployeeIdentity{
+		OrganizationID: orgID,
+		EmployeeCode:   code,
+		FirstName:      strings.TrimSpace(req.FirstName),
+		LastName:       strings.TrimSpace(req.LastName),
+		Email:          email,
+	}
+
+	acc := &models.OrganizationAccount{
+		OrganizationID: orgID,
+		Identifier:     code,
+		PasswordHash:   hash,
+		Status:         "ACTIVE",
+	}
+
+	detail, err := s.repo.CreateAdminAccount(ctx, emp, acc)
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+
+	res := mapper.ToAdminAccountResponse(detail)
+	return &res, nil
+}
+
+func (s *service) ListAdminAccounts(ctx context.Context, orgID string) ([]response.AdminAccountResponse, *apperrors.Error) {
+	org, err := s.repo.FindByID(ctx, orgID)
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+	if org == nil {
+		return nil, apperrors.NotFound("Organization not found")
+	}
+
+	details, err := s.repo.ListAdminAccounts(ctx, orgID)
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+
+	res := mapper.ToAdminAccountList(details)
+	return res, nil
 }

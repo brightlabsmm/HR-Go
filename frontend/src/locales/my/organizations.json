@@ -49,7 +49,31 @@
     "identity_description": "ဤအဖွဲ့အစည်းကို ခွဲခြားသတ်မှတ်ပုံ။",
     "contact": "ဆက်သွယ်ရန်",
     "contact_description": "ဤအဖွဲ့အစည်းကို ဆက်သွယ်နိုင်သည့် နည်းလမ်း။",
-    "overview": "အနှစ်ချုပ်"
+    "overview": "အနှစ်ချုပ်",
+    "administrators": "အဖွဲ့အစည်း စီမံခန့်ခွဲသူများ",
+    "no_administrators": "စီမံခန့်ခွဲသူ အကောင့် မရှိသေးပါ။"
+  },
+  "create_admin": {
+    "title": "Admin အကောင့် ဖန်တီးရန်",
+    "subtitle": "အဖွဲ့အစည်း စီမံခန့်ခွဲသူ ဝန်ထမ်းနှင့် login အကောင့် ဖန်တီးပါ။",
+    "first_name": "အမည်ရှေ့ပိုင်း",
+    "last_name": "အမည်နောက်ပိုင်း",
+    "email": "အီးမေးလ်",
+    "employee_code": "ဝန်ထမ်းကုဒ် / Identifier",
+    "employee_code_placeholder": "ဥပမာ - EMP-001",
+    "employee_code_hint": "ဤကုဒ်ကို ဝန်ထမ်းကုဒ်အဖြစ်ရော login ID အဖြစ်ပါ အသုံးပြုပါမည်။",
+    "password": "စကားဝှက်",
+    "submit": "Admin အကောင့် ဖန်တီးရန်",
+    "success": "Admin အကောင့် အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ။ Login identifier: {{identifier}}",
+    "errors": {
+      "first_name_required": "အမည်ရှေ့ပိုင်း ထည့်ရန် လိုအပ်ပါသည်။",
+      "last_name_required": "အမည်နောက်ပိုင်း ထည့်ရန် လိုအပ်ပါသည်။",
+      "employee_code_required": "ဝန်ထမ်းကုဒ် ထည့်ရန် လိုအပ်ပါသည်။",
+      "password_required": "စကားဝှက်သည် အနည်းဆုံး ၈ လုံး ရှိရပါမည်။"
+    }
+  },
+  "actions": {
+    "create_admin": "Admin အကောင့် ဖန်တီးရန်"
   },
   "created_at": "ဖန်တီးသည့်ရက်",
   "status_actions": {

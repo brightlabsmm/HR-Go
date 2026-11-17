@@ -87,3 +87,31 @@ func (h *Handler) UpdateStatus(c *gin.Context) {
 	}
 	responses.OK(c, res)
 }
+
+func (h *Handler) CreateAdminAccount(c *gin.Context) {
+	orgID := c.Param("organizationId")
+	var req request.CreateAdminAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		responses.Fail(c, apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "adminAccount", Message: "Missing or invalid required fields."},
+		}))
+		return
+	}
+
+	res, appErr := h.svc.CreateAdminAccount(c.Request.Context(), orgID, req)
+	if appErr != nil {
+		responses.Fail(c, appErr)
+		return
+	}
+	responses.Created(c, res)
+}
+
+func (h *Handler) ListAdminAccounts(c *gin.Context) {
+	orgID := c.Param("organizationId")
+	res, appErr := h.svc.ListAdminAccounts(c.Request.Context(), orgID)
+	if appErr != nil {
+		responses.Fail(c, appErr)
+		return
+	}
+	responses.OK(c, res)
+}

@@ -19,6 +19,10 @@ type Repository interface {
 	FindByCode(ctx context.Context, code string) (*models.Organization, error)
 	Update(ctx context.Context, org *models.Organization) error
 	List(ctx context.Context, q request.ListOrganizationsQuery) ([]models.Organization, int64, error)
+	CreateAdminAccount(ctx context.Context, emp *models.EmployeeIdentity, acc *models.OrganizationAccount) (*models.AdminAccountDetail, error)
+	ListAdminAccounts(ctx context.Context, orgID string) ([]models.AdminAccountDetail, error)
+	FindEmployeeByCode(ctx context.Context, orgID string, code string) (*models.EmployeeIdentity, error)
+	FindAccountByIdentifier(ctx context.Context, orgID string, identifier string) (*models.OrganizationAccount, error)
 }
 
 type repository struct {
@@ -134,4 +138,94 @@ func (r *repository) List(ctx context.Context, query request.ListOrganizationsQu
 	}
 
 	return list, total, nil
+}
+
+func (r *repository) CreateAdminAccount(ctx context.Context, emp *models.EmployeeIdentity, acc *models.OrganizationAccount) (*models.AdminAccountDetail, error) {
+	var detail models.AdminAccountDetail
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(emp).Error; err != nil {
+			return err
+		}
+
+		acc.EmployeeID = emp.ID
+		if err := tx.Create(acc).Error; err != nil {
+			return err
+		}
+
+		var role models.OrgRole
+		err := tx.Where("code = ? AND (organization_id = ? OR organization_id IS NULL)", "ORG_ADMIN", acc.OrganizationID).
+			Order("organization_id DESC NULLS LAST").
+			First(&role).Error
+		if err != nil {
+			return fmt.Errorf("ORG_ADMIN role not found: %w", err)
+		}
+
+		userRole := models.OrgUserRole{
+			AccountID: acc.ID,
+			RoleID:    role.ID,
+		}
+		if err := tx.Create(&userRole).Error; err != nil {
+			return err
+		}
+
+		detail = models.AdminAccountDetail{
+			AccountID:      acc.ID,
+			OrganizationID: acc.OrganizationID,
+			EmployeeID:     emp.ID,
+			Identifier:     acc.Identifier,
+			EmployeeCode:   emp.EmployeeCode,
+			FirstName:      emp.FirstName,
+			LastName:       emp.LastName,
+			Email:          emp.Email,
+			RoleCode:       role.Code,
+			RoleName:       role.Name,
+			Status:         acc.Status,
+			LastLoginAt:    acc.LastLoginAt,
+			CreatedAt:      acc.CreatedAt,
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &detail, nil
+}
+
+func (r *repository) ListAdminAccounts(ctx context.Context, orgID string) ([]models.AdminAccountDetail, error) {
+	var details []models.AdminAccountDetail
+	err := r.db.WithContext(ctx).Table("organization_accounts oa").
+		Select(`oa.id as account_id, oa.organization_id, oa.employee_id, oa.identifier,
+		        ei.employee_code, ei.first_name, ei.last_name, ei.email,
+		        r.code as role_code, r.name as role_name, oa.status, oa.last_login_at, oa.created_at`).
+		Joins("JOIN employee_identities ei ON ei.id = oa.employee_id").
+		Joins("JOIN org_user_roles our ON our.account_id = oa.id").
+		Joins("JOIN org_roles r ON r.id = our.role_id").
+		Where("oa.organization_id = ? AND r.code = ?", orgID, "ORG_ADMIN").
+		Order("oa.created_at DESC").
+		Scan(&details).Error
+	return details, err
+}
+
+func (r *repository) FindEmployeeByCode(ctx context.Context, orgID string, code string) (*models.EmployeeIdentity, error) {
+	var emp models.EmployeeIdentity
+	err := r.db.WithContext(ctx).Where("organization_id = ? AND LOWER(employee_code) = LOWER(?)", orgID, code).First(&emp).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &emp, nil
+}
+
+func (r *repository) FindAccountByIdentifier(ctx context.Context, orgID string, identifier string) (*models.OrganizationAccount, error) {
+	var acc models.OrganizationAccount
+	err := r.db.WithContext(ctx).Where("organization_id = ? AND LOWER(identifier) = LOWER(?)", orgID, identifier).First(&acc).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &acc, nil
 }
