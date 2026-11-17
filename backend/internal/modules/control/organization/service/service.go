@@ -34,6 +34,34 @@ func New(repo repository.Repository) Service {
 
 func (s *service) Create(ctx context.Context, req request.CreateOrganizationRequest) (*response.OrganizationResponse, *apperrors.Error) {
 	code := strings.TrimSpace(req.OrganizationCode)
+	if code == "" {
+		return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "organizationCode", Message: "Organization code is required."},
+		})
+	}
+
+	contactEmail := strings.TrimSpace(req.ContactEmail)
+	contactPhone := strings.TrimSpace(req.ContactPhone)
+	country := strings.TrimSpace(req.Country)
+	address := strings.TrimSpace(req.Address)
+
+	var validationIssues []apperrors.FieldIssue
+	if contactEmail == "" {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactEmail", Message: "Contact email is required."})
+	}
+	if contactPhone == "" {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactPhone", Message: "Contact phone is required."})
+	}
+	if country == "" {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "country", Message: "Country is required."})
+	}
+	if address == "" {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "address", Message: "Address is required."})
+	}
+	if len(validationIssues) > 0 {
+		return nil, apperrors.ValidationFailed(validationIssues)
+	}
+
 	existing, err := s.repo.FindByCode(ctx, code)
 	if err != nil {
 		return nil, apperrors.Internal()
@@ -44,19 +72,14 @@ func (s *service) Create(ctx context.Context, req request.CreateOrganizationRequ
 		})
 	}
 
-	country := req.Country
-	if country == "" {
-		country = "MM"
-	}
-
 	org := &models.Organization{
 		Code:         code,
-		LegalName:    req.LegalName,
-		DisplayName:  req.DisplayName,
-		ContactEmail: req.ContactEmail,
-		ContactPhone: req.ContactPhone,
+		LegalName:    strings.TrimSpace(req.LegalName),
+		DisplayName:  strings.TrimSpace(req.DisplayName),
+		ContactEmail: contactEmail,
+		ContactPhone: contactPhone,
 		Country:      country,
-		Address:      req.Address,
+		Address:      address,
 		Status:       "PENDING",
 	}
 
@@ -108,23 +131,42 @@ func (s *service) Update(ctx context.Context, id string, req request.UpdateOrgan
 		return nil, apperrors.NotFound("Organization not found")
 	}
 
+	if req.OrganizationCode != nil {
+		newCode := strings.TrimSpace(*req.OrganizationCode)
+		if newCode == "" {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "organizationCode", Message: "Organization code is required."},
+			})
+		}
+		if !strings.EqualFold(newCode, org.Code) {
+			existing, err := s.repo.FindByCode(ctx, newCode)
+			if err != nil {
+				return nil, apperrors.Internal()
+			}
+			if existing != nil && existing.ID != org.ID {
+				return nil, apperrors.Conflict("Organization code already in use")
+			}
+			org.Code = newCode
+		}
+	}
+
 	if req.LegalName != nil {
-		org.LegalName = *req.LegalName
+		org.LegalName = strings.TrimSpace(*req.LegalName)
 	}
 	if req.DisplayName != nil {
-		org.DisplayName = *req.DisplayName
+		org.DisplayName = strings.TrimSpace(*req.DisplayName)
 	}
 	if req.ContactEmail != nil {
-		org.ContactEmail = *req.ContactEmail
+		org.ContactEmail = strings.TrimSpace(*req.ContactEmail)
 	}
 	if req.ContactPhone != nil {
-		org.ContactPhone = *req.ContactPhone
+		org.ContactPhone = strings.TrimSpace(*req.ContactPhone)
 	}
 	if req.Country != nil {
-		org.Country = *req.Country
+		org.Country = strings.TrimSpace(*req.Country)
 	}
 	if req.Address != nil {
-		org.Address = *req.Address
+		org.Address = strings.TrimSpace(*req.Address)
 	}
 
 	if err := s.repo.Update(ctx, org); err != nil {

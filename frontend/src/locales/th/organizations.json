@@ -21,7 +21,7 @@
     "create_title": "องค์กรใหม่",
     "create_subtitle": "สร้างบัญชีองค์กรลูกค้า",
     "code": "รหัสองค์กร",
-    "code_placeholder": "001",
+    "code_placeholder": "ORG-001",
     "legal_name": "ชื่อตามกฎหมาย",
     "display_name": "ชื่อที่แสดง",
     "country": "ประเทศ",
@@ -37,7 +37,11 @@
       "code": "ต้องระบุรหัส",
       "legal_name": "ต้องระบุชื่อตามกฎหมาย",
       "display_name": "ต้องระบุชื่อที่แสดง",
-      "email": "อีเมลไม่ถูกต้อง"
+      "email": "อีเมลไม่ถูกต้อง",
+      "email_required": "ต้องระบุอีเมล",
+      "phone_required": "ต้องระบุหมายเลขโทรศัพท์",
+      "country_required": "ต้องระบุประเทศ",
+      "address_required": "ต้องระบุที่อยู่"
     }
   },
   "empty": {

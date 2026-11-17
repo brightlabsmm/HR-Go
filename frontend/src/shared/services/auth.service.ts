@@ -16,7 +16,7 @@ export interface AuthProfile {
   email?: string | null
   employeeCode?: string
   organizationId?: string
-  organizationCode?: string
+  organizationName?: string
   status: string
   roles: AuthRole[]
   permissions: string[]
@@ -46,7 +46,7 @@ interface PlatformUserPayload {
 
 interface WorkspaceUserPayload {
   organizationId?: string
-  organizationCode?: string
+  organizationName?: string
   accountId: string
   employeeId?: string
   employeeCode?: string
@@ -80,7 +80,7 @@ function mapWorkspaceUser(user: WorkspaceUserPayload): AuthProfile {
     fullName: user.fullName,
     employeeCode: user.employeeCode,
     organizationId: user.organizationId,
-    organizationCode: user.organizationCode,
+    organizationName: user.organizationName,
     status: user.accountStatus ?? "ACTIVE",
     roles: user.roles ?? [],
     permissions: user.permissions ?? [],

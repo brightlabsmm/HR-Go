@@ -14,6 +14,7 @@ import (
 type mockOrgRepo struct {
 	repository.Repository
 	org          *models.Organization
+	existingCode *models.Organization
 	emp          *models.EmployeeIdentity
 	acc          *models.OrganizationAccount
 	adminDetails []models.AdminAccountDetail
@@ -25,6 +26,22 @@ func (m *mockOrgRepo) FindByID(ctx context.Context, id string) (*models.Organiza
 		return nil, m.err
 	}
 	return m.org, nil
+}
+
+func (m *mockOrgRepo) FindByCode(ctx context.Context, code string) (*models.Organization, error) {
+	if m.existingCode != nil && m.existingCode.Code == code {
+		return m.existingCode, nil
+	}
+	if m.org != nil && m.org.Code == code {
+		return m.org, nil
+	}
+	return nil, nil
+}
+
+func (m *mockOrgRepo) Create(ctx context.Context, org *models.Organization) error {
+	org.ID = "org-created"
+	m.org = org
+	return nil
 }
 
 func (m *mockOrgRepo) Update(ctx context.Context, org *models.Organization) error {
@@ -304,6 +321,120 @@ func TestCreateAdminAccount(t *testing.T) {
 
 		if appErr == nil || appErr.Status != http.StatusNotFound {
 			t.Fatalf("expected 404, got %v", appErr)
+		}
+	})
+}
+
+func TestCreateOrganization(t *testing.T) {
+	t.Run("succeeds with all required fields including contact", func(t *testing.T) {
+		repo := &mockOrgRepo{}
+		svc := service.New(repo)
+
+		res, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ORG-001",
+			LegalName:        "Acme Corp",
+			DisplayName:      "Acme",
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "+95912345678",
+			Country:          "MM",
+			Address:          "Yangon, Myanmar",
+		})
+
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if res.OrganizationCode != "ORG-001" || res.ContactEmail != "contact@acme.com" {
+			t.Errorf("unexpected response: %+v", res)
+		}
+	})
+
+	t.Run("fails when contact fields are missing", func(t *testing.T) {
+		repo := &mockOrgRepo{}
+		svc := service.New(repo)
+
+		_, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ORG-001",
+			LegalName:        "Acme Corp",
+			DisplayName:      "Acme",
+			ContactEmail:     "",
+			ContactPhone:     "",
+			Country:          "",
+			Address:          "",
+		})
+
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected VALIDATION_ERROR, got %v", appErr)
+		}
+	})
+
+	t.Run("fails when organization code already exists", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			existingCode: &models.Organization{ID: "existing-id", Code: "ORG-001"},
+		}
+		svc := service.New(repo)
+
+		_, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ORG-001",
+			LegalName:        "Acme Corp",
+			DisplayName:      "Acme",
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "+95912345678",
+			Country:          "MM",
+			Address:          "Yangon, Myanmar",
+		})
+
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected duplicate code error, got %v", appErr)
+		}
+	})
+}
+
+func TestUpdateOrganization(t *testing.T) {
+	org := &models.Organization{
+		ID:           "org-1",
+		Code:         "ORG-001",
+		LegalName:    "Acme Corp",
+		DisplayName:  "Acme",
+		ContactEmail: "old@acme.com",
+		ContactPhone: "+959111111",
+		Country:      "MM",
+		Address:      "Old Address",
+		Status:       "ACTIVE",
+	}
+
+	t.Run("updates organization code and contact fields successfully", func(t *testing.T) {
+		repo := &mockOrgRepo{org: org}
+		svc := service.New(repo)
+
+		newCode := "ORG-NEW"
+		newEmail := "new@acme.com"
+		res, appErr := svc.Update(context.Background(), "org-1", request.UpdateOrganizationRequest{
+			OrganizationCode: &newCode,
+			ContactEmail:     &newEmail,
+		})
+
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if res.OrganizationCode != "ORG-NEW" || res.ContactEmail != "new@acme.com" {
+			t.Errorf("unexpected response: %+v", res)
+		}
+	})
+
+	t.Run("rejects duplicate organization code on update", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org:          org,
+			existingCode: &models.Organization{ID: "other-org", Code: "ORG-TAKEN"},
+		}
+		svc := service.New(repo)
+
+		takenCode := "ORG-TAKEN"
+		_, appErr := svc.Update(context.Background(), "org-1", request.UpdateOrganizationRequest{
+			OrganizationCode: &takenCode,
+		})
+
+		if appErr == nil || appErr.Code != "CONFLICT" {
+			t.Fatalf("expected CONFLICT, got %v", appErr)
 		}
 	})
 }

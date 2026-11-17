@@ -20,6 +20,8 @@ import {
   useUpdateOrganizationMutation,
 } from "@/shared/queries/organization.query"
 
+const CODE_PATTERN = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/
+
 export function OrganizationEditPage() {
   const { t } = useTranslation("organizations")
   const navigate = useNavigate()
@@ -32,16 +34,30 @@ export function OrganizationEditPage() {
   const schema = useMemo(
     () =>
       z.object({
+        organizationCode: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.code"))
+          .regex(CODE_PATTERN, t("form.errors.code")),
         legalName: z.string().trim().min(1, t("form.errors.legal_name")),
         displayName: z.string().trim().min(1, t("form.errors.display_name")),
         contactEmail: z
           .string()
           .trim()
-          .email(t("form.errors.email"))
-          .or(z.literal("")),
-        contactPhone: z.string(),
-        country: z.string(),
-        address: z.string(),
+          .min(1, t("form.errors.email_required", "Email is required."))
+          .email(t("form.errors.email")),
+        contactPhone: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.phone_required", "Phone number is required.")),
+        country: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.country_required", "Country is required.")),
+        address: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.address_required", "Address is required.")),
       }),
     [t]
   )
@@ -49,6 +65,7 @@ export function OrganizationEditPage() {
   const { control, handleSubmit, reset, setError, formState } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      organizationCode: "",
       legalName: "",
       displayName: "",
       contactEmail: "",
@@ -61,6 +78,7 @@ export function OrganizationEditPage() {
   useEffect(() => {
     if (organization) {
       reset({
+        organizationCode: organization.organizationCode ?? "",
         legalName: organization.legalName,
         displayName: organization.displayName,
         contactEmail: organization.contactEmail ?? "",
@@ -73,11 +91,6 @@ export function OrganizationEditPage() {
 
   if (!organization && organizationQuery.isFetched) {
     return <NotFoundState backTo="/" backLabel={t("title")} description={t("not_found")} />
-  }
-
-  function optionalText(value: string) {
-    const trimmed = value.trim()
-    return trimmed === "" ? undefined : trimmed
   }
 
   return (
@@ -99,12 +112,13 @@ export function OrganizationEditPage() {
             await updateMutation.mutateAsync({
               id,
               input: {
+                organizationCode: values.organizationCode.trim(),
                 legalName: values.legalName.trim(),
                 displayName: values.displayName.trim(),
-                contactEmail: optionalText(values.contactEmail),
-                contactPhone: optionalText(values.contactPhone),
-                country: optionalText(values.country),
-                address: optionalText(values.address),
+                contactEmail: values.contactEmail.trim(),
+                contactPhone: values.contactPhone.trim(),
+                country: values.country.trim(),
+                address: values.address.trim(),
               },
             })
             void navigate(detailPath)
@@ -123,6 +137,13 @@ export function OrganizationEditPage() {
             <FormFieldGrid>
               <FormTextInput
                 control={control}
+                name="organizationCode"
+                required
+                label={t("form.code")}
+                placeholder={t("form.code_placeholder")}
+              />
+              <FormTextInput
+                control={control}
                 name="legalName"
                 required
                 label={t("form.legal_name")}
@@ -132,6 +153,7 @@ export function OrganizationEditPage() {
                 name="displayName"
                 required
                 label={t("form.display_name")}
+                className="md:col-span-2"
               />
             </FormFieldGrid>
           )}
@@ -148,17 +170,25 @@ export function OrganizationEditPage() {
                 control={control}
                 name="contactEmail"
                 type="email"
+                required
                 label={t("form.email")}
               />
               <FormTextInput
                 control={control}
                 name="contactPhone"
+                required
                 label={t("form.phone")}
               />
-              <FormTextInput control={control} name="country" label={t("form.country")} />
+              <FormTextInput
+                control={control}
+                name="country"
+                required
+                label={t("form.country")}
+              />
               <FormTextareaInput
                 control={control}
                 name="address"
+                required
                 label={t("form.address")}
                 className="md:col-span-2"
               />
