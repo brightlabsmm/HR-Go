@@ -1,119 +1,83 @@
 import { useTranslation } from "react-i18next"
 
-import { groupPermissions } from "@/features/roles/group-permissions"
 import {
-  splitPermission,
-  usePermissionLabels,
-} from "@/features/roles/use-permission-labels"
+  resolvePermissionGrouping,
+} from "@/features/roles/group-permissions"
+import { usePermissionLabels } from "@/features/roles/use-permission-labels"
 
 import type { Role } from "@/shared/services/role.service"
-
-const ACTION_ORDER = [
-  "read",
-  "update",
-  "create",
-  "delete",
-  "status_update",
-  "assign",
-  "deactivate",
-  "manage",
-]
 
 interface RolePermissionListProps {
   role: Role
 }
 
-function uniqueActions(role: Role) {
-  const actions = new Set(
-    role.permissions.map((permission) => splitPermission(permission.code).action)
-  )
-
-  return [...actions].sort((left, right) => {
-    const leftIndex = ACTION_ORDER.indexOf(left)
-    const rightIndex = ACTION_ORDER.indexOf(right)
-
-    if (leftIndex === -1 && rightIndex === -1) {
-      return left.localeCompare(right)
-    }
-    if (leftIndex === -1) {
-      return 1
-    }
-    if (rightIndex === -1) {
-      return -1
-    }
-
-    return leftIndex - rightIndex
-  })
-}
-
 export function RolePermissionList({ role }: RolePermissionListProps) {
   const { t } = useTranslation("roles")
-  const { resourceLabel, actionLabel } = usePermissionLabels()
-  const groups = groupPermissions([role])
-  const actions = uniqueActions(role)
-  const granted = new Set(
-    role.permissions.map((permission) => {
-      const { resource, action } = splitPermission(permission.code)
-      return `${resource}:${action}`
-    })
-  )
+  const { groupingLabel, permissionLabel } = usePermissionLabels()
 
-  if (groups.length === 0) {
+  const permissions = [...role.permissions].sort((a, b) => {
+    const groupA = resolvePermissionGrouping(a)
+    const groupB = resolvePermissionGrouping(b)
+    const cmp = groupA.localeCompare(groupB)
+    if (cmp !== 0) return cmp
+    return a.code.localeCompare(b.code)
+  })
+
+  if (permissions.length === 0) {
     return (
       <p className="text-small-1 text-muted-foreground">{t("permissions.none")}</p>
     )
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[36rem] border-collapse text-small-1">
+    <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+      <table className="w-full min-w-[32rem] border-collapse text-small-1">
         <thead>
-          <tr>
+          <tr className="bg-muted/30">
             <th
               scope="col"
-              className="h-12 border-b border-border pr-6 text-left font-medium text-foreground"
+              className="h-12 w-44 border-b border-border px-4 text-left font-medium text-foreground"
             >
-              {t("form.permissions")}
+              {t("columns.grouping", { defaultValue: "Grouping" })}
             </th>
-            {actions.map((action) => (
-              <th
-                key={action}
-                scope="col"
-                className="h-12 w-24 border-b border-border px-3 text-center font-medium text-foreground"
-              >
-                {actionLabel(action)}
-              </th>
-            ))}
+            <th
+              scope="col"
+              className="h-12 w-48 border-b border-border px-4 text-left font-medium text-foreground"
+            >
+              {t("columns.permission", { defaultValue: "Permission" })}
+            </th>
+            <th
+              scope="col"
+              className="h-12 border-b border-border px-4 text-left font-medium text-foreground"
+            >
+              {t("columns.description", { defaultValue: "Description" })}
+            </th>
           </tr>
         </thead>
         <tbody>
-          {groups.map((group) => (
-            <tr key={group.resource}>
-              <th
-                scope="row"
-                className="h-12 border-b border-hair pr-6 text-left font-normal text-foreground"
-              >
-                {resourceLabel(group.resource)}
-              </th>
-              {actions.map((action) => {
-                const isGranted = granted.has(`${group.resource}:${action}`)
+          {permissions.map((permission) => {
+            const grouping = resolvePermissionGrouping(permission)
 
-                return (
-                  <td key={action} className="h-12 border-b border-hair px-3 text-center">
-                    <input
-                      type="checkbox"
-                      checked={isGranted}
-                      readOnly
-                      tabIndex={-1}
-                      aria-readonly
-                      className="size-4 accent-primary"
-                      aria-label={`${resourceLabel(group.resource)} ${actionLabel(action)}`}
-                    />
-                  </td>
-                )
-              })}
-            </tr>
-          ))}
+            return (
+              <tr
+                key={permission.id || permission.code}
+                title={permission.code}
+                className="transition-colors hover:bg-accent/40"
+              >
+                <td className="h-11 border-b border-hair px-4 font-medium text-foreground">
+                  <span className="inline-flex items-center rounded-md bg-accent px-2 py-0.5 text-small-2 font-medium text-secondary">
+                    {groupingLabel(grouping)}
+                  </span>
+                </td>
+                <td className="h-11 border-b border-hair px-4 font-medium text-foreground">
+                  {permissionLabel(permission)}
+                </td>
+                <td className="h-11 border-b border-hair px-4 text-small-2 text-muted-foreground">
+                  {permission.description || "—"}
+                </td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>

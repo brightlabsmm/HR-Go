@@ -12,6 +12,7 @@ func Register(rg *gin.RouterGroup, h *handler.Handler, sec *security.Middleware)
 	group.Use(sec.RequirePlatform())
 	{
 		group.GET("/roles", sec.RequirePermission("platform.role.read"), h.ListRoles)
+		group.PUT("/roles/:roleId/permissions", sec.RequirePermission("platform.role.assign"), h.UpdateRolePermissions)
 		group.GET("/permissions", sec.RequirePermission("platform.permission.read"), h.ListPermissions)
 	}
 }

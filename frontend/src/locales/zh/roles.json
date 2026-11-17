@@ -3,7 +3,12 @@
   "columns": {
     "code": "代码",
     "name": "名称",
-    "action": "操作"
+    "action": "操作",
+    "grouping": "分组",
+    "permission": "权限",
+    "description": "说明",
+    "scope": "范围",
+    "grant": "授权"
   },
   "form": {
     "name": "名称",
@@ -14,7 +19,9 @@
   },
   "empty": {
     "title": "还没有角色",
-    "description": "角色由平台提供。"
+    "description": "角色由平台提供。",
+    "permissions_title": "未找到权限",
+    "permissions_desc": "尝试调整您的搜索或筛选条件。"
   },
   "picker": {
     "no_permissions": "没有可用角色。"
@@ -30,6 +37,15 @@
     "manage": "管理",
     "status_update": "更改状态"
   },
+  "groupings": {
+    "branch": "分支机构",
+    "department": "部门",
+    "position": "职位",
+    "organization": "组织",
+    "user": "用户",
+    "role": "角色",
+    "general": "通用"
+  },
   "resources": {
     "org_branch": "组织 / 分支",
     "org_department": "组织 / 部门",
@@ -43,6 +59,21 @@
     "organization": "平台 / 组织",
     "permission": "平台 / 权限"
   },
+  "filters": {
+    "all_groupings": "所有分组",
+    "all_scopes": "所有范围"
+  },
+  "scopes": {
+    "all": "全部",
+    "platform": "平台",
+    "org": "组织",
+    "platform_permissions": "平台权限",
+    "org_permissions": "组织权限"
+  },
+  "permissions_page_title": "权限",
+  "permissions_page_subtitle": "按分组整理的系统权限目录。",
+  "permissions_table_label": "权限目录",
+  "search_placeholder": "搜索权限...",
   "system_title": "平台角色",
   "system_subtitle": "内置平台角色及其权限。",
   "catalog_subtitle": "本组织可用的角色及其权限。",
@@ -54,8 +85,26 @@
   },
   "sections": {
     "identity": "身份信息",
-    "permissions": "权限"
+    "permissions": "权限",
+    "access": "当前权限",
+    "grant_permissions": "(授予权限)"
   },
+  "save": "保存权限",
+  "save_success": "角色权限更新成功。",
+  "select_all": "全选",
+  "deselect_all": "取消全选",
+  "expand_all": "展开全部",
+  "collapse_all": "折叠全部",
+  "expand_list": "展开列表",
+  "collapse_list": "折叠列表",
+  "expand": "显示权限",
+  "collapse": "隐藏",
+  "discard_changes": "放弃更改",
+  "unsaved_changes": "未保存的更改",
+  "no_unsaved_changes": "所有更改已保存。",
+  "selected_permissions_counter": "已选择 {{total}} 项中的 {{selected}} 项",
+  "select_role_prompt": "在左侧选择一个角色以设置其权限。",
+  "active_count": "已授予 {{count}} 项权限",
   "permissions": {
     "none": "该角色没有任何权限。"
   }

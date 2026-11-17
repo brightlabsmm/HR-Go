@@ -3,7 +3,12 @@
   "columns": {
     "code": "Code",
     "name": "Name",
-    "action": "Action"
+    "action": "Action",
+    "grouping": "Grouping",
+    "permission": "Permission",
+    "description": "Description",
+    "scope": "Scope",
+    "grant": "Grant"
   },
   "form": {
     "name": "Name",
@@ -14,7 +19,9 @@
   },
   "empty": {
     "title": "No roles yet",
-    "description": "Roles are provided by the platform."
+    "description": "Roles are provided by the platform.",
+    "permissions_title": "No permissions found",
+    "permissions_desc": "Try adjusting your search or filters."
   },
   "picker": {
     "no_permissions": "No roles available."
@@ -30,6 +37,15 @@
     "manage": "Manage",
     "status_update": "Change status"
   },
+  "groupings": {
+    "branch": "Branch",
+    "department": "Department",
+    "position": "Position",
+    "organization": "Organization",
+    "user": "User",
+    "role": "Role",
+    "general": "General"
+  },
   "resources": {
     "org_branch": "Org / Branch",
     "org_department": "Org / Department",
@@ -43,6 +59,21 @@
     "organization": "Platform / Organization",
     "permission": "Platform / Permission"
   },
+  "filters": {
+    "all_groupings": "All groupings",
+    "all_scopes": "All scopes"
+  },
+  "scopes": {
+    "all": "All",
+    "platform": "Platform",
+    "org": "Organization",
+    "platform_permissions": "Platform Permissions",
+    "org_permissions": "Organization Permissions"
+  },
+  "permissions_page_title": "Permissions",
+  "permissions_page_subtitle": "System permissions catalog organized by grouping.",
+  "permissions_table_label": "Permissions catalogue",
+  "search_placeholder": "Search permissions...",
   "system_title": "Platform roles",
   "system_subtitle": "Built-in platform roles and their permissions.",
   "catalog_subtitle": "Roles available in this organization and what each one can do.",
@@ -54,8 +85,26 @@
   },
   "sections": {
     "identity": "Identity",
-    "permissions": "Permissions"
+    "permissions": "Permissions",
+    "access": "Access",
+    "grant_permissions": "(Grant permissions)"
   },
+  "save": "Save permissions",
+  "save_success": "Role permissions updated successfully.",
+  "select_all": "Select all",
+  "deselect_all": "Deselect all",
+  "expand_all": "Expand all",
+  "collapse_all": "Collapse all",
+  "expand_list": "Expand list",
+  "collapse_list": "Collapse list",
+  "expand": "Show permissions",
+  "collapse": "Hide",
+  "discard_changes": "Discard changes",
+  "unsaved_changes": "Unsaved changes",
+  "no_unsaved_changes": "All changes are saved.",
+  "selected_permissions_counter": "{{selected}} of {{total}} selected",
+  "select_role_prompt": "Select a role on the left to set its permissions.",
+  "active_count": "{{count}} granted permissions",
   "permissions": {
     "none": "This role has no permissions."
   }

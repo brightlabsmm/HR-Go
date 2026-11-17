@@ -1,4 +1,4 @@
-import { Building2Icon, ShieldIcon, UserRoundIcon, UsersIcon } from "lucide-react"
+import { Building2Icon, KeyRoundIcon, ShieldIcon, UserRoundIcon, UsersIcon } from "lucide-react"
 
 import type { PortalNavItem } from "@/portals/types"
 
@@ -27,6 +27,14 @@ export const PLATFORM_NAV: PortalNavItem[] = [
     icon: ShieldIcon,
     matchPrefix: "/roles",
     permission: "platform.role.read",
+  },
+  {
+    to: "/permissions",
+    labelKey: "nav.permissions",
+    groupKey: "nav_groups.access",
+    icon: KeyRoundIcon,
+    matchPrefix: "/permissions",
+    permission: "platform.permission.read",
   },
   {
     to: "/account",

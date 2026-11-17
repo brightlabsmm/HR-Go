@@ -7,6 +7,7 @@ import {
   OrganizationDetailPage,
   OrganizationEditPage,
   OrganizationListPage,
+  PermissionListPage,
   RoleDetailPage,
   RoleListPage,
   UserCreatePage,
@@ -27,5 +28,6 @@ export const platformRoutes: RouteObject[] = [
   { path: "users/:id", element: <UserDetailPage /> },
   { path: "roles/:id", element: <RoleDetailPage /> },
   { path: "roles", element: <RoleListPage /> },
+  { path: "permissions", element: <PermissionListPage /> },
   { path: "account", element: <AccountPage /> },
 ]

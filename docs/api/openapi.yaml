@@ -183,6 +183,9 @@ components:
           type: string
           enum: [PLATFORM, ORG]
           example: PLATFORM
+        grouping:
+          type: string
+          example: branch
         permissionCode:
           type: string
           example: platform.organization.read

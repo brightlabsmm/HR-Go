@@ -2,6 +2,9 @@ package service
 
 import (
 	"context"
+	"errors"
+
+	"gorm.io/gorm"
 
 	"hrgo/backend/internal/modules/control/role/mapper"
 	"hrgo/backend/internal/modules/control/role/repository"
@@ -13,6 +16,7 @@ import (
 type Service interface {
 	ListRoles(ctx context.Context) ([]response.RoleResponse, *apperrors.Error)
 	ListPermissions(ctx context.Context, q request.ListPermissionsQuery) ([]response.PermissionResponse, int, int, int64, *apperrors.Error)
+	UpdateRolePermissions(ctx context.Context, roleID string, req request.ReplaceRolePermissionsRequest) (*response.RoleResponse, *apperrors.Error)
 }
 
 type service struct {
@@ -46,4 +50,16 @@ func (s *service) ListPermissions(ctx context.Context, q request.ListPermissions
 		return nil, page, pageSize, 0, apperrors.Internal()
 	}
 	return mapper.ToPermissionList(perms), page, pageSize, total, nil
+}
+
+func (s *service) UpdateRolePermissions(ctx context.Context, roleID string, req request.ReplaceRolePermissionsRequest) (*response.RoleResponse, *apperrors.Error) {
+	role, err := s.repo.ReplaceRolePermissions(ctx, roleID, req.PermissionIDs)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperrors.NotFound("role not found")
+		}
+		return nil, apperrors.Internal()
+	}
+	res := mapper.ToRoleResponse(role)
+	return &res, nil
 }
