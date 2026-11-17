@@ -108,8 +108,6 @@ export function OrganizationCreateAdminPage() {
   return (
     <form className={formStackClassName} onSubmit={handleSubmit(onSubmit)}>
       <FormPageHeader
-        backTo={`/organizations/${id}`}
-        backLabel={organization?.displayName ?? t("detail.title")}
         title={t("create_admin.title")}
         subtitle={t("create_admin.subtitle")}
       />
