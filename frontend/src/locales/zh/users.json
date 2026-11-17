@@ -6,10 +6,11 @@
   "all_status": "全部状态",
   "not_found": "未找到用户。",
   "columns": {
+    "name": "姓名",
+    "email": "邮箱",
     "status": "状态",
     "role": "角色",
-    "actions": "操作",
-    "name": "姓名"
+    "actions": "操作"
   },
   "create": {
     "title": "新建平台用户",

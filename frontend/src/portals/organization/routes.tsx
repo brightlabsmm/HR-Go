@@ -15,7 +15,7 @@ import {
   PositionFormPage,
   PositionListPage,
   RoleDetailPage,
-  RoleOverviewPage,
+  RoleListPage,
 } from "@/constants/lazyload"
 
 export const organizationRoutes: RouteObject[] = [
@@ -33,7 +33,7 @@ export const organizationRoutes: RouteObject[] = [
   { path: "positions/:id/edit", element: <PositionFormPage /> },
   { path: "positions/:id", element: <PositionDetailPage /> },
   { path: "roles/:id", element: <RoleDetailPage /> },
-  { path: "roles", element: <RoleOverviewPage /> },
+  { path: "roles", element: <RoleListPage /> },
   { path: "settings", element: <OrganizationSettingsPage /> },
   { path: "account", element: <AccountPage /> },
   ...(import.meta.env.DEV

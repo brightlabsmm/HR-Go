@@ -6,10 +6,11 @@
   "all_status": "အခြေအနေအားလုံး",
   "not_found": "User မတွေ့ပါ။",
   "columns": {
+    "name": "အမည်",
+    "email": "Email",
     "status": "အခြေအနေ",
     "role": "Role",
-    "actions": "လုပ်ဆောင်ချက်များ",
-    "name": "အမည်"
+    "actions": "လုပ်ဆောင်ချက်များ"
   },
   "create": {
     "title": "Platform user အသစ်",
