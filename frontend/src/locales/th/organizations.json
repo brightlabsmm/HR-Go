@@ -86,6 +86,16 @@
     "archive": "เก็บถาวร",
     "reactivate": "เปิดใช้งานอีกครั้ง"
   },
+  "status_confirm": {
+    "activate_title": "เปิดใช้งาน {{name}} หรือไม่?",
+    "activate_description": "การดำเนินการนี้จะเปลี่ยนสถานะ {{name}} เป็นใช้งานได้ทันที",
+    "reactivate_title": "เปิดใช้งาน {{name}} ใหม่อีกครั้งหรือไม่?",
+    "reactivate_description": "การดำเนินการนี้จะเปิดใช้งาน {{name}} อีกครั้งและกู้คืนการเข้าถึง workspace",
+    "suspend_title": "ระงับการใช้งาน {{name}} หรือไม่?",
+    "suspend_description": "การดำเนินการนี้จะระงับ {{name}} ผู้ใช้ workspace จะถูกออกจากระบบทันที",
+    "archive_title": "จัดเก็บถาวร {{name}} หรือไม่?",
+    "archive_description": "การดำเนินการนี้จะจัดเก็บถาวร {{name}}"
+  },
   "status_change": {
     "menu": "เปลี่ยนสถานะ",
     "title": "เปลี่ยนสถานะเป็น {{status}}?",

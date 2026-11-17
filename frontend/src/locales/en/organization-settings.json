@@ -1,0 +1,35 @@
+{
+  "title": "Organization settings",
+  "subtitle": "Manage your organization profile, contact information, and preferences.",
+  "sections": {
+    "identity": "Identity",
+    "identity_description": "General information about your organization.",
+    "contact": "Contact",
+    "contact_description": "Contact information for your organization.",
+    "code_formats": "Code formats",
+    "code_formats_description": "Customize automated code generation formats for branches and departments."
+  },
+  "fields": {
+    "code": "Organization code",
+    "legal_name": "Legal name",
+    "display_name": "Display name",
+    "email": "Contact email",
+    "phone": "Contact phone",
+    "country": "Country",
+    "address": "Address",
+    "branch_code_format": "Branch code format",
+    "branch_code_format_placeholder": "BR-{0000}",
+    "department_code_format": "Department code format",
+    "department_code_format_placeholder": "DEPT-{0000}"
+  },
+  "errors": {
+    "display_name_required": "Display name is required.",
+    "email_required": "Contact email is required.",
+    "email_invalid": "Please enter a valid email address.",
+    "phone_required": "Contact phone is required.",
+    "country_required": "Country is required.",
+    "address_required": "Address is required."
+  },
+  "save": "Save changes",
+  "save_success": "Organization settings updated successfully."
+}

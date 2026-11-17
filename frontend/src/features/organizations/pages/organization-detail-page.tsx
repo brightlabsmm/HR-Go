@@ -13,7 +13,10 @@ import { StatusBadge } from "@/components/common/status-badge"
 import { Button } from "@/components/ui/button"
 import { OrganizationDetailHeader } from "@/features/organizations/components/organization-detail-header"
 import { OrganizationStatusButtons } from "@/features/organizations/components/organization-status-buttons"
-import { isHighImpactOrganizationStatus } from "@/features/organizations/components/organization-status-menu"
+import {
+  getStatusDialogContent,
+  isHighImpactOrganizationStatus,
+} from "@/features/organizations/components/organization-status-menu"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import {
   useOrganizationAdminAccountsQuery,
@@ -44,9 +47,6 @@ export function OrganizationDetailPage() {
   }
 
   const name = organization?.displayName ?? ""
-  const statusLabel = statusTarget
-    ? tCommon(`status.${statusTarget.toLowerCase()}`)
-    : ""
   const identityItems = [
     { label: t("form.code"), value: organization?.organizationCode, mono: true },
     { label: t("form.legal_name"), value: organization?.legalName },
@@ -60,6 +60,11 @@ export function OrganizationDetailPage() {
     { label: t("form.country"), value: organization?.country },
     { label: t("form.address"), value: organization?.address },
   ]
+
+  const statusDialogContent =
+    statusTarget && organization
+      ? getStatusDialogContent(organization.status, statusTarget, organization.displayName, t)
+      : null
 
   return (
     <MotionStack className="flex flex-col gap-8 pb-2">
@@ -186,12 +191,9 @@ export function OrganizationDetailPage() {
       </div>
       <ConfirmDialog
         open={statusTarget !== null}
-        title={t("status_change.title", { status: statusLabel })}
-        description={t("status_change.description", {
-          name: organization?.displayName ?? "",
-          status: statusLabel,
-        })}
-        confirmLabel={t("status_change.confirm")}
+        title={statusDialogContent?.title ?? ""}
+        description={statusDialogContent?.description ?? ""}
+        confirmLabel={statusDialogContent?.confirmLabel ?? t("status_change.confirm")}
         confirmVariant={
           statusTarget && isHighImpactOrganizationStatus(statusTarget)
             ? "destructive"

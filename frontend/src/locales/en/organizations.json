@@ -86,6 +86,16 @@
     "archive": "Archive",
     "reactivate": "Reactivate"
   },
+  "status_confirm": {
+    "activate_title": "Activate {{name}}?",
+    "activate_description": "This will set {{name}} to Active. The change takes effect immediately.",
+    "reactivate_title": "Reactivate {{name}}?",
+    "reactivate_description": "This will reactivate {{name}} and restore workspace access.",
+    "suspend_title": "Suspend {{name}}?",
+    "suspend_description": "This will suspend {{name}}. Workspace users will be logged out and unable to access the organization.",
+    "archive_title": "Archive {{name}}?",
+    "archive_description": "This will archive {{name}}."
+  },
   "status_change": {
     "menu": "Change status",
     "title": "Change status to {{status}}?",

@@ -12,6 +12,11 @@ export const AccountPage = pageLoader(
   "AccountPage"
 )
 
+export const OrganizationSettingsPage = pageLoader(
+  () => import("@/features/organization-settings/pages/organization-settings-page"),
+  "OrganizationSettingsPage"
+)
+
 export const HomePage = pageLoader(
   () => import("@/features/home/pages/home-page"),
   "HomePage"
@@ -43,6 +48,10 @@ export const DepartmentFormPage = pageLoader(
 export const PositionListPage = pageLoader(
   () => import("@/features/positions/pages/position-list-page"),
   "PositionListPage"
+)
+export const PositionDetailPage = pageLoader(
+  () => import("@/features/positions/pages/position-detail-page"),
+  "PositionDetailPage"
 )
 export const PositionFormPage = pageLoader(
   () => import("@/features/positions/pages/position-form-page"),

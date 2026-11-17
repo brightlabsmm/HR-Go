@@ -1,5 +1,6 @@
 {
   "title": "职位",
+  "not_found": "未找到职位。",
   "subtitle": "管理职位，可选关联部门。",
   "add": "添加职位",
   "all_status": "全部状态",

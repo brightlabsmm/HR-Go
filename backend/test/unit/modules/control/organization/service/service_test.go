@@ -207,6 +207,14 @@ func TestOrganizationStatusTransitions(t *testing.T) {
 			expectErrCode: "CONFLICT",
 			expectStatus:  http.StatusConflict,
 		},
+		{
+			name:          "PENDING to ACTIVE without active admin rejected with 400 Bad Request",
+			initialStatus: "PENDING",
+			targetStatus:  "ACTIVE",
+			confirmation:  false,
+			expectErrCode: "BAD_REQUEST",
+			expectStatus:  http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {
@@ -217,6 +225,11 @@ func TestOrganizationStatusTransitions(t *testing.T) {
 				Status: tt.initialStatus,
 			}
 			repo := &mockOrgRepo{org: org}
+			if tt.targetStatus == "ACTIVE" && tt.expectErrCode == "" {
+				repo.adminDetails = []models.AdminAccountDetail{
+					{AccountID: "acc-1", RoleCode: "ORG_ADMIN", Status: "ACTIVE"},
+				}
+			}
 			svc := service.New(repo)
 
 			res, appErr := svc.UpdateStatus(context.Background(), "org-1", request.UpdateStatusRequest{

@@ -10,6 +10,7 @@
     "roles": "角色",
     "permissions": "权限",
     "positions": "职位",
+    "organization_settings": "组织设置",
     "account": "我的账户"
   },
   "header": {

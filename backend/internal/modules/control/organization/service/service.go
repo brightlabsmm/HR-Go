@@ -215,6 +215,23 @@ func (s *service) UpdateStatus(ctx context.Context, id string, req request.Updat
 		return nil, apperrors.BadRequest("Confirmation is required for high-impact status changes.")
 	}
 
+	if target == "ACTIVE" {
+		adminAccounts, err := s.repo.ListAdminAccounts(ctx, id)
+		if err != nil {
+			return nil, apperrors.Internal()
+		}
+		hasActiveAdmin := false
+		for _, acc := range adminAccounts {
+			if strings.EqualFold(acc.Status, "ACTIVE") {
+				hasActiveAdmin = true
+				break
+			}
+		}
+		if !hasActiveAdmin {
+			return nil, apperrors.BadRequest("Cannot activate organization without an active organization administrator account.")
+		}
+	}
+
 	org.Status = target
 	if err := s.repo.Update(ctx, org); err != nil {
 		return nil, apperrors.Internal()

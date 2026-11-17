@@ -12,7 +12,7 @@ const column = createDataTableColumns<Branch>()
 interface BranchTableProps {
   data: Branch[]
   parentNames: Map<string, string>
-  onView?: (branch: Branch) => void
+  onRowClick?: (branch: Branch) => void
   onEdit: (branch: Branch) => void
   onDelete: (branch: Branch) => void
 }
@@ -20,7 +20,7 @@ interface BranchTableProps {
 export function BranchTable({
   data,
   parentNames,
-  onView,
+  onRowClick,
   onEdit,
   onDelete,
 }: BranchTableProps) {
@@ -50,7 +50,6 @@ export function BranchTable({
       meta: { align: "end" },
       cell: ({ row }) => (
         <DataTableActions
-          onView={onView ? () => onView(row.original) : undefined}
           onEdit={() => onEdit(row.original)}
           onDelete={() => onDelete(row.original)}
         />
@@ -64,6 +63,7 @@ export function BranchTable({
       data={data}
       getRowId={(branch) => branch.id}
       label={t("title")}
+      onRowClick={onRowClick}
     />
   )
 }

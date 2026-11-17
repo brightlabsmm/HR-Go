@@ -1,5 +1,6 @@
 {
   "title": "Positions",
+  "not_found": "Position not found.",
   "subtitle": "Manage positions, optionally by department.",
   "add": "Add position",
   "all_status": "All status",

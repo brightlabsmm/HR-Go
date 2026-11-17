@@ -87,7 +87,7 @@ export function BranchListPage() {
       <BranchTable
         data={items}
         parentNames={parentNames}
-        onView={(branch) => {
+        onRowClick={(branch) => {
           void navigate(`/branches/${branch.id}`)
         }}
         onEdit={(branch) => {

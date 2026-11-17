@@ -10,6 +10,8 @@ import {
   DepartmentListPage,
   FormPreviewPage,
   HomePage,
+  OrganizationSettingsPage,
+  PositionDetailPage,
   PositionFormPage,
   PositionListPage,
   RoleDetailPage,
@@ -29,8 +31,10 @@ export const organizationRoutes: RouteObject[] = [
   { path: "positions", element: <PositionListPage /> },
   { path: "positions/new", element: <PositionFormPage /> },
   { path: "positions/:id/edit", element: <PositionFormPage /> },
+  { path: "positions/:id", element: <PositionDetailPage /> },
   { path: "roles/:id", element: <RoleDetailPage /> },
   { path: "roles", element: <RoleOverviewPage /> },
+  { path: "settings", element: <OrganizationSettingsPage /> },
   { path: "account", element: <AccountPage /> },
   ...(import.meta.env.DEV
     ? [{ path: "form-preview", element: <FormPreviewPage /> }]
