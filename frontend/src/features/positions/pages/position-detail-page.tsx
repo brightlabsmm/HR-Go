@@ -82,7 +82,7 @@ export function PositionDetailPage() {
           type="button"
           variant="outline"
           className="text-destructive hover:bg-destructive-muted hover:text-destructive"
-          onClick={() => setShowDeactivateDialog(false || true)}
+          onClick={() => setShowDeactivateDialog(true)}
         >
           <Trash2Icon className="size-4" />
           {tCommon("actions.deactivate", "Deactivate")}

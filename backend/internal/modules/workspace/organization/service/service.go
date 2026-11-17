@@ -8,8 +8,8 @@ import (
 	"hrgo/backend/internal/modules/workspace/organization/repository"
 	"hrgo/backend/internal/modules/workspace/organization/request"
 	"hrgo/backend/internal/modules/workspace/organization/response"
-	apperrors "hrgo/backend/internal/shared/errors"
 	"hrgo/backend/internal/shared/codeformat"
+	apperrors "hrgo/backend/internal/shared/errors"
 )
 
 type Service interface {
