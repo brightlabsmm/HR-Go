@@ -61,6 +61,10 @@ export const OrganizationDetailPage = pageLoader(
   () => import("@/features/organizations/pages/organization-detail-page"),
   "OrganizationDetailPage"
 )
+export const OrganizationCreateAdminPage = pageLoader(
+  () => import("@/features/organizations/pages/organization-create-admin-page"),
+  "OrganizationCreateAdminPage"
+)
 export const OrganizationEditPage = pageLoader(
   () => import("@/features/organizations/pages/organization-edit-page"),
   "OrganizationEditPage"

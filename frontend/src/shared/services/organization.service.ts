@@ -53,6 +53,31 @@ export interface UpdateOrganizationStatusInput {
   reason?: string
 }
 
+export interface CreateAdminAccountInput {
+  firstName: string
+  lastName: string
+  email?: string
+  employeeCode: string
+  password: string
+}
+
+export interface AdminAccount {
+  id: string
+  organizationId: string
+  employeeId: string
+  identifier: string
+  employeeCode: string
+  firstName: string
+  lastName: string
+  fullName: string
+  email?: string
+  roleCode: string
+  roleName: string
+  status: string
+  lastLoginAt?: string | null
+  createdAt: string
+}
+
 export function listOrganizations(params?: OrganizationListParams) {
   return unwrapPage<Organization>(
     apiClient.get(controlPath("/organizations"), {
@@ -88,5 +113,23 @@ export function updateOrganizationStatus(
       controlPath(`/organizations/${id}/status`),
       compactParams(input)
     )
+  )
+}
+
+export function createOrganizationAdminAccount(
+  organizationId: string,
+  input: CreateAdminAccountInput
+) {
+  return unwrap<AdminAccount>(
+    apiClient.post(
+      controlPath(`/organizations/${organizationId}/admin-account`),
+      compactParams(input)
+    )
+  )
+}
+
+export function listOrganizationAdminAccounts(organizationId: string) {
+  return unwrap<AdminAccount[]>(
+    apiClient.get(controlPath(`/organizations/${organizationId}/admin-accounts`))
   )
 }

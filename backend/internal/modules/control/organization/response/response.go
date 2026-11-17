@@ -15,3 +15,20 @@ type OrganizationResponse struct {
 	CreatedAt        time.Time `json:"createdAt"`
 	UpdatedAt        time.Time `json:"updatedAt"`
 }
+
+type AdminAccountResponse struct {
+	ID             string     `json:"id"`
+	OrganizationID string     `json:"organizationId"`
+	EmployeeID     string     `json:"employeeId"`
+	Identifier     string     `json:"identifier"`
+	EmployeeCode   string     `json:"employeeCode"`
+	FirstName      string     `json:"firstName"`
+	LastName       string     `json:"lastName"`
+	FullName       string     `json:"fullName"`
+	Email          string     `json:"email,omitempty"`
+	RoleCode       string     `json:"roleCode"`
+	RoleName       string     `json:"roleName"`
+	Status         string     `json:"status"`
+	LastLoginAt    *time.Time `json:"lastLoginAt,omitempty"`
+	CreatedAt      time.Time  `json:"createdAt"`
+}

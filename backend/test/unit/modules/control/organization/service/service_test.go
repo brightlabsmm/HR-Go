@@ -13,8 +13,11 @@ import (
 
 type mockOrgRepo struct {
 	repository.Repository
-	org *models.Organization
-	err error
+	org          *models.Organization
+	emp          *models.EmployeeIdentity
+	acc          *models.OrganizationAccount
+	adminDetails []models.AdminAccountDetail
+	err          error
 }
 
 func (m *mockOrgRepo) FindByID(ctx context.Context, id string) (*models.Organization, error) {
@@ -27,6 +30,34 @@ func (m *mockOrgRepo) FindByID(ctx context.Context, id string) (*models.Organiza
 func (m *mockOrgRepo) Update(ctx context.Context, org *models.Organization) error {
 	m.org = org
 	return nil
+}
+
+func (m *mockOrgRepo) FindEmployeeByCode(ctx context.Context, orgID string, code string) (*models.EmployeeIdentity, error) {
+	return m.emp, nil
+}
+
+func (m *mockOrgRepo) FindAccountByIdentifier(ctx context.Context, orgID string, identifier string) (*models.OrganizationAccount, error) {
+	return m.acc, nil
+}
+
+func (m *mockOrgRepo) CreateAdminAccount(ctx context.Context, emp *models.EmployeeIdentity, acc *models.OrganizationAccount) (*models.AdminAccountDetail, error) {
+	return &models.AdminAccountDetail{
+		AccountID:      "acc-1",
+		OrganizationID: emp.OrganizationID,
+		EmployeeID:     "emp-1",
+		Identifier:     acc.Identifier,
+		EmployeeCode:   emp.EmployeeCode,
+		FirstName:      emp.FirstName,
+		LastName:       emp.LastName,
+		Email:          emp.Email,
+		RoleCode:       "ORG_ADMIN",
+		RoleName:       "Org Admin",
+		Status:         "ACTIVE",
+	}, nil
+}
+
+func (m *mockOrgRepo) ListAdminAccounts(ctx context.Context, orgID string) ([]models.AdminAccountDetail, error) {
+	return m.adminDetails, nil
 }
 
 func TestOrganizationStatusTransitions(t *testing.T) {
@@ -196,4 +227,83 @@ func TestOrganizationStatusTransitions(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreateAdminAccount(t *testing.T) {
+	org := &models.Organization{ID: "org-1", Code: "ORG-001", LegalName: "Acme", Status: "ACTIVE"}
+
+	t.Run("creates admin account successfully", func(t *testing.T) {
+		repo := &mockOrgRepo{org: org}
+		svc := service.New(repo)
+
+		email := "admin@acme.com"
+		res, appErr := svc.CreateAdminAccount(context.Background(), "org-1", request.CreateAdminAccountRequest{
+			FirstName:    "John",
+			LastName:     "Doe",
+			Email:        &email,
+			EmployeeCode: "EMP-001",
+			Password:     "Password@123",
+		})
+
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if res.Identifier != "EMP-001" || res.RoleCode != "ORG_ADMIN" {
+			t.Errorf("unexpected response: %+v", res)
+		}
+	})
+
+	t.Run("rejects duplicate employee code", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: org,
+			emp: &models.EmployeeIdentity{ID: "emp-exist", EmployeeCode: "EMP-001"},
+		}
+		svc := service.New(repo)
+
+		_, appErr := svc.CreateAdminAccount(context.Background(), "org-1", request.CreateAdminAccountRequest{
+			FirstName:    "John",
+			LastName:     "Doe",
+			EmployeeCode: "EMP-001",
+			Password:     "Password@123",
+		})
+
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected VALIDATION_ERROR, got %v", appErr)
+		}
+	})
+
+	t.Run("rejects duplicate login identifier", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: org,
+			acc: &models.OrganizationAccount{ID: "acc-exist", Identifier: "EMP-001"},
+		}
+		svc := service.New(repo)
+
+		_, appErr := svc.CreateAdminAccount(context.Background(), "org-1", request.CreateAdminAccountRequest{
+			FirstName:    "John",
+			LastName:     "Doe",
+			EmployeeCode: "EMP-001",
+			Password:     "Password@123",
+		})
+
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected VALIDATION_ERROR, got %v", appErr)
+		}
+	})
+
+	t.Run("returns 404 if org not found", func(t *testing.T) {
+		repo := &mockOrgRepo{org: nil}
+		svc := service.New(repo)
+
+		_, appErr := svc.CreateAdminAccount(context.Background(), "missing-org", request.CreateAdminAccountRequest{
+			FirstName:    "John",
+			LastName:     "Doe",
+			EmployeeCode: "EMP-001",
+			Password:     "Password@123",
+		})
+
+		if appErr == nil || appErr.Status != http.StatusNotFound {
+			t.Fatalf("expected 404, got %v", appErr)
+		}
+	})
 }

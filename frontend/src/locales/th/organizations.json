@@ -49,7 +49,31 @@
     "identity_description": "ชื่อและการระบุองค์กรนี้",
     "contact": "การติดต่อ",
     "contact_description": "ช่องทางติดต่อองค์กรนี้",
-    "overview": "ภาพรวม"
+    "overview": "ภาพรวม",
+    "administrators": "ผู้ดูแลระบบองค์กร",
+    "no_administrators": "ยังไม่มีบัญชีผู้ดูแลระบบ"
+  },
+  "create_admin": {
+    "title": "สร้างบัญชีผู้ดูแลองค์กร",
+    "subtitle": "สร้างพนักงานและบัญชีเข้าสู่ระบบของผู้ดูแลองค์กร",
+    "first_name": "ชื่อจริง",
+    "last_name": "นามสกุล",
+    "email": "อีเมล",
+    "employee_code": "รหัสพนักงาน / รหัสเข้าสู่ระบบ",
+    "employee_code_placeholder": "เช่น EMP-001",
+    "employee_code_hint": "รหัสนี้จะใช้เป็นทั้งรหัสพนักงานและ ID เข้าสู่ระบบ",
+    "password": "รหัสผ่าน",
+    "submit": "สร้างบัญชีผู้ดูแลองค์กร",
+    "success": "สร้างบัญชีผู้ดูแลองค์กรสำเร็จ รหัสเข้าสู่ระบบ: {{identifier}}",
+    "errors": {
+      "first_name_required": "กรุณาระบุชื่อจริง",
+      "last_name_required": "กรุณาระบุนามสกุล",
+      "employee_code_required": "กรุณาระบุรหัสพนักงาน",
+      "password_required": "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"
+    }
+  },
+  "actions": {
+    "create_admin": "สร้างบัญชีผู้ดูแลองค์กร"
   },
   "created_at": "สร้างเมื่อ",
   "status_actions": {

@@ -2,6 +2,7 @@ import type { RouteObject } from "react-router"
 
 import {
   AccountPage,
+  OrganizationCreateAdminPage,
   OrganizationCreatePage,
   OrganizationDetailPage,
   OrganizationEditPage,
@@ -17,6 +18,7 @@ import {
 export const platformRoutes: RouteObject[] = [
   { index: true, element: <OrganizationListPage /> },
   { path: "organizations/new", element: <OrganizationCreatePage /> },
+  { path: "organizations/:id/create-admin", element: <OrganizationCreateAdminPage /> },
   { path: "organizations/:id/edit", element: <OrganizationEditPage /> },
   { path: "organizations/:id", element: <OrganizationDetailPage /> },
   { path: "users", element: <UserListPage /> },

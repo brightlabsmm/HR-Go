@@ -396,6 +396,75 @@ components:
           type: boolean
           example: true
 
+    CreateAdminAccountRequest:
+      type: object
+      required: [firstName, lastName, employeeCode, password]
+      properties:
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        email:
+          type: string
+          format: email
+          example: admin@acme.com
+        employeeCode:
+          type: string
+          description: Single field used for both employee record and login ID
+          example: EMP-001
+        password:
+          type: string
+          example: Password@123
+
+    AdminAccountResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 7a6b5c4d-3e2f-1a0b-9c8d-7e6f5a4b3c2d
+        organizationId:
+          type: string
+          example: 9c1b2a3d-4e5f-6a7b-8c9d-0e1f2a3b4c5d
+        employeeId:
+          type: string
+          example: 6f5e4d3c-2b1a-0f9e-8d7c-6b5a4f3e2d1c
+        identifier:
+          type: string
+          example: EMP-001
+        employeeCode:
+          type: string
+          example: EMP-001
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+        fullName:
+          type: string
+          example: John Doe
+        email:
+          type: string
+          example: admin@acme.com
+        roleCode:
+          type: string
+          example: ORG_ADMIN
+        roleName:
+          type: string
+          example: Org Admin
+        status:
+          type: string
+          example: ACTIVE
+        lastLoginAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
     WorkspaceRoleAssignment:
       type: object
       properties:
@@ -1315,6 +1384,72 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+
+  /api/v1/control/organizations/{organizationId}/admin-account:
+    post:
+      tags: [Control - Organizations]
+      summary: Create organization admin account and employee identity
+      description: Creates an employee identity and organization login account with the `ORG_ADMIN` role. Requires `platform.organization.update`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAdminAccountRequest"
+      responses:
+        "201":
+          description: Admin account and employee identity created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAccountResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/control/organizations/{organizationId}/admin-accounts:
+    get:
+      tags: [Control - Organizations]
+      summary: List organization admin accounts
+      description: Returns the list of administrator accounts for this organization. Requires `platform.organization.read`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of administrator accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminAccountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   # ===========================================================================
   # WORKSPACE API — ORGANIZATION & EMPLOYEE ACCESS
