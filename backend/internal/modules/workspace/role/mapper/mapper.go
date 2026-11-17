@@ -11,6 +11,7 @@ func ToOrgRoleResponse(r *models.OrgRole) response.OrgRoleResponse {
 		perms = append(perms, response.PermissionResponse{
 			ID:          r.Permissions[i].ID,
 			Code:        r.Permissions[i].Code,
+			Grouping:    r.Permissions[i].Grouping,
 			Resource:    r.Permissions[i].Resource,
 			Action:      r.Permissions[i].Action,
 			Description: r.Permissions[i].Description,

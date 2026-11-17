@@ -3,6 +3,7 @@ package response
 type PermissionResponse struct {
 	ID          string `json:"id"`
 	Code        string `json:"code"`
+	Grouping    string `json:"grouping"`
 	Resource    string `json:"resource"`
 	Action      string `json:"action"`
 	Description string `json:"description"`

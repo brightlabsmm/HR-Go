@@ -36,6 +36,7 @@ type Permission struct {
 	ID          string `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
 	Code        string `gorm:"uniqueIndex;not null"`
 	Scope       string `gorm:"not null"` // PLATFORM or ORG
+	Grouping    string `gorm:"column:grouping;not null;default:''"`
 	Resource    string `gorm:"not null"`
 	Action      string `gorm:"not null"`
 	Description string

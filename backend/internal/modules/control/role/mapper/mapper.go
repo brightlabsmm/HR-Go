@@ -10,6 +10,7 @@ func ToPermissionResponse(p *models.Permission) response.PermissionResponse {
 		ID:          p.ID,
 		Code:        p.Code,
 		Scope:       p.Scope,
+		Grouping:    p.Grouping,
 		Resource:    p.Resource,
 		Action:      p.Action,
 		Description: p.Description,

@@ -3,7 +3,12 @@
   "columns": {
     "code": "รหัส",
     "name": "ชื่อ",
-    "action": "การดำเนินการ"
+    "action": "การดำเนินการ",
+    "grouping": "การจัดกลุ่ม",
+    "permission": "สิทธิ์",
+    "description": "คำอธิบาย",
+    "scope": "ขอบเขต",
+    "grant": "ให้สิทธิ์"
   },
   "form": {
     "name": "ชื่อ",
@@ -14,7 +19,9 @@
   },
   "empty": {
     "title": "ยังไม่มีบทบาท",
-    "description": "บทบาทถูกกำหนดโดยแพลตฟอร์ม"
+    "description": "บทบาทถูกกำหนดโดยแพลตฟอร์ม",
+    "permissions_title": "ไม่พบสิทธิ์",
+    "permissions_desc": "ลองปรับการค้นหาหรือตัวกรองของคุณ"
   },
   "picker": {
     "no_permissions": "ไม่มีบทบาท"
@@ -30,6 +37,15 @@
     "manage": "จัดการ",
     "status_update": "เปลี่ยนสถานะ"
   },
+  "groupings": {
+    "branch": "สาขา",
+    "department": "แผนก",
+    "position": "ตำแหน่ง",
+    "organization": "องค์กร",
+    "user": "ผู้ใช้",
+    "role": "บทบาท",
+    "general": "ทั่วไป"
+  },
   "resources": {
     "org_branch": "องค์กร / สาขา",
     "org_department": "องค์กร / แผนก",
@@ -43,6 +59,21 @@
     "organization": "แพลตฟอร์ม / องค์กร",
     "permission": "แพลตฟอร์ม / สิทธิ์"
   },
+  "filters": {
+    "all_groupings": "การจัดกลุ่มทั้งหมด",
+    "all_scopes": "ขอบเขตทั้งหมด"
+  },
+  "scopes": {
+    "all": "ทั้งหมด",
+    "platform": "แพลตฟอร์ม",
+    "org": "องค์กร",
+    "platform_permissions": "สิทธิ์ของแพลตฟอร์ม",
+    "org_permissions": "สิทธิ์ขององค์กร"
+  },
+  "permissions_page_title": "สิทธิ์",
+  "permissions_page_subtitle": "รายการสิทธิ์ระบบที่จัดระเบียบตามการจัดกลุ่ม",
+  "permissions_table_label": "รายการสิทธิ์",
+  "search_placeholder": "ค้นหาสิทธิ์...",
   "system_title": "บทบาทแพลตฟอร์ม",
   "system_subtitle": "บทบาทแพลตฟอร์มในตัวและสิทธิ์ของแต่ละบทบาท",
   "catalog_subtitle": "บทบาทในองค์กรนี้และสิ่งที่แต่ละบทบาททำได้",
@@ -54,8 +85,26 @@
   },
   "sections": {
     "identity": "ข้อมูลระบุตัวตน",
-    "permissions": "สิทธิ์"
+    "permissions": "สิทธิ์",
+    "access": "สิทธิ์ปัจจุบัน",
+    "grant_permissions": "(กำหนดสิทธิ์)"
   },
+  "save": "บันทึกสิทธิ์",
+  "save_success": "อัปเดตสิทธิ์ของบทบาทสำเร็จแล้ว",
+  "select_all": "เลือกทั้งหมด",
+  "deselect_all": "ยกเลิกทั้งหมด",
+  "expand_all": "ขยายทั้งหมด",
+  "collapse_all": "ยุบทั้งหมด",
+  "expand_list": "ขยายรายการ",
+  "collapse_list": "ยุบรายการ",
+  "expand": "แสดงสิทธิ์",
+  "collapse": "ซ่อน",
+  "discard_changes": "ละทิ้งการเปลี่ยนแปลง",
+  "unsaved_changes": "มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก",
+  "no_unsaved_changes": "บันทึกการเปลี่ยนแปลงทั้งหมดแล้ว",
+  "selected_permissions_counter": "เลือกแล้ว {{selected}} จาก {{total}} สิทธิ์",
+  "select_role_prompt": "เลือกบทบาททางด้านซ้ายเพื่อกำหนดสิทธิ์",
+  "active_count": "สิทธิ์ที่ได้รับ {{count}} รายการ",
   "permissions": {
     "none": "บทบาทนี้ไม่มีสิทธิ์"
   }

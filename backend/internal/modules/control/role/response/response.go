@@ -4,6 +4,7 @@ type PermissionResponse struct {
 	ID          string `json:"id"`
 	Code        string `json:"code"`
 	Scope       string `json:"scope"`
+	Grouping    string `json:"grouping"`
 	Resource    string `json:"resource"`
 	Action      string `json:"action"`
 	Description string `json:"description"`

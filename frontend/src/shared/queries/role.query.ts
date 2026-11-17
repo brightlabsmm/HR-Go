@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { isPlatformPortal } from "@/app/portal"
-import { listPermissions, listRoles } from "@/shared/services/role.service"
+import { listPermissions, listRoles, updateRolePermissions } from "@/shared/services/role.service"
 import { useAuthStore } from "@/shared/stores/auth.store"
 
 export const roleKeys = {
@@ -38,5 +38,22 @@ export function usePermissionsQuery(scope?: "PLATFORM" | "ORG") {
     queryKey: roleKeys.permissions(scope),
     queryFn: () => listPermissions(scope),
     enabled: Boolean(accessToken && isPlatformPortal()),
+  })
+}
+
+export function useUpdateRolePermissionsMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      roleId,
+      permissionIds,
+    }: {
+      roleId: string
+      permissionIds: string[]
+    }) => updateRolePermissions(roleId, permissionIds),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: roleKeys.all })
+    },
   })
 }

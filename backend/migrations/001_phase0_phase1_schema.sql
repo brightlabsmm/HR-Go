@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS permissions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     code VARCHAR(100) NOT NULL UNIQUE,
     scope VARCHAR(20) NOT NULL DEFAULT 'PLATFORM', -- 'PLATFORM' or 'ORG'
+    grouping VARCHAR(50) NOT NULL DEFAULT '',
     resource VARCHAR(50) NOT NULL,
     action VARCHAR(50) NOT NULL,
     description TEXT,
@@ -229,36 +230,36 @@ VALUES
 ON CONFLICT (iso_code) DO NOTHING;
 
 -- Platform & Org Permissions
-INSERT INTO permissions (code, scope, resource, action, description)
+INSERT INTO permissions (code, scope, grouping, resource, action, description)
 VALUES
     -- Platform permissions
-    ('platform.user.read', 'PLATFORM', 'platform_user', 'read', 'View platform users'),
-    ('platform.user.create', 'PLATFORM', 'platform_user', 'create', 'Create platform users'),
-    ('platform.user.update', 'PLATFORM', 'platform_user', 'update', 'Update platform users'),
-    ('platform.user.deactivate', 'PLATFORM', 'platform_user', 'deactivate', 'Deactivate platform users'),
-    ('platform.role.read', 'PLATFORM', 'platform_role', 'read', 'View platform roles and permissions'),
-    ('platform.role.assign', 'PLATFORM', 'platform_role', 'assign', 'Assign platform roles to users'),
-    ('platform.permission.read', 'PLATFORM', 'permission', 'read', 'View permission catalogue'),
-    ('platform.organization.create', 'PLATFORM', 'organization', 'create', 'Create customer organizations'),
-    ('platform.organization.read', 'PLATFORM', 'organization', 'read', 'View and search customer organizations'),
-    ('platform.organization.update', 'PLATFORM', 'organization', 'update', 'Update organization profiles'),
-    ('platform.organization.status.update', 'PLATFORM', 'organization', 'status.update', 'Execute organization lifecycle status changes'),
+    ('platform.user.read', 'PLATFORM', 'user', 'platform_user', 'read', 'View platform users'),
+    ('platform.user.create', 'PLATFORM', 'user', 'platform_user', 'create', 'Create platform users'),
+    ('platform.user.update', 'PLATFORM', 'user', 'platform_user', 'update', 'Update platform users'),
+    ('platform.user.deactivate', 'PLATFORM', 'user', 'platform_user', 'deactivate', 'Deactivate platform users'),
+    ('platform.role.read', 'PLATFORM', 'role', 'platform_role', 'read', 'View platform roles and permissions'),
+    ('platform.role.assign', 'PLATFORM', 'role', 'platform_role', 'assign', 'Assign platform roles to users'),
+    ('platform.permission.read', 'PLATFORM', 'role', 'permission', 'read', 'View permission catalogue'),
+    ('platform.organization.create', 'PLATFORM', 'organization', 'organization', 'create', 'Create customer organizations'),
+    ('platform.organization.read', 'PLATFORM', 'organization', 'organization', 'read', 'View and search customer organizations'),
+    ('platform.organization.update', 'PLATFORM', 'organization', 'organization', 'update', 'Update organization profiles'),
+    ('platform.organization.status.update', 'PLATFORM', 'organization', 'organization', 'status.update', 'Execute organization lifecycle status changes'),
 
     -- Org permissions
-    ('org.branch.create', 'ORG', 'branch', 'create', 'Create branches'),
-    ('org.branch.read', 'ORG', 'branch', 'read', 'View and list branches'),
-    ('org.branch.update', 'ORG', 'branch', 'update', 'Update branches'),
-    ('org.branch.deactivate', 'ORG', 'branch', 'deactivate', 'Deactivate branches'),
-    ('org.department.create', 'ORG', 'department', 'create', 'Create departments'),
-    ('org.department.read', 'ORG', 'department', 'read', 'View and list departments'),
-    ('org.department.update', 'ORG', 'department', 'update', 'Update departments'),
-    ('org.department.deactivate', 'ORG', 'department', 'deactivate', 'Deactivate departments'),
-    ('org.position.create', 'ORG', 'position', 'create', 'Create positions'),
-    ('org.position.read', 'ORG', 'position', 'read', 'View and list positions'),
-    ('org.position.update', 'ORG', 'position', 'update', 'Update positions'),
-    ('org.position.deactivate', 'ORG', 'position', 'deactivate', 'Deactivate positions'),
-    ('org.role.read', 'ORG', 'org_role', 'read', 'View organization roles'),
-    ('org.role.assign', 'ORG', 'org_role', 'assign', 'Assign organization roles to accounts')
+    ('org.branch.create', 'ORG', 'branch', 'branch', 'create', 'Create branches'),
+    ('org.branch.read', 'ORG', 'branch', 'branch', 'read', 'View and list branches'),
+    ('org.branch.update', 'ORG', 'branch', 'branch', 'update', 'Update branches'),
+    ('org.branch.deactivate', 'ORG', 'branch', 'branch', 'deactivate', 'Deactivate branches'),
+    ('org.department.create', 'ORG', 'department', 'department', 'create', 'Create departments'),
+    ('org.department.read', 'ORG', 'department', 'department', 'read', 'View and list departments'),
+    ('org.department.update', 'ORG', 'department', 'department', 'update', 'Update departments'),
+    ('org.department.deactivate', 'ORG', 'department', 'department', 'deactivate', 'Deactivate departments'),
+    ('org.position.create', 'ORG', 'position', 'position', 'create', 'Create positions'),
+    ('org.position.read', 'ORG', 'position', 'position', 'read', 'View and list positions'),
+    ('org.position.update', 'ORG', 'position', 'position', 'update', 'Update positions'),
+    ('org.position.deactivate', 'ORG', 'position', 'position', 'deactivate', 'Deactivate positions'),
+    ('org.role.read', 'ORG', 'role', 'org_role', 'read', 'View organization roles'),
+    ('org.role.assign', 'ORG', 'role', 'org_role', 'assign', 'Assign organization roles to accounts')
 ON CONFLICT (code) DO NOTHING;
 
 -- Platform Roles

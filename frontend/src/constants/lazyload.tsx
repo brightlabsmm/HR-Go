@@ -77,6 +77,10 @@ export const RoleDetailPage = pageLoader(
   () => import("@/features/roles/pages/role-detail-page"),
   "RoleDetailPage"
 )
+export const PermissionListPage = pageLoader(
+  () => import("@/features/roles/pages/permission-list-page"),
+  "PermissionListPage"
+)
 export const UserListPage = pageLoader(
   () => import("@/features/users/pages/user-list-page"),
   "UserListPage"
