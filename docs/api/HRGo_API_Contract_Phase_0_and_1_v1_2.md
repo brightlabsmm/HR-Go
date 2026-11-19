@@ -194,8 +194,9 @@ List endpoints use the following query convention:
 | `sortBy` | string or string[] | One or more approved sortable fields (multi-column). Query form: repeat (`sortBy=status&sortBy=code`) or comma-separated (`sortBy=status,code`). A single value remains valid. |
 | `sortOrder` | `asc` / `desc` or array of those | Direction per `sortBy` entry (index-aligned). A single value applies to every column. Defaults when omitted follow each endpoint. |
 | `sortDirection` | `asc` / `desc` or array | Deprecated alias for `sortOrder`; still accepted when `sortOrder` is absent. |
+| `filter` | string[] | One or more column filters, AND-combined. Repeat the parameter. Each entry is `field:op:value`. Ops: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `like`, `ilike`, `in` (comma-separated values), `isnull`, `notnull`. Unknown fields/ops are ignored. Allowed fields are endpoint-specific. |
 | `q` | string | Optional text search where supported. |
-| `status` | string | Optional status filter where supported. |
+| `status` | string | Optional status filter where supported (combines with `filter` via AND). |
 
 The SRS requires organization list search/filter by name, organization code, status, and creation date, plus pagination and sorting. The exact maximum page size and supported sort fields are implementation configuration.
 
@@ -706,6 +707,7 @@ Supported query parameters:
 | `createdTo` | Inclusive creation date upper bound. |
 | `page`, `pageSize` | Pagination. |
 | `sortBy`, `sortOrder` (legacy `sortDirection`) | Multi-column sorting. |
+| `filter` | Array of `field:op:value` conditions (AND). Prefer for column filters such as `createdAt:gte:…`; `status` / `organizationCode` remain as dedicated params. |
 
 Success: `200 OK` with the standard paginated response.
 
@@ -845,7 +847,7 @@ Rules:
 
 Permission: `org.branch.read`
 
-Query parameters: `q`, `status`, `page`, `pageSize`, `sortBy`, `sortOrder` (legacy `sortDirection`).
+Query parameters: `q`, `status`, `page`, `pageSize`, `filter`, `sortBy`, `sortOrder` (legacy `sortDirection`).
 
 Returns only branches belonging to the authenticated organization.
 
@@ -921,7 +923,7 @@ Rules:
 
 Permission: `org.department.read`.
 
-Query parameters: `q`, `branchId`, `status`, `page`, `pageSize`, `sortBy`, `sortOrder` (legacy `sortDirection`).
+Query parameters: `q`, `branchId`, `status`, `page`, `pageSize`, `filter`, `sortBy`, `sortOrder` (legacy `sortDirection`).
 
 Returns only departments belonging to the authenticated organization.
 
@@ -994,7 +996,7 @@ Rules:
 
 Permission: `org.position.read`.
 
-Query parameters: `q`, `departmentId`, `status`, `page`, `pageSize`, `sortBy`, `sortOrder` (legacy `sortDirection`).
+Query parameters: `q`, `departmentId`, `status`, `page`, `pageSize`, `filter`, `sortBy`, `sortOrder` (legacy `sortDirection`).
 
 #### `GET /api/v1/workspace/positions/{positionId}`
 
@@ -1268,6 +1270,7 @@ The following items are not fully specified by the SRS or selected ERD area and 
 
 | Date | Author | Change |
 |---|---|---|
+| 2026-11-19 | thanthtooaung-coding | Documented shared `filter` query array (`field:op:value`) on all list APIs. |
 | 2026-11-19 | thanthtooaung-coding | Documented multi-column `sortBy` / `sortOrder` query arrays on list APIs; kept legacy `sortDirection` as an alias. |
 | 2026-11-12 | LCN-Alvin | Initial Phase 0 and Phase 1 API contract draft. Limited ERD review to Platform & Shared Permissions and Organization Structure & Identity. |
 | 2026-11-13 | LCN-Alvin | Added a consolidated API endpoint summary table grouped by Control, Workspace, and operational endpoints. |

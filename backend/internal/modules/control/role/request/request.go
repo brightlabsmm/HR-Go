@@ -1,9 +1,13 @@
 package request
 
-import "hrgo/backend/internal/shared/sorting"
+import (
+	"hrgo/backend/internal/shared/filtering"
+	"hrgo/backend/internal/shared/sorting"
+)
 
 type ListRolesQuery struct {
 	sorting.Query
+	filtering.Params
 }
 
 type ListPermissionsQuery struct {
@@ -12,6 +16,7 @@ type ListPermissionsQuery struct {
 	Page     int    `form:"page,default=1"`
 	PageSize int    `form:"pageSize,default=50"`
 	sorting.Query
+	filtering.Params
 }
 
 type ReplaceRolePermissionsRequest struct {

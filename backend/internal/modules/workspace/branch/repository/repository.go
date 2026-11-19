@@ -10,6 +10,7 @@ import (
 	"hrgo/backend/internal/modules/workspace/branch/models"
 	"hrgo/backend/internal/modules/workspace/branch/request"
 	"hrgo/backend/internal/shared/codeformat"
+	"hrgo/backend/internal/shared/filtering"
 	"hrgo/backend/internal/shared/sorting"
 )
 
@@ -111,6 +112,20 @@ func (r *repository) List(ctx context.Context, orgID string, q request.ListBranc
 	if status := strings.TrimSpace(q.Status); status != "" {
 		db = db.Where("status = ?", status)
 	}
+
+	branchFilterCols := map[string]string{
+		"name":       "name",
+		"code":       "code",
+		"address":    "address",
+		"status":     "status",
+		"parentid":   "parent_id",
+		"parent_id":  "parent_id",
+		"createdat":  "created_at",
+		"created_at": "created_at",
+		"updatedat":  "updated_at",
+		"updated_at": "updated_at",
+	}
+	db = filtering.Apply(db, q.Filter, filtering.Options{Allowed: branchFilterCols})
 
 	var total int64
 	if err := db.Count(&total).Error; err != nil {

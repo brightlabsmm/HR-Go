@@ -9,6 +9,7 @@ import (
 
 	"hrgo/backend/internal/modules/workspace/position/models"
 	"hrgo/backend/internal/modules/workspace/position/request"
+	"hrgo/backend/internal/shared/filtering"
 	"hrgo/backend/internal/shared/sorting"
 )
 
@@ -82,6 +83,19 @@ func (r *repository) List(ctx context.Context, orgID string, q request.ListPosit
 	if status := strings.TrimSpace(q.Status); status != "" {
 		db = db.Where("status = ?", status)
 	}
+
+	posFilterCols := map[string]string{
+		"name":          "name",
+		"code":          "code",
+		"status":        "status",
+		"departmentid":  "department_id",
+		"department_id": "department_id",
+		"createdat":     "created_at",
+		"created_at":    "created_at",
+		"updatedat":     "updated_at",
+		"updated_at":    "updated_at",
+	}
+	db = filtering.Apply(db, q.Filter, filtering.Options{Allowed: posFilterCols})
 
 	var total int64
 	if err := db.Count(&total).Error; err != nil {
