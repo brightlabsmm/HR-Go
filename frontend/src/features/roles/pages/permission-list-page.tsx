@@ -22,7 +22,6 @@ const column = createDataTableColumns<Permission>()
 
 export function PermissionListPage() {
   const { t } = useTranslation("roles")
-  const { t: tCommon } = useTranslation("common")
   const { groupingLabel, permissionLabel } = usePermissionLabels()
 
   const [scopeFilter, setScopeFilter] = useState<string>("all")

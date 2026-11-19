@@ -110,7 +110,7 @@ export function OrganizationTable({
               statusItems.length > 0 ? (
                 <OrganizationStatusMenuItems
                   organization={organization}
-                  onSelect={(status) => onChangeStatus(organization, status)}
+                  onSelect={(status) => onChangeStatus?.(organization, status)}
                 />
               ) : undefined
             }
