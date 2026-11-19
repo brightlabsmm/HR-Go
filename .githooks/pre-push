@@ -12,4 +12,8 @@ fi
 
 root=$(git rev-parse --show-toplevel)
 cd "$root/backend"
+if ! command -v go >/dev/null 2>&1; then
+  echo "bump patch version: go is not on PATH" >&2
+  exit 1
+fi
 go run ./cmd/bump-patch-version
