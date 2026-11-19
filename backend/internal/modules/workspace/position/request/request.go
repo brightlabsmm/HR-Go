@@ -1,5 +1,7 @@
 package request
 
+import "hrgo/backend/internal/shared/sorting"
+
 type CreatePositionRequest struct {
 	PositionCode string  `json:"positionCode" binding:"required"`
 	PositionName string  `json:"positionName" binding:"required"`
@@ -12,11 +14,10 @@ type UpdatePositionRequest struct {
 }
 
 type ListPositionsQuery struct {
-	Q             string  `form:"q"`
-	DepartmentID  *string `form:"departmentId"`
-	Status        string  `form:"status"`
-	Page          int     `form:"page,default=1"`
-	PageSize      int     `form:"pageSize,default=20"`
-	SortBy        string  `form:"sortBy"`
-	SortDirection string  `form:"sortDirection"`
+	Q            string  `form:"q"`
+	DepartmentID *string `form:"departmentId"`
+	Status       string  `form:"status"`
+	Page         int     `form:"page,default=1"`
+	PageSize     int     `form:"pageSize,default=20"`
+	sorting.Query
 }

@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"gorm.io/gorm"
@@ -11,6 +10,7 @@ import (
 	"hrgo/backend/internal/modules/workspace/department/models"
 	"hrgo/backend/internal/modules/workspace/department/request"
 	"hrgo/backend/internal/shared/codeformat"
+	"hrgo/backend/internal/shared/sorting"
 )
 
 type Repository interface {
@@ -139,20 +139,18 @@ func (r *repository) List(ctx context.Context, orgID string, q request.ListDepar
 	}
 	offset := (page - 1) * pageSize
 
-	sortBy := "created_at"
-	if strings.EqualFold(q.SortBy, "name") {
-		sortBy = "name"
-	} else if strings.EqualFold(q.SortBy, "code") {
-		sortBy = "code"
-	}
-
-	orderDir := "DESC"
-	if strings.EqualFold(q.SortDirection, "ASC") {
-		orderDir = "ASC"
-	}
-
 	var list []models.Department
-	err := db.Order(fmt.Sprintf("%s %s", sortBy, orderDir)).
+	err := sorting.Apply(db, q.SortBy, q.Orders(), sorting.Options{
+		Allowed: map[string]string{
+			"name":       "name",
+			"code":       "code",
+			"status":     "status",
+			"createdat":  "created_at",
+			"created_at": "created_at",
+		},
+		Default:      "created_at DESC",
+		DefaultOrder: "DESC",
+	}).
 		Limit(pageSize).
 		Offset(offset).
 		Find(&list).Error

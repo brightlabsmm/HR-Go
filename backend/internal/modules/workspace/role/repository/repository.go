@@ -7,10 +7,11 @@ import (
 
 	"hrgo/backend/internal/modules/workspace/role/models"
 	"hrgo/backend/internal/modules/workspace/role/request"
+	"hrgo/backend/internal/shared/sorting"
 )
 
 type Repository interface {
-	ListRoles(ctx context.Context, orgID string) ([]models.OrgRole, error)
+	ListRoles(ctx context.Context, orgID string, q request.ListRolesQuery) ([]models.OrgRole, error)
 	AccountBelongsToOrg(ctx context.Context, orgID, accountID string) (bool, error)
 	ReplaceAccountRoles(ctx context.Context, orgID, accountID string, assignments []request.RoleAssignmentInput) error
 }
@@ -23,15 +24,25 @@ func New(db *gorm.DB) Repository {
 	return &repository{db: db}
 }
 
-func (r *repository) ListRoles(ctx context.Context, orgID string) ([]models.OrgRole, error) {
+func (r *repository) ListRoles(ctx context.Context, orgID string, q request.ListRolesQuery) ([]models.OrgRole, error) {
 	var roles []models.OrgRole
-	err := r.db.WithContext(ctx).
+	db := r.db.WithContext(ctx).
 		Preload("Permissions", func(db *gorm.DB) *gorm.DB {
 			return db.Order("grouping ASC, resource ASC, action ASC")
 		}).
-		Where("organization_id IS NULL OR organization_id = ?", orgID).
-		Order("is_system DESC, name ASC").
-		Find(&roles).Error
+		Where("organization_id IS NULL OR organization_id = ?", orgID)
+	err := sorting.Apply(db, q.SortBy, q.Orders(), sorting.Options{
+		Allowed: map[string]string{
+			"name":       "name",
+			"code":       "code",
+			"issystem":   "is_system",
+			"is_system":  "is_system",
+			"createdat":  "created_at",
+			"created_at": "created_at",
+		},
+		Default:      "is_system DESC, name ASC",
+		DefaultOrder: "ASC",
+	}).Find(&roles).Error
 	return roles, err
 }
 

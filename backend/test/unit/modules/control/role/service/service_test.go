@@ -18,7 +18,7 @@ type mockRoleRepo struct {
 	err   error
 }
 
-func (m *mockRoleRepo) ListRoles(ctx context.Context) ([]models.PlatformRole, error) {
+func (m *mockRoleRepo) ListRoles(ctx context.Context, q request.ListRolesQuery) ([]models.PlatformRole, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -109,7 +109,7 @@ func TestRoleService(t *testing.T) {
 		}
 		svc := service.New(repo)
 
-		roles, appErr := svc.ListRoles(context.Background())
+		roles, appErr := svc.ListRoles(context.Background(), request.ListRolesQuery{})
 		if appErr != nil {
 			t.Fatalf("unexpected error: %v", appErr)
 		}

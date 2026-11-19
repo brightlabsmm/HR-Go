@@ -1,5 +1,7 @@
 package request
 
+import "hrgo/backend/internal/shared/sorting"
+
 type CreateBranchRequest struct {
 	BranchName string  `json:"branchName" binding:"required"`
 	ParentID   *string `json:"parentId"`
@@ -13,10 +15,9 @@ type UpdateBranchRequest struct {
 }
 
 type ListBranchesQuery struct {
-	Q             string `form:"q"`
-	Status        string `form:"status"`
-	Page          int    `form:"page,default=1"`
-	PageSize      int    `form:"pageSize,default=20"`
-	SortBy        string `form:"sortBy"`
-	SortDirection string `form:"sortDirection"`
+	Q        string `form:"q"`
+	Status   string `form:"status"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"pageSize,default=20"`
+	sorting.Query
 }

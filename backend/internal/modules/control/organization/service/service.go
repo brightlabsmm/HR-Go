@@ -22,7 +22,7 @@ type Service interface {
 	UpdateStatus(ctx context.Context, id string, req request.UpdateStatusRequest) (*response.OrganizationResponse, *apperrors.Error)
 	Delete(ctx context.Context, id string) *apperrors.Error
 	CreateAdminAccount(ctx context.Context, orgID string, req request.CreateAdminAccountRequest) (*response.AdminAccountResponse, *apperrors.Error)
-	ListAdminAccounts(ctx context.Context, orgID string) ([]response.AdminAccountResponse, *apperrors.Error)
+	ListAdminAccounts(ctx context.Context, orgID string, q request.ListAdminAccountsQuery) ([]response.AdminAccountResponse, *apperrors.Error)
 }
 
 type service struct {
@@ -264,7 +264,7 @@ func (s *service) UpdateStatus(ctx context.Context, id string, req request.Updat
 	}
 
 	if target == "ACTIVE" {
-		adminAccounts, err := s.repo.ListAdminAccounts(ctx, id)
+		adminAccounts, err := s.repo.ListAdminAccounts(ctx, id, request.ListAdminAccountsQuery{})
 		if err != nil {
 			return nil, apperrors.Internal()
 		}
@@ -373,7 +373,7 @@ func (s *service) CreateAdminAccount(ctx context.Context, orgID string, req requ
 	return &res, nil
 }
 
-func (s *service) ListAdminAccounts(ctx context.Context, orgID string) ([]response.AdminAccountResponse, *apperrors.Error) {
+func (s *service) ListAdminAccounts(ctx context.Context, orgID string, q request.ListAdminAccountsQuery) ([]response.AdminAccountResponse, *apperrors.Error) {
 	org, err := s.repo.FindByID(ctx, orgID)
 	if err != nil {
 		return nil, apperrors.Internal()
@@ -382,7 +382,7 @@ func (s *service) ListAdminAccounts(ctx context.Context, orgID string) ([]respon
 		return nil, apperrors.NotFound("Organization not found")
 	}
 
-	details, err := s.repo.ListAdminAccounts(ctx, orgID)
+	details, err := s.repo.ListAdminAccounts(ctx, orgID, q)
 	if err != nil {
 		return nil, apperrors.Internal()
 	}

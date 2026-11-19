@@ -7,10 +7,11 @@ import (
 
 	"hrgo/backend/internal/modules/control/role/models"
 	"hrgo/backend/internal/modules/control/role/request"
+	"hrgo/backend/internal/shared/sorting"
 )
 
 type Repository interface {
-	ListRoles(ctx context.Context) ([]models.PlatformRole, error)
+	ListRoles(ctx context.Context, q request.ListRolesQuery) ([]models.PlatformRole, error)
 	ListPermissions(ctx context.Context, q request.ListPermissionsQuery) ([]models.Permission, int64, error)
 	ReplaceRolePermissions(ctx context.Context, roleID string, permissionIDs []string) (*models.PlatformRole, error)
 }
@@ -23,14 +24,22 @@ func New(db *gorm.DB) Repository {
 	return &repository{db: db}
 }
 
-func (r *repository) ListRoles(ctx context.Context) ([]models.PlatformRole, error) {
+func (r *repository) ListRoles(ctx context.Context, q request.ListRolesQuery) ([]models.PlatformRole, error) {
 	var roles []models.PlatformRole
-	err := r.db.WithContext(ctx).
+	db := r.db.WithContext(ctx).
 		Preload("Permissions", func(db *gorm.DB) *gorm.DB {
 			return db.Order("grouping ASC, resource ASC, action ASC")
-		}).
-		Order("name ASC").
-		Find(&roles).Error
+		})
+	err := sorting.Apply(db, q.SortBy, q.Orders(), sorting.Options{
+		Allowed: map[string]string{
+			"name":       "name",
+			"code":       "code",
+			"createdat":  "created_at",
+			"created_at": "created_at",
+		},
+		Default:      "name ASC",
+		DefaultOrder: "ASC",
+	}).Find(&roles).Error
 	return roles, err
 }
 
@@ -59,7 +68,19 @@ func (r *repository) ListPermissions(ctx context.Context, q request.ListPermissi
 	offset := (page - 1) * pageSize
 
 	var perms []models.Permission
-	err := db.Order("grouping ASC, resource ASC, action ASC").
+	err := sorting.Apply(db, q.SortBy, q.Orders(), sorting.Options{
+		Allowed: map[string]string{
+			"grouping":   "grouping",
+			"resource":   "resource",
+			"action":     "action",
+			"code":       "code",
+			"scope":      "scope",
+			"createdat":  "created_at",
+			"created_at": "created_at",
+		},
+		Default:      "grouping ASC, resource ASC, action ASC",
+		DefaultOrder: "ASC",
+	}).
 		Limit(pageSize).
 		Offset(offset).
 		Find(&perms).Error
