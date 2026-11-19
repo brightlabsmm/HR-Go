@@ -22,7 +22,8 @@
     "back": "နောက်သို့"
   },
   "footer": {
-    "copyright": "© {{year}} HR Go"
+    "copyright": "© {{year}} HR Go",
+    "patch_version": "ဗားရှင်း {{version}}"
   },
   "actions": {
     "submit": "တင်သွင်းရန်",

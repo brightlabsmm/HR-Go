@@ -21,6 +21,10 @@ import (
 	orgrepo "hrgo/backend/internal/modules/control/organization/repository"
 	orgroutes "hrgo/backend/internal/modules/control/organization/routes"
 	orgsvc "hrgo/backend/internal/modules/control/organization/service"
+	patchversionhandler "hrgo/backend/internal/modules/control/patchversion/handler"
+	patchversionrepo "hrgo/backend/internal/modules/control/patchversion/repository"
+	patchversionroutes "hrgo/backend/internal/modules/control/patchversion/routes"
+	patchversionsvc "hrgo/backend/internal/modules/control/patchversion/service"
 	rolehandler "hrgo/backend/internal/modules/control/role/handler"
 	rolerepo "hrgo/backend/internal/modules/control/role/repository"
 	roleroutes "hrgo/backend/internal/modules/control/role/routes"
@@ -134,6 +138,10 @@ func NewEngine(deps Dependencies) *gin.Engine {
 		userRepo := userrepo.New(deps.DB)
 		userService := usersvc.New(userRepo)
 		userroutes.Register(v1, userhandler.New(userService), secMiddleware)
+
+		patchVersionRepo := patchversionrepo.New(deps.DB)
+		patchVersionService := patchversionsvc.New(patchVersionRepo)
+		patchversionroutes.Register(v1, patchversionhandler.New(patchVersionService))
 
 		// Workspace modules
 		wsAuthRepo := wsauthrepo.New(deps.DB)

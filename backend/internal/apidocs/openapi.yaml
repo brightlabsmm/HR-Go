@@ -193,6 +193,25 @@ components:
               type: string
               example: 550e8400-e29b-41d4-a716-446655440000
 
+    PatchVersion:
+      type: object
+      required: [patchVersion, patchDateTime, current]
+      properties:
+        patchVersion:
+          type: string
+          description: Application patch version, exactly two digits per segment.
+          pattern: "^[0-9]{2}\\.[0-9]{2}\\.[0-9]{2}$"
+          example: "01.00.01"
+        patchDateTime:
+          type: string
+          format: date-time
+          description: When this patch version became current. Seeded value is 2026-11-19 15:14 Asia/Bangkok.
+          example: "2026-11-19T15:14:00+07:00"
+        current:
+          type: boolean
+          description: True for the single current row.
+          example: true
+
     PlatformRoleSummary:
       type: object
       properties:
@@ -905,6 +924,23 @@ paths:
                     format: date-time
         "503":
           description: Database or dependency unavailable
+
+  /api/v1/patch-version:
+    get:
+      tags: [Operational]
+      summary: Current application patch version
+      description: |
+        Public. No authentication. Returns the single current row from `application_patch_versions`.
+        Both the platform console and the organization portal show `patchVersion` on the login screen.
+      responses:
+        "200":
+          description: Current patch version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PatchVersion"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   # ===========================================================================
   # CONTROL API — PLATFORM ADMINISTRATION

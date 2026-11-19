@@ -1162,6 +1162,26 @@ If the database or another required dependency is unavailable, return an appropr
 
 The exact health-check paths may be adapted to the deployment platform, but liveness and readiness must remain distinguishable.
 
+### `GET /api/v1/patch-version`
+
+Public. No authentication. Returns the single current row from `application_patch_versions` for the platform console and organization login screens.
+
+`patchVersion` is exactly `00.00.00` (two digits per segment). `patchDateTime` is the PatchDateTime. `current` is true for that single current row.
+
+Example:
+
+```json
+{
+  "patchVersion": "01.00.01",
+  "patchDateTime": "2026-11-19T15:14:00+07:00",
+  "current": true
+}
+```
+
+The seeded current row is `01.00.01` at `2026-11-19 15:14` Asia/Bangkok. Later rows are inserted by the git pre-push hook, which bumps the version and marks the new row current.
+
+If no current row exists, return `404 NOT_FOUND` with message `Current patch version not found`.
+
 ---
 
 ## 14. Validation and conflict rules
@@ -1270,6 +1290,7 @@ The following items are not fully specified by the SRS or selected ERD area and 
 
 | Date | Author | Change |
 |---|---|---|
+| 2026-11-19 | thanthtooaung-coding | Documented public `GET /api/v1/patch-version` and the `application_patch_versions` current row. |
 | 2026-11-19 | thanthtooaung-coding | Documented shared `filter` query array (`field:op:value`) on all list APIs. |
 | 2026-11-19 | thanthtooaung-coding | Documented multi-column `sortBy` / `sortOrder` query arrays on list APIs; kept legacy `sortDirection` as an alias. |
 | 2026-11-12 | LCN-Alvin | Initial Phase 0 and Phase 1 API contract draft. Limited ERD review to Platform & Shared Permissions and Organization Structure & Identity. |
@@ -1279,3 +1300,9 @@ The following items are not fully specified by the SRS or selected ERD area and 
 ---
 
 **HRGo — Better Workplace Together**
+
+## Changed Logs
+
+| Date | Time | Author | Change |
+|---|---|---|---|
+| 2026-11-19 | 15:26 | thanthtooaung-coding | Documented public `GET /api/v1/patch-version` and the `application_patch_versions` current row. |
