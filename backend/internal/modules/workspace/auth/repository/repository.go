@@ -30,7 +30,9 @@ func (r *repository) FindByIdentifier(ctx context.Context, identifier string) (*
 		Preload("Organization").
 		Preload("Employee").
 		Preload("UserRoles.Role.Permissions").
-		Where("LOWER(identifier) = LOWER(?)", identifier).
+		Joins("JOIN organizations o ON o.id = organization_accounts.organization_id").
+		Where("LOWER(organization_accounts.identifier) = LOWER(?)", identifier).
+		Order("o.deleted_at NULLS FIRST").
 		First(&acc).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

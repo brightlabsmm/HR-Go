@@ -6,7 +6,6 @@ export type StatusBadgeStatus =
   | "inactive"
   | "suspended"
   | "pending"
-  | "archived"
 
 interface StatusBadgeProps {
   status: string
@@ -18,7 +17,6 @@ const STATUS_CLASS: Record<StatusBadgeStatus, string> = {
   inactive: "bg-muted text-muted-foreground",
   suspended: "bg-warning-muted text-warning-foreground",
   pending: "bg-info-muted text-info",
-  archived: "bg-muted text-muted-foreground",
 }
 
 function resolveStatus(status: string): StatusBadgeStatus {
@@ -26,8 +24,7 @@ function resolveStatus(status: string): StatusBadgeStatus {
   if (
     normalized === "active" ||
     normalized === "suspended" ||
-    normalized === "pending" ||
-    normalized === "archived"
+    normalized === "pending"
   ) {
     return normalized
   }

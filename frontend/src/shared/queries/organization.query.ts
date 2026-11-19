@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   createOrganization,
   createOrganizationAdminAccount,
+  deleteOrganization,
   getOrganization,
   listOrganizationAdminAccounts,
   listOrganizations,
@@ -125,6 +126,18 @@ export function useCreateOrganizationAdminAccountMutation() {
       void queryClient.invalidateQueries({
         queryKey: organizationKeys.detail(variables.organizationId),
       })
+    },
+  })
+}
+
+export function useDeleteOrganizationMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => deleteOrganization(id),
+    onSuccess: (_data, id) => {
+      void queryClient.invalidateQueries({ queryKey: organizationKeys.all })
+      queryClient.removeQueries({ queryKey: organizationKeys.detail(id) })
     },
   })
 }

@@ -51,8 +51,7 @@
     "active": "Active",
     "inactive": "Inactive",
     "suspended": "Suspended",
-    "pending": "Pending",
-    "archived": "Archived"
+    "pending": "Pending"
   },
   "table": {
     "empty": "No results found"

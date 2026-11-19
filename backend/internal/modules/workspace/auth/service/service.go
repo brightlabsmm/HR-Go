@@ -36,6 +36,10 @@ func (s *service) Login(ctx context.Context, req request.LoginRequest) (*respons
 		return nil, apperrors.Unauthorized("Invalid employee identifier or password.")
 	}
 
+	if acc.Organization.DeletedAt != nil {
+		return nil, apperrors.Forbidden("Organization has been deleted. Sign in is disabled.")
+	}
+
 	if acc.Organization.Status != "ACTIVE" {
 		return nil, apperrors.Forbidden("Organization is " + strings.ToLower(acc.Organization.Status) + ". Sign in is disabled.")
 	}

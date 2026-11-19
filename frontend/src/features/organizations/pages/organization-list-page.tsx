@@ -22,9 +22,11 @@ import { OrganizationTable } from "@/features/organizations/components/organizat
 import { useOrganizationListParams } from "@/features/organizations/hooks/use-organization-list-params"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import {
+  useDeleteOrganizationMutation,
   useOrganizationsQuery,
   useUpdateOrganizationStatusMutation,
 } from "@/shared/queries/organization.query"
+import { toast } from "@/shared/stores/toast.store"
 
 import type {
   Organization,
@@ -39,11 +41,14 @@ export function OrganizationListPage() {
   const organizationsQuery = useOrganizationsQuery(params.listParams)
   const { can } = usePermissions()
   const canCreate = can("platform.organization.create")
+  const canDelete = can("platform.organization.delete")
   const statusMutation = useUpdateOrganizationStatusMutation()
+  const deleteMutation = useDeleteOrganizationMutation()
   const [statusTarget, setStatusTarget] = useState<{
     organization: Organization
     status: OrganizationStatus
   } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Organization | null>(null)
   const items = organizationsQuery.data?.items ?? []
   const isUnfilteredEmpty =
     organizationsQuery.isSuccess &&
@@ -54,7 +59,6 @@ export function OrganizationListPage() {
     { value: "pending", label: tCommon("status.pending") },
     { value: "active", label: tCommon("status.active") },
     { value: "suspended", label: tCommon("status.suspended") },
-    { value: "archived", label: tCommon("status.archived") },
   ]
 
   const addButton = canCreate ? (
@@ -100,6 +104,7 @@ export function OrganizationListPage() {
         onChangeStatus={(organization, status) =>
           setStatusTarget({ organization, status })
         }
+        onDelete={canDelete ? setDeleteTarget : undefined}
       />
     )
   }
@@ -184,6 +189,33 @@ export function OrganizationListPage() {
           />
         )
       })()}
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title={t("delete.title", { name: deleteTarget?.displayName ?? "" })}
+        description={t("delete.description", {
+          name: deleteTarget?.displayName ?? "",
+        })}
+        confirmLabel={t("delete.confirm")}
+        confirmVariant="destructive"
+        isPending={deleteMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null)
+          }
+        }}
+        onConfirm={() => {
+          if (!deleteTarget) {
+            return
+          }
+
+          deleteMutation.mutate(deleteTarget.id, {
+            onSuccess: () => {
+              setDeleteTarget(null)
+              toast.success(t("delete.success"))
+            },
+          })
+        }}
+      />
     </MotionStack>
   )
 }

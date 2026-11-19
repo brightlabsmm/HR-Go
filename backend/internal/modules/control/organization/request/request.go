@@ -14,7 +14,7 @@ type UpdateOrganizationRequest struct {
 	OrganizationCode *string `json:"organizationCode"`
 	LegalName        *string `json:"legalName"`
 	DisplayName      *string `json:"displayName"`
-	ContactEmail     *string `json:"contactEmail"`
+	ContactEmail     *string `json:"contactEmail" binding:"omitempty,email"`
 	ContactPhone     *string `json:"contactPhone"`
 	Country          *string `json:"country"`
 	Address          *string `json:"address"`

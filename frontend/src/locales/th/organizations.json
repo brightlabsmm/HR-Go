@@ -83,7 +83,6 @@
   "status_actions": {
     "activate": "เปิดใช้งาน",
     "suspend": "ระงับชั่วคราว",
-    "archive": "เก็บถาวร",
     "reactivate": "เปิดใช้งานอีกครั้ง"
   },
   "status_confirm": {
@@ -92,9 +91,13 @@
     "reactivate_title": "เปิดใช้งาน {{name}} ใหม่อีกครั้งหรือไม่?",
     "reactivate_description": "การดำเนินการนี้จะเปิดใช้งาน {{name}} อีกครั้งและกู้คืนการเข้าถึง workspace",
     "suspend_title": "ระงับการใช้งาน {{name}} หรือไม่?",
-    "suspend_description": "การดำเนินการนี้จะระงับ {{name}} ผู้ใช้ workspace จะถูกออกจากระบบทันที",
-    "archive_title": "จัดเก็บถาวร {{name}} หรือไม่?",
-    "archive_description": "การดำเนินการนี้จะจัดเก็บถาวร {{name}}"
+    "suspend_description": "การดำเนินการนี้จะระงับ {{name}} ผู้ใช้ workspace จะถูกออกจากระบบทันที"
+  },
+  "delete": {
+    "title": "ลบ {{name}} หรือไม่?",
+    "description": "การดำเนินการนี้จะลบ {{name}} ผู้ใช้ workspace จะถูกออกจากระบบและไม่สามารถเข้าถึงองค์กรนี้ได้อีก",
+    "confirm": "ลบ",
+    "success": "ลบองค์กรเรียบร้อยแล้ว"
   },
   "status_change": {
     "menu": "เปลี่ยนสถานะ",

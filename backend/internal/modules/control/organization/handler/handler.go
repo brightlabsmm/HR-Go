@@ -88,6 +88,15 @@ func (h *Handler) UpdateStatus(c *gin.Context) {
 	responses.OK(c, res)
 }
 
+func (h *Handler) Delete(c *gin.Context) {
+	id := c.Param("organizationId")
+	if appErr := h.svc.Delete(c.Request.Context(), id); appErr != nil {
+		responses.Fail(c, appErr)
+		return
+	}
+	responses.NoContent(c)
+}
+
 func (h *Handler) CreateAdminAccount(c *gin.Context) {
 	orgID := c.Param("organizationId")
 	var req request.CreateAdminAccountRequest

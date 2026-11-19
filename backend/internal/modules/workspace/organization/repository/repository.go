@@ -13,6 +13,7 @@ import (
 
 type Repository interface {
 	FindByID(ctx context.Context, id string) (*models.Organization, error)
+	FindByContactEmail(ctx context.Context, email string) (*models.Organization, error)
 	Update(ctx context.Context, org *models.Organization) error
 	GetSettings(ctx context.Context, orgID string) (map[string]string, error)
 	SaveSetting(ctx context.Context, orgID string, key, value string) error
@@ -29,6 +30,18 @@ func New(db *gorm.DB) Repository {
 func (r *repository) FindByID(ctx context.Context, id string) (*models.Organization, error) {
 	var org models.Organization
 	err := r.db.WithContext(ctx).First(&org, "id = ?", id).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &org, nil
+}
+
+func (r *repository) FindByContactEmail(ctx context.Context, email string) (*models.Organization, error) {
+	var org models.Organization
+	err := r.db.WithContext(ctx).Where("LOWER(contact_email) = LOWER(?)", email).First(&org).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil

@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Organization struct {
 	ID           string `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
@@ -14,6 +18,7 @@ type Organization struct {
 	Status       string `gorm:"default:'PENDING'"`
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
 }
 
 func (Organization) TableName() string {

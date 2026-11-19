@@ -6,7 +6,7 @@ import {
   parsePageSizeParam,
 } from "@/util/pagination"
 
-const STATUSES = ["pending", "active", "suspended", "archived"] as const
+const STATUSES = ["pending", "active", "suspended"] as const
 
 function parseStatus(value: string | null) {
   if (value && STATUSES.includes(value as (typeof STATUSES)[number])) {

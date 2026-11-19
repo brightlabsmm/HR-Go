@@ -20,13 +20,20 @@ const column = createDataTableColumns<Organization>()
 interface OrganizationTableProps {
   data: Organization[]
   onChangeStatus?: (organization: Organization, status: OrganizationStatus) => void
+  onDelete?: (organization: Organization) => void
 }
 
-export function OrganizationTable({ data, onChangeStatus }: OrganizationTableProps) {
+export function OrganizationTable({
+  data,
+  onChangeStatus,
+  onDelete,
+}: OrganizationTableProps) {
   const { t, i18n } = useTranslation("organizations")
   const navigate = useNavigate()
   const { can } = usePermissions()
+  const canUpdate = can("platform.organization.update")
   const canChangeStatus = can("platform.organization.status.update")
+  const canDelete = can("platform.organization.delete")
   const columns = column.columns([
     column.accessor("displayName", {
       header: t("columns.name"),
@@ -68,8 +75,13 @@ export function OrganizationTable({ data, onChangeStatus }: OrganizationTablePro
       cell: ({ row }) => (
         <div className="flex items-center justify-end gap-0.5">
           <DataTableActions
-            onEdit={() =>
-              void navigate(`/organizations/${row.original.id}/edit`)
+            onEdit={
+              canUpdate
+                ? () => void navigate(`/organizations/${row.original.id}/edit`)
+                : undefined
+            }
+            onDelete={
+              canDelete && onDelete ? () => onDelete(row.original) : undefined
             }
           />
           {canChangeStatus && onChangeStatus ? (

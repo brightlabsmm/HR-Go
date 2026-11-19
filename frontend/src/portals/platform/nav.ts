@@ -15,6 +15,7 @@ export const PLATFORM_NAV: PortalNavItem[] = [
       "platform.organization.create",
       "platform.organization.update",
       "platform.organization.status.update",
+      "platform.organization.delete",
     ],
   },
   {

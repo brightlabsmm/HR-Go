@@ -1,10 +1,10 @@
 import { apiClient } from "@/app/api/client"
-import { unwrap, unwrapPage } from "@/app/api/http"
+import { unwrap, unwrapEmpty, unwrapPage } from "@/app/api/http"
 import { controlPath } from "@/app/api/paths"
 import { compactParams } from "@/util/compact-params"
 import { toListQuery } from "@/util/list-query"
 
-export type OrganizationStatus = "PENDING" | "ACTIVE" | "SUSPENDED" | "ARCHIVED"
+export type OrganizationStatus = "PENDING" | "ACTIVE" | "SUSPENDED"
 
 export interface Organization {
   id: string
@@ -133,4 +133,8 @@ export function listOrganizationAdminAccounts(organizationId: string) {
   return unwrap<AdminAccount[]>(
     apiClient.get(controlPath(`/organizations/${organizationId}/admin-accounts`))
   )
+}
+
+export function deleteOrganization(id: string) {
+  return unwrapEmpty(apiClient.delete(controlPath(`/organizations/${id}`)))
 }

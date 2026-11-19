@@ -63,6 +63,26 @@ func (s *service) UpdateSettings(ctx context.Context, orgID string, req request.
 
 	if req.ContactEmail != nil {
 		email := strings.TrimSpace(*req.ContactEmail)
+		if email == "" {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "contactEmail", Message: "Contact email is required."},
+			})
+		}
+		currentEmail := ""
+		if org.ContactEmail != nil {
+			currentEmail = *org.ContactEmail
+		}
+		if !strings.EqualFold(email, currentEmail) {
+			existingByEmail, err := s.repo.FindByContactEmail(ctx, email)
+			if err != nil {
+				return nil, apperrors.Internal()
+			}
+			if existingByEmail != nil && existingByEmail.ID != org.ID {
+				return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+					{Field: "contactEmail", Message: "This contact email is already in use."},
+				})
+			}
+		}
 		org.ContactEmail = &email
 	}
 	if req.ContactPhone != nil {
@@ -79,6 +99,11 @@ func (s *service) UpdateSettings(ctx context.Context, orgID string, req request.
 	}
 
 	if err := s.repo.Update(ctx, org); err != nil {
+		if strings.Contains(err.Error(), "idx_organizations_contact_email_lower") {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "contactEmail", Message: "This contact email is already in use."},
+			})
+		}
 		return nil, apperrors.Internal()
 	}
 
