@@ -325,7 +325,7 @@ components:
           example: Yangon, Myanmar
         status:
           type: string
-          enum: [PENDING, ACTIVE, SUSPENDED, ARCHIVED]
+          enum: [PENDING, ACTIVE, SUSPENDED]
           example: ACTIVE
         createdAt:
           type: string
@@ -393,7 +393,7 @@ components:
       properties:
         status:
           type: string
-          enum: [PENDING, ACTIVE, SUSPENDED, ARCHIVED]
+          enum: [PENDING, ACTIVE, SUSPENDED]
           example: ACTIVE
         reason:
           type: string
@@ -1253,7 +1253,7 @@ paths:
           required: false
           schema:
             type: string
-            enum: [PENDING, ACTIVE, SUSPENDED, ARCHIVED]
+            enum: [PENDING, ACTIVE, SUSPENDED]
         - name: createdFrom
           in: query
           required: false
@@ -1354,11 +1354,27 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+    delete:
+      tags: [Control - Organizations]
+      summary: Soft delete organization
+      description: Soft delete a customer organization by setting deleted_at. Requires `platform.organization.delete`.
+      security:
+        - BearerAuth: []
+      responses:
+        "204":
+          description: Organization soft deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /api/v1/control/organizations/{organizationId}/status:
     post:
       tags: [Control - Organizations]
       summary: Transition organization lifecycle status
-      description: Execute an approved organization lifecycle status transition (`PENDING` -> `ACTIVE`; `ACTIVE` -> `SUSPENDED`, `ARCHIVED`; `SUSPENDED` -> `ACTIVE`, `ARCHIVED`; `ARCHIVED` -> `ACTIVE`). Requires `platform.organization.status.update`.
+      description: Execute an approved organization lifecycle status transition (`PENDING` -> `ACTIVE`; `ACTIVE` -> `SUSPENDED`; `SUSPENDED` -> `ACTIVE`). Requires `platform.organization.status.update`.
       security:
         - BearerAuth: []
       parameters:

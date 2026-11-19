@@ -50,7 +50,7 @@ func main() {
 
 	// 2. Ensure Demo Customer Organization
 	var orgID string
-	err = db.Raw(`SELECT id FROM organizations WHERE LOWER(code) = LOWER('ORG-001')`).Scan(&orgID).Error
+	err = db.Raw(`SELECT id FROM organizations WHERE LOWER(code) = LOWER('ORG-001') AND deleted_at IS NULL`).Scan(&orgID).Error
 	if err != nil || orgID == "" {
 		err = db.Raw(`
 			INSERT INTO organizations (code, legal_name, display_name, status, country)

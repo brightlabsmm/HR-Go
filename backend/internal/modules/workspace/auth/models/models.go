@@ -24,9 +24,10 @@ func (OrganizationAccount) TableName() string {
 type Organization struct {
 	ID          string `gorm:"primaryKey;type:uuid"`
 	Code        string
-	LegalName   string `gorm:"column:legal_name"`
-	DisplayName string `gorm:"column:display_name"`
-	Status      string `gorm:"column:status"`
+	LegalName   string     `gorm:"column:legal_name"`
+	DisplayName string     `gorm:"column:display_name"`
+	Status      string     `gorm:"column:status"`
+	DeletedAt   *time.Time `gorm:"column:deleted_at"`
 }
 
 func (Organization) TableName() string {

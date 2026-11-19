@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -17,7 +18,9 @@ type Repository interface {
 	Create(ctx context.Context, org *models.Organization) error
 	FindByID(ctx context.Context, id string) (*models.Organization, error)
 	FindByCode(ctx context.Context, code string) (*models.Organization, error)
+	FindByContactEmail(ctx context.Context, email string) (*models.Organization, error)
 	Update(ctx context.Context, org *models.Organization) error
+	SoftDelete(ctx context.Context, id string) error
 	List(ctx context.Context, q request.ListOrganizationsQuery) ([]models.Organization, int64, error)
 	CreateAdminAccount(ctx context.Context, emp *models.EmployeeIdentity, acc *models.OrganizationAccount) (*models.AdminAccountDetail, error)
 	ListAdminAccounts(ctx context.Context, orgID string) ([]models.AdminAccountDetail, error)
@@ -80,8 +83,31 @@ func (r *repository) FindByCode(ctx context.Context, code string) (*models.Organ
 	return &org, nil
 }
 
+func (r *repository) FindByContactEmail(ctx context.Context, email string) (*models.Organization, error) {
+	var org models.Organization
+	err := r.db.WithContext(ctx).Where("LOWER(contact_email) = LOWER(?)", email).First(&org).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &org, nil
+}
+
 func (r *repository) Update(ctx context.Context, org *models.Organization) error {
 	return r.db.WithContext(ctx).Save(org).Error
+}
+
+func (r *repository) SoftDelete(ctx context.Context, id string) error {
+	now := time.Now().UTC()
+	return r.db.WithContext(ctx).
+		Model(&models.Organization{}).
+		Where("id = ? AND deleted_at IS NULL", id).
+		Updates(map[string]any{
+			"deleted_at": now,
+			"updated_at": now,
+		}).Error
 }
 
 func (r *repository) List(ctx context.Context, query request.ListOrganizationsQuery) ([]models.Organization, int64, error) {

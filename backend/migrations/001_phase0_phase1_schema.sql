@@ -15,10 +15,13 @@ CREATE TABLE IF NOT EXISTS organizations (
     status VARCHAR(30) NOT NULL DEFAULT 'PENDING',
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT chk_org_status CHECK (status IN ('PENDING', 'ACTIVE', 'SUSPENDED', 'ARCHIVED'))
+    deleted_at TIMESTAMPTZ,
+    CONSTRAINT chk_org_status CHECK (status IN ('PENDING', 'ACTIVE', 'SUSPENDED'))
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_organizations_code_lower ON organizations (LOWER(code));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_organizations_code_lower ON organizations (LOWER(code)) WHERE deleted_at IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_organizations_contact_email_lower ON organizations (LOWER(contact_email)) WHERE deleted_at IS NULL AND contact_email IS NOT NULL AND TRIM(contact_email) <> '';
+CREATE INDEX IF NOT EXISTS idx_organizations_deleted_at ON organizations (deleted_at);
 CREATE INDEX IF NOT EXISTS idx_organizations_status ON organizations (status);
 
 -- 1b. Organization Settings
@@ -244,6 +247,7 @@ VALUES
     ('platform.organization.read', 'PLATFORM', 'organization', 'organization', 'read', 'View and search customer organizations'),
     ('platform.organization.update', 'PLATFORM', 'organization', 'organization', 'update', 'Update organization profiles'),
     ('platform.organization.status.update', 'PLATFORM', 'organization', 'organization', 'status.update', 'Execute organization lifecycle status changes'),
+    ('platform.organization.delete', 'PLATFORM', 'organization', 'organization', 'delete', 'Soft delete customer organizations'),
 
     -- Org permissions
     ('org.branch.create', 'ORG', 'branch', 'branch', 'create', 'Create branches'),

@@ -3,6 +3,7 @@ package service_test
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 
 	"hrgo/backend/internal/modules/control/organization/models"
@@ -13,12 +14,14 @@ import (
 
 type mockOrgRepo struct {
 	repository.Repository
-	org          *models.Organization
-	existingCode *models.Organization
-	emp          *models.EmployeeIdentity
-	acc          *models.OrganizationAccount
-	adminDetails []models.AdminAccountDetail
-	err          error
+	org           *models.Organization
+	existingCode  *models.Organization
+	existingEmail *models.Organization
+	deletedID     string
+	emp           *models.EmployeeIdentity
+	acc           *models.OrganizationAccount
+	adminDetails  []models.AdminAccountDetail
+	err           error
 }
 
 func (m *mockOrgRepo) FindByID(ctx context.Context, id string) (*models.Organization, error) {
@@ -29,10 +32,20 @@ func (m *mockOrgRepo) FindByID(ctx context.Context, id string) (*models.Organiza
 }
 
 func (m *mockOrgRepo) FindByCode(ctx context.Context, code string) (*models.Organization, error) {
-	if m.existingCode != nil && m.existingCode.Code == code {
+	if m.existingCode != nil && strings.EqualFold(m.existingCode.Code, code) {
 		return m.existingCode, nil
 	}
-	if m.org != nil && m.org.Code == code {
+	if m.org != nil && strings.EqualFold(m.org.Code, code) {
+		return m.org, nil
+	}
+	return nil, nil
+}
+
+func (m *mockOrgRepo) FindByContactEmail(ctx context.Context, email string) (*models.Organization, error) {
+	if m.existingEmail != nil && strings.EqualFold(m.existingEmail.ContactEmail, email) {
+		return m.existingEmail, nil
+	}
+	if m.org != nil && strings.EqualFold(m.org.ContactEmail, email) {
 		return m.org, nil
 	}
 	return nil, nil
@@ -46,6 +59,12 @@ func (m *mockOrgRepo) Create(ctx context.Context, org *models.Organization) erro
 
 func (m *mockOrgRepo) Update(ctx context.Context, org *models.Organization) error {
 	m.org = org
+	return nil
+}
+
+func (m *mockOrgRepo) SoftDelete(ctx context.Context, id string) error {
+	m.deletedID = id
+	m.org = nil
 	return nil
 }
 
@@ -109,7 +128,7 @@ func TestOrganizationStatusTransitions(t *testing.T) {
 			expectErrCode: "CONFLICT",
 			expectStatus:  http.StatusConflict,
 		},
-		// ACTIVE -> allowed: SUSPENDED, ARCHIVED
+		// ACTIVE -> allowed: SUSPENDED
 		{
 			name:          "ACTIVE to SUSPENDED without confirmation rejected with 400 Bad Request",
 			initialStatus: "ACTIVE",
@@ -125,18 +144,12 @@ func TestOrganizationStatusTransitions(t *testing.T) {
 			confirmation:  true,
 		},
 		{
-			name:          "ACTIVE to ARCHIVED without confirmation rejected with 400 Bad Request",
-			initialStatus: "ACTIVE",
-			targetStatus:  "ARCHIVED",
-			confirmation:  false,
-			expectErrCode: "BAD_REQUEST",
-			expectStatus:  http.StatusBadRequest,
-		},
-		{
-			name:          "ACTIVE to ARCHIVED with confirmation succeeds",
+			name:          "ACTIVE to ARCHIVED rejected with 409 Conflict",
 			initialStatus: "ACTIVE",
 			targetStatus:  "ARCHIVED",
 			confirmation:  true,
+			expectErrCode: "CONFLICT",
+			expectStatus:  http.StatusConflict,
 		},
 		{
 			name:          "ACTIVE to PENDING rejected with 409 Conflict",
@@ -146,7 +159,7 @@ func TestOrganizationStatusTransitions(t *testing.T) {
 			expectErrCode: "CONFLICT",
 			expectStatus:  http.StatusConflict,
 		},
-		// SUSPENDED -> allowed: ACTIVE, ARCHIVED
+		// SUSPENDED -> allowed: ACTIVE
 		{
 			name:          "SUSPENDED to ACTIVE (Reactivate) succeeds",
 			initialStatus: "SUSPENDED",
@@ -154,45 +167,16 @@ func TestOrganizationStatusTransitions(t *testing.T) {
 			confirmation:  false,
 		},
 		{
-			name:          "SUSPENDED to ARCHIVED with confirmation succeeds",
+			name:          "SUSPENDED to ARCHIVED rejected with 409 Conflict",
 			initialStatus: "SUSPENDED",
 			targetStatus:  "ARCHIVED",
 			confirmation:  true,
-		},
-		{
-			name:          "SUSPENDED to ARCHIVED without confirmation rejected with 400 Bad Request",
-			initialStatus: "SUSPENDED",
-			targetStatus:  "ARCHIVED",
-			confirmation:  false,
-			expectErrCode: "BAD_REQUEST",
-			expectStatus:  http.StatusBadRequest,
+			expectErrCode: "CONFLICT",
+			expectStatus:  http.StatusConflict,
 		},
 		{
 			name:          "SUSPENDED to PENDING rejected with 409 Conflict",
 			initialStatus: "SUSPENDED",
-			targetStatus:  "PENDING",
-			confirmation:  false,
-			expectErrCode: "CONFLICT",
-			expectStatus:  http.StatusConflict,
-		},
-		// ARCHIVED -> allowed: ACTIVE
-		{
-			name:          "ARCHIVED to ACTIVE (Reactivate) succeeds",
-			initialStatus: "ARCHIVED",
-			targetStatus:  "ACTIVE",
-			confirmation:  false,
-		},
-		{
-			name:          "ARCHIVED to SUSPENDED rejected with 409 Conflict",
-			initialStatus: "ARCHIVED",
-			targetStatus:  "SUSPENDED",
-			confirmation:  true,
-			expectErrCode: "CONFLICT",
-			expectStatus:  http.StatusConflict,
-		},
-		{
-			name:          "ARCHIVED to PENDING rejected with 409 Conflict",
-			initialStatus: "ARCHIVED",
 			targetStatus:  "PENDING",
 			confirmation:  false,
 			expectErrCode: "CONFLICT",
@@ -400,23 +384,46 @@ func TestCreateOrganization(t *testing.T) {
 			t.Fatalf("expected duplicate code error, got %v", appErr)
 		}
 	})
+
+	t.Run("fails when contact email already exists case-insensitively", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			existingEmail: &models.Organization{ID: "existing-id", Code: "ORG-999", ContactEmail: "Contact@Acme.com"},
+		}
+		svc := service.New(repo)
+
+		_, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ORG-002",
+			LegalName:        "Acme Two Corp",
+			DisplayName:      "Acme Two",
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "+95912345678",
+			Country:          "MM",
+			Address:          "Yangon, Myanmar",
+		})
+
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" || len(appErr.Details) == 0 || appErr.Details[0].Field != "contactEmail" {
+			t.Fatalf("expected VALIDATION_ERROR on contactEmail, got %+v", appErr)
+		}
+	})
 }
 
 func TestUpdateOrganization(t *testing.T) {
-	org := &models.Organization{
-		ID:           "org-1",
-		Code:         "ORG-001",
-		LegalName:    "Acme Corp",
-		DisplayName:  "Acme",
-		ContactEmail: "old@acme.com",
-		ContactPhone: "+959111111",
-		Country:      "MM",
-		Address:      "Old Address",
-		Status:       "ACTIVE",
+	newTestOrg := func() *models.Organization {
+		return &models.Organization{
+			ID:           "org-1",
+			Code:         "ORG-001",
+			LegalName:    "Acme Corp",
+			DisplayName:  "Acme",
+			ContactEmail: "old@acme.com",
+			ContactPhone: "+959111111",
+			Country:      "MM",
+			Address:      "Old Address",
+			Status:       "ACTIVE",
+		}
 	}
 
 	t.Run("updates organization code and contact fields successfully", func(t *testing.T) {
-		repo := &mockOrgRepo{org: org}
+		repo := &mockOrgRepo{org: newTestOrg()}
 		svc := service.New(repo)
 
 		newCode := "ORG-NEW"
@@ -434,9 +441,43 @@ func TestUpdateOrganization(t *testing.T) {
 		}
 	})
 
+	t.Run("allows updating while keeping own contact email with different casing", func(t *testing.T) {
+		repo := &mockOrgRepo{org: newTestOrg()}
+		svc := service.New(repo)
+
+		sameEmailDifferentCase := "OLD@ACME.COM"
+		res, appErr := svc.Update(context.Background(), "org-1", request.UpdateOrganizationRequest{
+			ContactEmail: &sameEmailDifferentCase,
+		})
+
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if res.ContactEmail != "OLD@ACME.COM" {
+			t.Errorf("expected contact email OLD@ACME.COM, got %s", res.ContactEmail)
+		}
+	})
+
+	t.Run("rejects duplicate contact email belonging to another organization", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org:           newTestOrg(),
+			existingEmail: &models.Organization{ID: "other-org", ContactEmail: "taken@acme.com"},
+		}
+		svc := service.New(repo)
+
+		takenEmail := "TAKEN@ACME.COM"
+		_, appErr := svc.Update(context.Background(), "org-1", request.UpdateOrganizationRequest{
+			ContactEmail: &takenEmail,
+		})
+
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" || len(appErr.Details) == 0 || appErr.Details[0].Field != "contactEmail" {
+			t.Fatalf("expected VALIDATION_ERROR on contactEmail, got %+v", appErr)
+		}
+	})
+
 	t.Run("rejects duplicate organization code on update", func(t *testing.T) {
 		repo := &mockOrgRepo{
-			org:          org,
+			org:          newTestOrg(),
 			existingCode: &models.Organization{ID: "other-org", Code: "ORG-TAKEN"},
 		}
 		svc := service.New(repo)
@@ -448,6 +489,33 @@ func TestUpdateOrganization(t *testing.T) {
 
 		if appErr == nil || appErr.Code != "CONFLICT" {
 			t.Fatalf("expected CONFLICT, got %v", appErr)
+		}
+	})
+}
+
+func TestDeleteOrganization(t *testing.T) {
+	t.Run("soft deletes existing organization", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: &models.Organization{ID: "org-1", Code: "ORG-001", Status: "ACTIVE"},
+		}
+		svc := service.New(repo)
+
+		appErr := svc.Delete(context.Background(), "org-1")
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if repo.deletedID != "org-1" {
+			t.Errorf("expected deletedID org-1, got %s", repo.deletedID)
+		}
+	})
+
+	t.Run("returns 404 when organization does not exist", func(t *testing.T) {
+		repo := &mockOrgRepo{org: nil}
+		svc := service.New(repo)
+
+		appErr := svc.Delete(context.Background(), "missing-id")
+		if appErr == nil || appErr.Status != http.StatusNotFound {
+			t.Fatalf("expected 404 NotFound, got %+v", appErr)
 		}
 	})
 }

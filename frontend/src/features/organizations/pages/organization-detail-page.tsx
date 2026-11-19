@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { PencilIcon, UserPlusIcon } from "lucide-react"
+import { PencilIcon, Trash2Icon, UserPlusIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router"
 
@@ -19,10 +19,12 @@ import {
 } from "@/features/organizations/components/organization-status-menu"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import {
+  useDeleteOrganizationMutation,
   useOrganizationAdminAccountsQuery,
   useOrganizationQuery,
   useUpdateOrganizationStatusMutation,
 } from "@/shared/queries/organization.query"
+import { toast } from "@/shared/stores/toast.store"
 import { formatDate } from "@/util/format-date"
 import { getInitials } from "@/util/initials"
 
@@ -39,8 +41,11 @@ export function OrganizationDetailPage() {
   const adminAccounts = adminAccountsQuery.data ?? []
   const { can } = usePermissions()
   const canChangeStatus = can("platform.organization.status.update")
+  const canDelete = can("platform.organization.delete")
   const statusMutation = useUpdateOrganizationStatusMutation()
+  const deleteMutation = useDeleteOrganizationMutation()
   const [statusTarget, setStatusTarget] = useState<OrganizationStatus | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   if (!organization && organizationQuery.isFetched) {
     return <NotFoundState backTo="/" backLabel={t("title")} description={t("not_found")} />
@@ -93,6 +98,17 @@ export function OrganizationDetailPage() {
                 organization={organization}
                 onSelect={(status) => setStatusTarget(status)}
               />
+            ) : null}
+            {canDelete && organization ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="border-destructive/40 bg-destructive-muted/20 text-destructive hover:border-destructive/60 hover:bg-destructive-muted hover:text-destructive dark:border-destructive/40 dark:bg-destructive-muted/20 dark:hover:bg-destructive-muted/40"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2Icon className="size-4" />
+                {tCommon("actions.delete")}
+              </Button>
             ) : null}
           </div>
         }
@@ -222,6 +238,32 @@ export function OrganizationDetailPage() {
               onSuccess: () => setStatusTarget(null),
             }
           )
+        }}
+      />
+      <ConfirmDialog
+        open={showDeleteDialog}
+        title={t("delete.title", { name })}
+        description={t("delete.description", { name })}
+        confirmLabel={t("delete.confirm")}
+        confirmVariant="destructive"
+        isPending={deleteMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowDeleteDialog(false)
+          }
+        }}
+        onConfirm={() => {
+          if (!organization) {
+            return
+          }
+
+          deleteMutation.mutate(organization.id, {
+            onSuccess: () => {
+              setShowDeleteDialog(false)
+              toast.success(t("delete.success"))
+              void navigate("/")
+            },
+          })
         }}
       />
     </MotionStack>

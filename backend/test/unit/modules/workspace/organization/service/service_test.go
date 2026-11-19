@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,9 +15,10 @@ import (
 
 type mockWorkspaceOrgRepo struct {
 	repository.Repository
-	org      *models.Organization
-	settings map[string]string
-	err      error
+	org           *models.Organization
+	existingEmail *models.Organization
+	settings      map[string]string
+	err           error
 }
 
 func (m *mockWorkspaceOrgRepo) FindByID(ctx context.Context, id string) (*models.Organization, error) {
@@ -24,6 +26,16 @@ func (m *mockWorkspaceOrgRepo) FindByID(ctx context.Context, id string) (*models
 		return nil, m.err
 	}
 	return m.org, nil
+}
+
+func (m *mockWorkspaceOrgRepo) FindByContactEmail(ctx context.Context, email string) (*models.Organization, error) {
+	if m.existingEmail != nil && m.existingEmail.ContactEmail != nil && strings.EqualFold(*m.existingEmail.ContactEmail, email) {
+		return m.existingEmail, nil
+	}
+	if m.org != nil && m.org.ContactEmail != nil && strings.EqualFold(*m.org.ContactEmail, email) {
+		return m.org, nil
+	}
+	return nil, nil
 }
 
 func (m *mockWorkspaceOrgRepo) Update(ctx context.Context, org *models.Organization) error {
@@ -112,6 +124,37 @@ func TestWorkspaceOrgSettings(t *testing.T) {
 		}
 		if res.BranchCodeFormat != "BRANCH-{000}" {
 			t.Errorf("expected branch format BRANCH-{000}, got %s", res.BranchCodeFormat)
+		}
+	})
+
+	t.Run("UpdateSettings rejects duplicate contact email from another organization", func(t *testing.T) {
+		otherEmail := "taken@other.com"
+		repoWithDup := &mockWorkspaceOrgRepo{
+			org:           org,
+			existingEmail: &models.Organization{ID: "org-2", ContactEmail: &otherEmail},
+			settings:      repo.settings,
+		}
+		svcWithDup := service.New(repoWithDup)
+
+		dupEmail := "TAKEN@other.com"
+		_, appErr := svcWithDup.UpdateSettings(context.Background(), "org-1", request.UpdateOrganizationSettingsRequest{
+			ContactEmail: &dupEmail,
+		})
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" || len(appErr.Details) == 0 || appErr.Details[0].Field != "contactEmail" {
+			t.Fatalf("expected VALIDATION_ERROR on contactEmail, got %+v", appErr)
+		}
+	})
+
+	t.Run("UpdateSettings allows keeping own contact email", func(t *testing.T) {
+		sameEmail := "INFO@ACME.COM"
+		res, appErr := svc.UpdateSettings(context.Background(), "org-1", request.UpdateOrganizationSettingsRequest{
+			ContactEmail: &sameEmail,
+		})
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if res.ContactEmail != "INFO@ACME.COM" {
+			t.Errorf("expected contact email INFO@ACME.COM, got %s", res.ContactEmail)
 		}
 	})
 }

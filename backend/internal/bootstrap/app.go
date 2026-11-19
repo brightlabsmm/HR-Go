@@ -81,7 +81,7 @@ func NewEngine(deps Dependencies) *gin.Engine {
 	if deps.DB != nil {
 		secMiddleware.SetOrgStatusChecker(func(ctx context.Context, orgID string) (string, error) {
 			var status string
-			err := deps.DB.WithContext(ctx).Table("organizations").Select("status").Where("id = ?", orgID).Scan(&status).Error
+			err := deps.DB.WithContext(ctx).Table("organizations").Select("status").Where("id = ? AND deleted_at IS NULL", orgID).Scan(&status).Error
 			return status, err
 		})
 	}

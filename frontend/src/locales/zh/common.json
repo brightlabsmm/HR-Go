@@ -51,8 +51,7 @@
     "active": "启用",
     "inactive": "停用",
     "suspended": "已暂停",
-    "pending": "待处理",
-    "archived": "已归档"
+    "pending": "待处理"
   },
   "table": {
     "empty": "暂无数据"

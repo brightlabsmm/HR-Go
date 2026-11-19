@@ -51,8 +51,7 @@
     "active": "ใช้งาน",
     "inactive": "ไม่ใช้งาน",
     "suspended": "ถูกระงับ",
-    "pending": "รอดำเนินการ",
-    "archived": "เก็บถาวร"
+    "pending": "รอดำเนินการ"
   },
   "table": {
     "empty": "ไม่พบข้อมูล"

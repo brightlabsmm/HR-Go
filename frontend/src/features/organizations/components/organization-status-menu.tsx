@@ -22,15 +22,13 @@ const ORGANIZATION_STATUSES: OrganizationStatus[] = [
   "PENDING",
   "ACTIVE",
   "SUSPENDED",
-  "ARCHIVED",
 ]
 
-const HIGH_IMPACT_STATUSES = new Set<OrganizationStatus>(["SUSPENDED", "ARCHIVED"])
+const HIGH_IMPACT_STATUSES = new Set<OrganizationStatus>(["SUSPENDED"])
 
 export type OrganizationStatusAction =
   | "activate"
   | "suspend"
-  | "archive"
   | "reactivate"
 
 export interface OrganizationStatusTransition {
@@ -43,15 +41,8 @@ export const ORGANIZATION_STATUS_TRANSITIONS: Record<
   OrganizationStatusTransition[]
 > = {
   PENDING: [{ status: "ACTIVE", action: "activate" }],
-  ACTIVE: [
-    { status: "SUSPENDED", action: "suspend" },
-    { status: "ARCHIVED", action: "archive" },
-  ],
-  SUSPENDED: [
-    { status: "ACTIVE", action: "reactivate" },
-    { status: "ARCHIVED", action: "archive" },
-  ],
-  ARCHIVED: [{ status: "ACTIVE", action: "reactivate" }],
+  ACTIVE: [{ status: "SUSPENDED", action: "suspend" }],
+  SUSPENDED: [{ status: "ACTIVE", action: "reactivate" }],
 }
 
 interface OrganizationStatusMenuProps {
@@ -116,15 +107,6 @@ export function getStatusDialogContent(
           defaultValue: `This will suspend ${name}. Workspace users will be logged out and unable to access the organization.`,
         }),
         confirmLabel: t("status_actions.suspend", { defaultValue: "Suspend" }),
-      }
-    case "archive":
-      return {
-        title: t("status_confirm.archive_title", { name, defaultValue: `Archive ${name}?` }),
-        description: t("status_confirm.archive_description", {
-          name,
-          defaultValue: `This will archive ${name}.`,
-        }),
-        confirmLabel: t("status_actions.archive", { defaultValue: "Archive" }),
       }
     default:
       return {

@@ -20,6 +20,7 @@ type Service interface {
 	List(ctx context.Context, query request.ListOrganizationsQuery) ([]response.OrganizationResponse, int, int, int64, *apperrors.Error)
 	Update(ctx context.Context, id string, req request.UpdateOrganizationRequest) (*response.OrganizationResponse, *apperrors.Error)
 	UpdateStatus(ctx context.Context, id string, req request.UpdateStatusRequest) (*response.OrganizationResponse, *apperrors.Error)
+	Delete(ctx context.Context, id string) *apperrors.Error
 	CreateAdminAccount(ctx context.Context, orgID string, req request.CreateAdminAccountRequest) (*response.AdminAccountResponse, *apperrors.Error)
 	ListAdminAccounts(ctx context.Context, orgID string) ([]response.AdminAccountResponse, *apperrors.Error)
 }
@@ -66,10 +67,24 @@ func (s *service) Create(ctx context.Context, req request.CreateOrganizationRequ
 	if err != nil {
 		return nil, apperrors.Internal()
 	}
+	existingByEmail, err := s.repo.FindByContactEmail(ctx, contactEmail)
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+
+	var dupIssues []apperrors.FieldIssue
 	if existing != nil {
-		return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
-			{Field: "organizationCode", Message: "This organization code is already in use."},
+		dupIssues = append(dupIssues, apperrors.FieldIssue{
+			Field: "organizationCode", Message: "This organization code is already in use.",
 		})
+	}
+	if existingByEmail != nil {
+		dupIssues = append(dupIssues, apperrors.FieldIssue{
+			Field: "contactEmail", Message: "This contact email is already in use.",
+		})
+	}
+	if len(dupIssues) > 0 {
+		return nil, apperrors.ValidationFailed(dupIssues)
 	}
 
 	org := &models.Organization{
@@ -84,6 +99,9 @@ func (s *service) Create(ctx context.Context, req request.CreateOrganizationRequ
 	}
 
 	if err := s.repo.Create(ctx, org); err != nil {
+		if appErr := mapUniqueConstraintError(err); appErr != nil {
+			return nil, appErr
+		}
 		return nil, apperrors.Internal()
 	}
 
@@ -157,7 +175,24 @@ func (s *service) Update(ctx context.Context, id string, req request.UpdateOrgan
 		org.DisplayName = strings.TrimSpace(*req.DisplayName)
 	}
 	if req.ContactEmail != nil {
-		org.ContactEmail = strings.TrimSpace(*req.ContactEmail)
+		newEmail := strings.TrimSpace(*req.ContactEmail)
+		if newEmail == "" {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "contactEmail", Message: "Contact email is required."},
+			})
+		}
+		if !strings.EqualFold(newEmail, org.ContactEmail) {
+			existingByEmail, err := s.repo.FindByContactEmail(ctx, newEmail)
+			if err != nil {
+				return nil, apperrors.Internal()
+			}
+			if existingByEmail != nil && existingByEmail.ID != org.ID {
+				return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+					{Field: "contactEmail", Message: "This contact email is already in use."},
+				})
+			}
+		}
+		org.ContactEmail = newEmail
 	}
 	if req.ContactPhone != nil {
 		org.ContactPhone = strings.TrimSpace(*req.ContactPhone)
@@ -170,11 +205,29 @@ func (s *service) Update(ctx context.Context, id string, req request.UpdateOrgan
 	}
 
 	if err := s.repo.Update(ctx, org); err != nil {
+		if appErr := mapUniqueConstraintError(err); appErr != nil {
+			return nil, appErr
+		}
 		return nil, apperrors.Internal()
 	}
 
 	res := mapper.ToOrganizationResponse(org)
 	return &res, nil
+}
+
+func mapUniqueConstraintError(err error) *apperrors.Error {
+	msg := err.Error()
+	if strings.Contains(msg, "idx_organizations_contact_email_lower") {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "contactEmail", Message: "This contact email is already in use."},
+		})
+	}
+	if strings.Contains(msg, "idx_organizations_code_lower") {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "organizationCode", Message: "This organization code is already in use."},
+		})
+	}
+	return nil
 }
 
 var allowedStatusTransitions = map[string]map[string]bool{
@@ -183,13 +236,8 @@ var allowedStatusTransitions = map[string]map[string]bool{
 	},
 	"ACTIVE": {
 		"SUSPENDED": true,
-		"ARCHIVED":  true,
 	},
 	"SUSPENDED": {
-		"ACTIVE":   true,
-		"ARCHIVED": true,
-	},
-	"ARCHIVED": {
 		"ACTIVE": true,
 	},
 }
@@ -211,7 +259,7 @@ func (s *service) UpdateStatus(ctx context.Context, id string, req request.Updat
 		return nil, apperrors.Conflict(fmt.Sprintf("Invalid organization status transition from %s to %s", current, target))
 	}
 
-	if (target == "SUSPENDED" || target == "ARCHIVED") && !req.Confirmation {
+	if target == "SUSPENDED" && !req.Confirmation {
 		return nil, apperrors.BadRequest("Confirmation is required for high-impact status changes.")
 	}
 
@@ -239,6 +287,20 @@ func (s *service) UpdateStatus(ctx context.Context, id string, req request.Updat
 
 	res := mapper.ToOrganizationResponse(org)
 	return &res, nil
+}
+
+func (s *service) Delete(ctx context.Context, id string) *apperrors.Error {
+	org, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return apperrors.Internal()
+	}
+	if org == nil {
+		return apperrors.NotFound("Organization not found")
+	}
+	if err := s.repo.SoftDelete(ctx, id); err != nil {
+		return apperrors.Internal()
+	}
+	return nil
 }
 
 func (s *service) CreateAdminAccount(ctx context.Context, orgID string, req request.CreateAdminAccountRequest) (*response.AdminAccountResponse, *apperrors.Error) {

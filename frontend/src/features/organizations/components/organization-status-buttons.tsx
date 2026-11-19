@@ -1,6 +1,5 @@
 import type { ReactNode } from "react"
 import {
-  ArchiveIcon,
   CheckCircleIcon,
   PauseCircleIcon,
   RotateCcwIcon,
@@ -40,11 +39,6 @@ export const STATUS_ACTION_CONFIG: Record<
     className:
       "border-warning/60 bg-warning-muted/40 text-warning-foreground hover:border-warning hover:bg-warning-muted hover:text-warning-foreground dark:border-warning/50 dark:bg-warning-muted/20 dark:text-warning dark:hover:bg-warning-muted/40",
     icon: <PauseCircleIcon className="size-4" />,
-  },
-  archive: {
-    className:
-      "border-destructive/40 bg-destructive-muted/20 text-destructive hover:border-destructive/60 hover:bg-destructive-muted hover:text-destructive dark:border-destructive/40 dark:bg-destructive-muted/20 dark:hover:bg-destructive-muted/40",
-    icon: <ArchiveIcon className="size-4" />,
   },
   reactivate: {
     className:
