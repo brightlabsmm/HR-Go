@@ -17,4 +17,17 @@ describe("compactParams", () => {
   it("returns undefined when nothing remains", () => {
     expect(compactParams({ search: "" })).toBeUndefined()
   })
+
+  it("keeps non-empty arrays", () => {
+    expect(
+      compactParams({
+        sortBy: ["code", "status"],
+        sortOrder: ["asc", "desc"],
+        filter: [],
+      })
+    ).toEqual({
+      sortBy: ["code", "status"],
+      sortOrder: ["asc", "desc"],
+    })
+  })
 })

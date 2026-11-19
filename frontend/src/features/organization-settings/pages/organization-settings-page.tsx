@@ -9,6 +9,7 @@ import { FormActions } from "@/components/common/form-actions"
 import { FormFieldGrid } from "@/components/common/form-field-grid"
 import { FormSkeleton } from "@/components/common/form-skeleton"
 import { FormSection, formStackClassName } from "@/components/common/form-section"
+import { FormPhoneInput } from "@/components/common/form/form-phone-input"
 import { FormTextInput } from "@/components/common/form/form-text-input"
 import { FormTextareaInput } from "@/components/common/form/form-textarea-input"
 import { MotionStack } from "@/components/common/motion-stack"
@@ -21,6 +22,7 @@ import {
   useWorkspaceOrganizationQuery,
 } from "@/shared/queries/workspace-organization.query"
 import { getInitials } from "@/util/initials"
+import { requiredE164Phone } from "@/util/phone"
 
 export function OrganizationSettingsPage() {
   const { t } = useTranslation("organization_settings")
@@ -42,10 +44,10 @@ export function OrganizationSettingsPage() {
           .trim()
           .min(1, t("errors.email_required"))
           .email(t("errors.email_invalid")),
-        contactPhone: z
-          .string()
-          .trim()
-          .min(1, t("errors.phone_required")),
+        contactPhone: requiredE164Phone(
+          t("errors.phone_required"),
+          t("errors.phone_invalid")
+        ),
         country: z
           .string()
           .trim()
@@ -181,7 +183,7 @@ export function OrganizationSettingsPage() {
                     required
                     label={t("fields.email")}
                   />
-                  <FormTextInput
+                  <FormPhoneInput
                     control={control}
                     name="contactPhone"
                     required

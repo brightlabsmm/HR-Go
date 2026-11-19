@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react"
 
-import { DataTable } from "@/components/common/data-table"
-import { DataTableActions } from "@/components/common/data-table-actions"
-import { createDataTableColumns } from "@/components/common/data-table-columns"
+import {
+  createDataTableColumns,
+  DataTable,
+  DataTableActions,
+} from "@/components/common/data-table"
 import { SearchBox } from "@/components/common/search-box"
 import { StatusBadge } from "@/components/common/status-badge"
 
@@ -138,10 +140,12 @@ export function BranchTablePreview() {
         className="max-w-md"
       />
       <DataTable
+        tableId="branches-preview"
         columns={columns}
         data={visibleBranches}
         getRowId={(branch) => branch.id}
         label="Branches"
+        enableColumnVisibility={false}
       />
     </div>
   )

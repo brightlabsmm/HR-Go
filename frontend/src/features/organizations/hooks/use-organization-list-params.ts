@@ -1,6 +1,7 @@
 import { useSearchParams } from "react-router"
 
 import { PAGE_PARAM, PAGE_SIZE_PARAM } from "@/constants/pagination"
+import { useListSort } from "@/shared/hooks/use-list-sort"
 import {
   parsePageParam,
   parsePageSizeParam,
@@ -18,6 +19,7 @@ function parseStatus(value: string | null) {
 
 export function useOrganizationListParams() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const { sorting, setSorting, listSortParams } = useListSort()
   const page = parsePageParam(searchParams.get(PAGE_PARAM))
   const limit = parsePageSizeParam(searchParams.get(PAGE_SIZE_PARAM))
   const search = searchParams.get("search") ?? ""
@@ -43,11 +45,14 @@ export function useOrganizationListParams() {
     status,
     hasFilters: Boolean(search || status),
     resetFilters: () => patchParams({ search: null, status: null }),
+    sorting,
+    setSorting,
     listParams: {
       page,
       limit,
       search: search || undefined,
       status,
+      ...listSortParams,
     },
     setSearch: (value: string) => patchParams({ search: value }),
     setStatus: (value: string) =>

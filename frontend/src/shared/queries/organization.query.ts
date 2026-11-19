@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 
 import {
   createOrganization,
@@ -34,6 +39,7 @@ export function useOrganizationsQuery(params?: OrganizationListParams) {
     queryKey: organizationKeys.list(params),
     queryFn: () => listOrganizations(params),
     enabled: Boolean(accessToken),
+    placeholderData: keepPreviousData,
   })
 }
 

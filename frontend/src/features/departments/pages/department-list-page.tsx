@@ -4,9 +4,11 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useSearchParams } from "react-router"
 
 import { ConfirmDialog } from "@/components/common/confirm-dialog"
-import { DataTable } from "@/components/common/data-table"
-import { DataTableActions } from "@/components/common/data-table-actions"
-import { createDataTableColumns } from "@/components/common/data-table-columns"
+import {
+  createDataTableColumns,
+  DataTable,
+  DataTableActions,
+} from "@/components/common/data-table"
 import { FilterBar } from "@/components/common/filter-bar"
 import { FilterSelect } from "@/components/common/filter-select"
 import { ListCard } from "@/components/common/list-card"
@@ -18,6 +20,7 @@ import { StatusBadge } from "@/components/common/status-badge"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { Button } from "@/components/ui/button"
 import { PAGE_PARAM, PAGE_SIZE_PARAM } from "@/constants/pagination"
+import { useListSort } from "@/shared/hooks/use-list-sort"
 import { useBranchesQuery } from "@/shared/queries/branch.query"
 import {
   useDeactivateDepartmentMutation,
@@ -35,6 +38,7 @@ export function DepartmentListPage() {
   const { t: tCommon } = useTranslation("common")
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { sorting, setSorting, listSortParams } = useListSort()
   const status =
     searchParams.get("status") === "inactive" ||
     searchParams.get("status") === "active"
@@ -49,6 +53,7 @@ export function DepartmentListPage() {
     limit,
     status: status ?? undefined,
     branchId,
+    ...listSortParams,
   })
   const branchesQuery = useBranchesQuery({ limit: 100 })
   const deactivateMutation = useDeactivateDepartmentMutation()
@@ -94,16 +99,21 @@ export function DepartmentListPage() {
   ]
   const columns = column.columns([
     column.accessor("departmentName", {
+      id: "name",
       header: t("columns.name"),
+      enableSorting: true,
     }),
     column.accessor("departmentCode", {
+      id: "code",
       header: t("columns.code"),
+      enableSorting: true,
       cell: ({ getValue }) => (
         <span className="font-mono text-small-2 text-muted-foreground">{getValue()}</span>
       ),
     }),
     column.accessor("branchId", {
       header: t("form.branch"),
+      enableSorting: false,
       cell: ({ getValue }) => {
         const value = getValue()
         return value ? (branchNames.get(value) ?? "—") : "—"
@@ -111,11 +121,14 @@ export function DepartmentListPage() {
     }),
     column.accessor("status", {
       header: t("columns.status"),
+      enableSorting: true,
       cell: ({ getValue }) => <StatusBadge status={getValue()} />,
     }),
     column.display({
       id: "actions",
       header: t("columns.actions"),
+      enableSorting: false,
+      enableHiding: false,
       meta: { align: "end" },
       cell: ({ row }) => (
         <DataTableActions
@@ -165,10 +178,13 @@ export function DepartmentListPage() {
 
     return (
       <DataTable
+        tableId="departments"
         columns={columns}
         data={rows}
         getRowId={(department) => department.id}
         label={t("title")}
+        sorting={sorting}
+        onSortingChange={setSorting}
         onRowClick={(department) => void navigate(`/departments/${department.id}`)}
       />
     )

@@ -9,6 +9,7 @@ import { applyApiFieldErrors } from "@/app/api/feedback"
 import { FormActions } from "@/components/common/form-actions"
 import { FormFieldGrid } from "@/components/common/form-field-grid"
 import { FormSkeleton } from "@/components/common/form-skeleton"
+import { FormPhoneInput } from "@/components/common/form/form-phone-input"
 import { FormTextInput } from "@/components/common/form/form-text-input"
 import { FormTextareaInput } from "@/components/common/form/form-textarea-input"
 import { FormSection, formStackClassName } from "@/components/common/form-section"
@@ -19,6 +20,7 @@ import {
   useOrganizationQuery,
   useUpdateOrganizationMutation,
 } from "@/shared/queries/organization.query"
+import { requiredE164Phone } from "@/util/phone"
 
 const CODE_PATTERN = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/
 
@@ -46,10 +48,10 @@ export function OrganizationEditPage() {
           .trim()
           .min(1, t("form.errors.email_required", "Email is required."))
           .email(t("form.errors.email")),
-        contactPhone: z
-          .string()
-          .trim()
-          .min(1, t("form.errors.phone_required", "Phone number is required.")),
+        contactPhone: requiredE164Phone(
+          t("form.errors.phone_required"),
+          t("form.errors.phone_invalid")
+        ),
         country: z
           .string()
           .trim()
@@ -173,7 +175,7 @@ export function OrganizationEditPage() {
                 required
                 label={t("form.email")}
               />
-              <FormTextInput
+              <FormPhoneInput
                 control={control}
                 name="contactPhone"
                 required

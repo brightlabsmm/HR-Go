@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router"
 
 import { ConfirmDialog } from "@/components/common/confirm-dialog"
+import { DetailActionButton } from "@/components/common/detail-action-button"
 import { DetailList } from "@/components/common/detail-list"
 import { FormSkeleton } from "@/components/common/form-skeleton"
 import { MotionStack } from "@/components/common/motion-stack"
@@ -40,6 +41,7 @@ export function OrganizationDetailPage() {
   const adminAccountsQuery = useOrganizationAdminAccountsQuery(id)
   const adminAccounts = adminAccountsQuery.data ?? []
   const { can } = usePermissions()
+  const canUpdate = can("platform.organization.update")
   const canChangeStatus = can("platform.organization.status.update")
   const canDelete = can("platform.organization.delete")
   const statusMutation = useUpdateOrganizationStatusMutation()
@@ -76,23 +78,24 @@ export function OrganizationDetailPage() {
       <OrganizationDetailHeader
         organizationId={id}
         actions={
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => void navigate(`/organizations/${id}/create-admin`)}
-            >
-              <UserPlusIcon className="size-4" />
-              {t("actions.create_admin", "Create Admin Account")}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => void navigate(`/organizations/${id}/edit`)}
-            >
-              <PencilIcon className="size-4" />
-              {tCommon("actions.edit")}
-            </Button>
+          <>
+            {canUpdate ? (
+              <DetailActionButton
+                tone="primary"
+                onClick={() => void navigate(`/organizations/${id}/create-admin`)}
+              >
+                <UserPlusIcon />
+                {t("actions.create_admin", "Create Admin Account")}
+              </DetailActionButton>
+            ) : null}
+            {canUpdate ? (
+              <DetailActionButton
+                onClick={() => void navigate(`/organizations/${id}/edit`)}
+              >
+                <PencilIcon />
+                {tCommon("actions.edit")}
+              </DetailActionButton>
+            ) : null}
             {canChangeStatus && organization ? (
               <OrganizationStatusButtons
                 organization={organization}
@@ -100,17 +103,15 @@ export function OrganizationDetailPage() {
               />
             ) : null}
             {canDelete && organization ? (
-              <Button
-                type="button"
-                variant="outline"
-                className="border-destructive/40 bg-destructive-muted/20 text-destructive hover:border-destructive/60 hover:bg-destructive-muted hover:text-destructive dark:border-destructive/40 dark:bg-destructive-muted/20 dark:hover:bg-destructive-muted/40"
+              <DetailActionButton
+                tone="destructive"
                 onClick={() => setShowDeleteDialog(true)}
               >
-                <Trash2Icon className="size-4" />
+                <Trash2Icon />
                 {tCommon("actions.delete")}
-              </Button>
+              </DetailActionButton>
             ) : null}
-          </div>
+          </>
         }
       />
       <div className="grid items-start gap-12 lg:grid-cols-[18.75rem_minmax(0,1fr)]">

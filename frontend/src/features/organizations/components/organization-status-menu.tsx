@@ -1,17 +1,12 @@
-import { cn } from "cn"
-import { MoreHorizontalIcon } from "lucide-react"
+import {
+  CheckCircleIcon,
+  PauseCircleIcon,
+  RotateCcwIcon,
+  type LucideIcon,
+} from "lucide-react"
 import { useTranslation } from "react-i18next"
 
-import { StatusBadge } from "@/components/common/status-badge"
-import { buttonVariants } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 
 import type {
   Organization,
@@ -31,6 +26,12 @@ export type OrganizationStatusAction =
   | "suspend"
   | "reactivate"
 
+const STATUS_ACTION_ICONS: Record<OrganizationStatusAction, LucideIcon> = {
+  activate: CheckCircleIcon,
+  suspend: PauseCircleIcon,
+  reactivate: RotateCcwIcon,
+}
+
 export interface OrganizationStatusTransition {
   status: OrganizationStatus
   action: OrganizationStatusAction
@@ -45,7 +46,7 @@ export const ORGANIZATION_STATUS_TRANSITIONS: Record<
   SUSPENDED: [{ status: "ACTIVE", action: "reactivate" }],
 }
 
-interface OrganizationStatusMenuProps {
+interface OrganizationStatusMenuItemsProps {
   organization: Organization
   onSelect: (status: OrganizationStatus) => void
 }
@@ -117,10 +118,10 @@ export function getStatusDialogContent(
   }
 }
 
-export function OrganizationStatusMenu({
+export function OrganizationStatusMenuItems({
   organization,
   onSelect,
-}: OrganizationStatusMenuProps) {
+}: OrganizationStatusMenuItemsProps) {
   const { t } = useTranslation("organizations")
   const transitions = getAvailableStatusTransitions(organization.status)
 
@@ -129,33 +130,21 @@ export function OrganizationStatusMenu({
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        aria-label={t("status_change.menu")}
-        className={cn(
-          buttonVariants({ variant: "ghost", size: "icon-sm" }),
-          "cursor-pointer text-muted-foreground"
-        )}
-      >
-        <MoreHorizontalIcon />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-48">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>{t("status_change.menu")}</DropdownMenuLabel>
-          {transitions.map((item) => (
-            <DropdownMenuItem
-              key={item.status}
-              className="flex cursor-pointer items-center justify-between gap-3"
-              onClick={() => onSelect(item.status)}
-            >
-              <span className="font-medium text-foreground">
-                {t(`status_actions.${item.action}`)}
-              </span>
-              <StatusBadge status={item.status} />
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      {transitions.map((item) => {
+        const Icon = STATUS_ACTION_ICONS[item.action]
+
+        return (
+          <DropdownMenuItem
+            key={item.status}
+            className="cursor-pointer"
+            onClick={() => onSelect(item.status)}
+          >
+            <Icon />
+            {t(`status_actions.${item.action}`)}
+          </DropdownMenuItem>
+        )
+      })}
+    </>
   )
 }
