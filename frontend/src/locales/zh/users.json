@@ -27,6 +27,11 @@
     "description": "该平台用户将被设为停用。",
     "confirm": "停用"
   },
+  "reactivate": {
+    "title": "重新启用该用户？",
+    "description": "该平台用户将被恢复为启用。",
+    "confirm": "重新启用"
+  },
   "form": {
     "email": "邮箱",
     "full_name": "全名",

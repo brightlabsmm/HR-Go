@@ -1,12 +1,18 @@
+import type { SortingState } from "@tanstack/react-table"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router"
 
-import { DataTable } from "@/components/common/data-table"
-import { DataTableActions } from "@/components/common/data-table-actions"
-import { createDataTableColumns } from "@/components/common/data-table-columns"
+import {
+  createDataTableColumns,
+  DataTable,
+  DataTableActions,
+} from "@/components/common/data-table"
 import { IdentityCell } from "@/components/common/identity-cell"
 import { StatusBadge } from "@/components/common/status-badge"
-import { OrganizationStatusMenu } from "@/features/organizations/components/organization-status-menu"
+import {
+  getAvailableStatusTransitions,
+  OrganizationStatusMenuItems,
+} from "@/features/organizations/components/organization-status-menu"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import { formatDate } from "@/util/format-date"
 
@@ -19,12 +25,16 @@ const column = createDataTableColumns<Organization>()
 
 interface OrganizationTableProps {
   data: Organization[]
+  sorting: SortingState
+  onSortingChange: (sorting: SortingState) => void
   onChangeStatus?: (organization: Organization, status: OrganizationStatus) => void
   onDelete?: (organization: Organization) => void
 }
 
 export function OrganizationTable({
   data,
+  sorting,
+  onSortingChange,
   onChangeStatus,
   onDelete,
 }: OrganizationTableProps) {
@@ -36,7 +46,9 @@ export function OrganizationTable({
   const canDelete = can("platform.organization.delete")
   const columns = column.columns([
     column.accessor("displayName", {
+      id: "displayName",
       header: t("columns.name"),
+      enableSorting: true,
       cell: ({ row }) => (
         <IdentityCell
           name={row.original.displayName}
@@ -45,25 +57,31 @@ export function OrganizationTable({
       ),
     }),
     column.accessor("organizationCode", {
+      id: "code",
       header: t("columns.code"),
+      enableSorting: true,
       cell: ({ getValue }) => (
         <span className="font-mono text-small-2 text-muted-foreground">{getValue()}</span>
       ),
     }),
     column.accessor("contactEmail", {
       header: t("columns.email"),
+      enableSorting: false,
       cell: ({ getValue }) => getValue() || "—",
     }),
     column.accessor("country", {
       header: t("columns.country"),
+      enableSorting: false,
       cell: ({ getValue }) => getValue() || "—",
     }),
     column.accessor("status", {
       header: t("columns.status"),
+      enableSorting: true,
       cell: ({ getValue }) => <StatusBadge status={getValue()} />,
     }),
     column.accessor("createdAt", {
       header: t("created_at"),
+      enableSorting: true,
       cell: ({ getValue }) => (
         <span className="text-muted-foreground">{formatDate(getValue(), i18n.language)}</span>
       ),
@@ -71,36 +89,49 @@ export function OrganizationTable({
     column.display({
       id: "actions",
       header: () => <span className="sr-only">{t("columns.actions")}</span>,
+      enableSorting: false,
+      enableHiding: false,
       meta: { align: "end" },
-      cell: ({ row }) => (
-        <div className="flex items-center justify-end gap-0.5">
+      cell: ({ row }) => {
+        const organization = row.original
+        const statusItems =
+          canChangeStatus && onChangeStatus
+            ? getAvailableStatusTransitions(organization.status)
+            : []
+
+        return (
           <DataTableActions
             onEdit={
               canUpdate
-                ? () => void navigate(`/organizations/${row.original.id}/edit`)
+                ? () => void navigate(`/organizations/${organization.id}/edit`)
                 : undefined
             }
+            extraItems={
+              statusItems.length > 0 ? (
+                <OrganizationStatusMenuItems
+                  organization={organization}
+                  onSelect={(status) => onChangeStatus?.(organization, status)}
+                />
+              ) : undefined
+            }
             onDelete={
-              canDelete && onDelete ? () => onDelete(row.original) : undefined
+              canDelete && onDelete ? () => onDelete(organization) : undefined
             }
           />
-          {canChangeStatus && onChangeStatus ? (
-            <OrganizationStatusMenu
-              organization={row.original}
-              onSelect={(status) => onChangeStatus(row.original, status)}
-            />
-          ) : null}
-        </div>
-      ),
+        )
+      },
     }),
   ])
 
   return (
     <DataTable
+      tableId="organizations"
       columns={columns}
       data={data}
       getRowId={(organization) => organization.id}
       label={t("title")}
+      sorting={sorting}
+      onSortingChange={onSortingChange}
       onRowClick={(organization) => void navigate(`/organizations/${organization.id}`)}
     />
   )

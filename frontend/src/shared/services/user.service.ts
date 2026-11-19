@@ -1,7 +1,7 @@
 import { apiClient } from "@/app/api/client"
 import { unwrap, unwrapPage } from "@/app/api/http"
 import { controlPath } from "@/app/api/paths"
-import { toListQuery } from "@/util/list-query"
+import { toListQuery, type ListQueryParams } from "@/util/list-query"
 
 import type { AuthRole } from "@/shared/services/auth.service"
 
@@ -17,12 +17,7 @@ export interface PlatformUser {
   permissions: string[]
 }
 
-export interface UserListParams {
-  page?: number
-  limit?: number
-  search?: string
-  status?: string
-}
+export type UserListParams = ListQueryParams
 
 export interface CreatePlatformUserInput {
   fullName: string

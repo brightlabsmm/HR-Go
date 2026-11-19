@@ -87,6 +87,8 @@ export function BranchListPage() {
       <BranchTable
         data={items}
         parentNames={parentNames}
+        sorting={params.sorting}
+        onSortingChange={params.setSorting}
         onRowClick={(branch) => {
           void navigate(`/branches/${branch.id}`)
         }}

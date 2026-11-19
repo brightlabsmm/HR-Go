@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest"
 import {
   isOptionalE164Phone,
   isValidBranchPhone,
+  optionalE164Phone,
+  requiredE164Phone,
   splitPhone,
   toE164Phone,
   uniqueDialCodes,
@@ -38,6 +40,22 @@ describe("phone helpers", () => {
       phoneCode: "+66",
       national: "",
     })
+  })
+
+  it("validates required E.164 numbers with zod", () => {
+    const schema = requiredE164Phone("Phone is required.", "Enter a valid phone number.")
+    expect(schema.safeParse("").error?.issues[0]?.message).toBe("Phone is required.")
+    expect(schema.safeParse("912345678").error?.issues[0]?.message).toBe(
+      "Enter a valid phone number."
+    )
+    expect(schema.parse("+95912345678")).toBe("+95912345678")
+  })
+
+  it("allows a blank optional E.164 number", () => {
+    const schema = optionalE164Phone("Enter a valid phone number.")
+    expect(schema.parse("")).toBe("")
+    expect(schema.parse("+66912345678")).toBe("+66912345678")
+    expect(schema.safeParse("123").success).toBe(false)
   })
 
   it("dedupes dial codes from the country list", () => {

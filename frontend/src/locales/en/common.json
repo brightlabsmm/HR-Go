@@ -22,7 +22,8 @@
     "back": "Back"
   },
   "footer": {
-    "copyright": "© {{year}} HR Go"
+    "copyright": "© {{year}} HR Go",
+    "patch_version": "Patch version {{version}}"
   },
   "actions": {
     "submit": "Submit",
@@ -54,7 +55,13 @@
     "pending": "Pending"
   },
   "table": {
-    "empty": "No results found"
+    "empty": "No results found",
+    "columns": "Columns",
+    "toggle_columns": "Toggle columns",
+    "sort_asc": "Sort ascending",
+    "sort_desc": "Sort descending",
+    "clear_sort": "Clear sort",
+    "row_actions": "Row actions"
   },
   "language": "Language",
   "locale": {

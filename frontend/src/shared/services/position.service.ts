@@ -2,7 +2,7 @@ import { apiClient } from "@/app/api/client"
 import { unwrap, unwrapPage } from "@/app/api/http"
 import { workspacePath } from "@/app/api/paths"
 import { compactParams } from "@/util/compact-params"
-import { toListQuery } from "@/util/list-query"
+import { toListQuery, type ListQueryParams } from "@/util/list-query"
 
 export type PositionStatus = "ACTIVE" | "INACTIVE"
 
@@ -17,12 +17,8 @@ export interface Position {
   updatedAt: string
 }
 
-export interface PositionListParams {
-  page?: number
-  limit?: number
+export interface PositionListParams extends ListQueryParams {
   departmentId?: string
-  status?: string
-  search?: string
 }
 
 export interface PositionInput {
@@ -34,13 +30,7 @@ export interface PositionInput {
 export function listPositions(params?: PositionListParams) {
   return unwrapPage<Position>(
     apiClient.get(workspacePath("/positions"), {
-      params: toListQuery({
-        page: params?.page,
-        limit: params?.limit,
-        search: params?.search,
-        status: params?.status,
-        departmentId: params?.departmentId,
-      }),
+      params: toListQuery(params),
     })
   )
 }

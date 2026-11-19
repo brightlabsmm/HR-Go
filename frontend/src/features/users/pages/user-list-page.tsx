@@ -4,9 +4,11 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useSearchParams } from "react-router"
 
 import { ConfirmDialog } from "@/components/common/confirm-dialog"
-import { DataTable } from "@/components/common/data-table"
-import { DataTableActions } from "@/components/common/data-table-actions"
-import { createDataTableColumns } from "@/components/common/data-table-columns"
+import {
+  createDataTableColumns,
+  DataTable,
+  DataTableActions,
+} from "@/components/common/data-table"
 import { FilterBar } from "@/components/common/filter-bar"
 import { FilterSelect } from "@/components/common/filter-select"
 import { IdentityCell } from "@/components/common/identity-cell"
@@ -21,6 +23,7 @@ import { TableSkeleton } from "@/components/common/table-skeleton"
 import { ToneBadge } from "@/components/common/tone-badge"
 import { Button } from "@/components/ui/button"
 import { PAGE_PARAM, PAGE_SIZE_PARAM } from "@/constants/pagination"
+import { useListSort } from "@/shared/hooks/use-list-sort"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import { useCurrentUserQuery } from "@/shared/queries/auth.query"
 import {
@@ -48,6 +51,7 @@ export function UserListPage() {
   const { t: tCommon } = useTranslation("common")
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { sorting, setSorting, listSortParams } = useListSort()
   const page = parsePageParam(searchParams.get(PAGE_PARAM))
   const limit = parsePageSizeParam(searchParams.get(PAGE_SIZE_PARAM))
   const search = searchParams.get("search") ?? ""
@@ -58,6 +62,7 @@ export function UserListPage() {
     limit,
     search: search || undefined,
     status,
+    ...listSortParams,
   })
   const meQuery = useCurrentUserQuery()
   const { can } = usePermissions()
@@ -98,23 +103,27 @@ export function UserListPage() {
     { value: "inactive", label: tCommon("status.inactive") },
   ]
   const columns = column.columns([
-    column.display({
-      id: "name",
+    column.accessor("fullName", {
+      id: "fullName",
       header: t("columns.name"),
+      enableSorting: true,
       cell: ({ row }) => <IdentityCell name={row.original.fullName} />,
     }),
     column.accessor("email", {
       header: t("columns.email"),
+      enableSorting: true,
       cell: ({ getValue }) => (
         <span className="text-small-1 text-foreground">{getValue() ?? "—"}</span>
       ),
     }),
     column.accessor("status", {
       header: t("columns.status"),
+      enableSorting: true,
       cell: ({ getValue }) => <StatusBadge status={getValue()} />,
     }),
     column.accessor("roles", {
       header: t("columns.role"),
+      enableSorting: false,
       cell: ({ getValue }) => {
         const role = getValue()[0]
         return role ? <ToneBadge tone="brand">{role.roleName}</ToneBadge> : "—"
@@ -123,6 +132,8 @@ export function UserListPage() {
     column.display({
       id: "actions",
       header: t("columns.actions"),
+      enableSorting: false,
+      enableHiding: false,
       meta: { align: "end" },
       cell: ({ row }) => (
         <DataTableActions
@@ -180,10 +191,13 @@ export function UserListPage() {
 
     return (
       <DataTable
+        tableId="users"
         columns={columns}
         data={users}
         getRowId={(user) => user.id}
         label={t("title")}
+        sorting={sorting}
+        onSortingChange={setSorting}
         onRowClick={(user) => void navigate(`/users/${user.id}`)}
       />
     )

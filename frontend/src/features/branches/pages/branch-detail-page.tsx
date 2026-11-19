@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router"
 
 import { ConfirmDialog } from "@/components/common/confirm-dialog"
+import { DetailActionButton } from "@/components/common/detail-action-button"
 import { DetailList } from "@/components/common/detail-list"
 import { FormSkeleton } from "@/components/common/form-skeleton"
 import { MotionStack } from "@/components/common/motion-stack"
@@ -11,7 +12,6 @@ import { NotFoundState } from "@/components/common/not-found-state"
 import { PageHeader } from "@/components/common/page-header"
 import { ProfileSummaryCard } from "@/components/common/profile-summary-card"
 import { StatusBadge } from "@/components/common/status-badge"
-import { Button } from "@/components/ui/button"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import {
   useBranchQuery,
@@ -65,29 +65,23 @@ export function BranchDetailPage() {
   ]
 
   const actions = (
-    <div className="flex items-center gap-2">
+    <>
       {canUpdate && branch ? (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => void navigate(`/branches/${id}/edit`)}
-        >
-          <PencilIcon className="size-4" />
+        <DetailActionButton onClick={() => void navigate(`/branches/${id}/edit`)}>
+          <PencilIcon />
           {tCommon("actions.edit")}
-        </Button>
+        </DetailActionButton>
       ) : null}
       {canDeactivate && branch && branch.status === "ACTIVE" ? (
-        <Button
-          type="button"
-          variant="outline"
-          className="text-destructive hover:bg-destructive-muted hover:text-destructive"
+        <DetailActionButton
+          tone="destructive"
           onClick={() => setShowDeactivateDialog(true)}
         >
-          <Trash2Icon className="size-4" />
+          <Trash2Icon />
           {tCommon("actions.deactivate", "Deactivate")}
-        </Button>
+        </DetailActionButton>
       ) : null}
-    </div>
+    </>
   )
 
   return (

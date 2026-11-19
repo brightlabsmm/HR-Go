@@ -101,6 +101,8 @@ export function OrganizationListPage() {
     return (
       <OrganizationTable
         data={items}
+        sorting={params.sorting}
+        onSortingChange={params.setSorting}
         onChangeStatus={(organization, status) =>
           setStatusTarget({ organization, status })
         }

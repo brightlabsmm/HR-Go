@@ -22,7 +22,8 @@
     "back": "กลับ"
   },
   "footer": {
-    "copyright": "© {{year}} HR Go"
+    "copyright": "© {{year}} HR Go",
+    "patch_version": "เวอร์ชันแพตช์ {{version}}"
   },
   "actions": {
     "submit": "ส่ง",
@@ -54,7 +55,13 @@
     "pending": "รอดำเนินการ"
   },
   "table": {
-    "empty": "ไม่พบข้อมูล"
+    "empty": "ไม่พบข้อมูล",
+    "columns": "คอลัมน์",
+    "toggle_columns": "แสดงหรือซ่อนคอลัมน์",
+    "sort_asc": "เรียงจากน้อยไปมาก",
+    "sort_desc": "เรียงจากมากไปน้อย",
+    "clear_sort": "ล้างการเรียง",
+    "row_actions": "การดำเนินการของแถว"
   },
   "language": "ภาษา",
   "locale": {

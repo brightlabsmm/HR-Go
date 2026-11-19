@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 
 import { authKeys } from "@/shared/queries/auth.query"
 import {
@@ -31,6 +36,7 @@ export function useUsersQuery(params?: UserListParams) {
     queryKey: userKeys.list(params),
     queryFn: () => listUsers(params),
     enabled: Boolean(accessToken),
+    placeholderData: keepPreviousData,
   })
 }
 

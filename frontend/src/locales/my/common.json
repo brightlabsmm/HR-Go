@@ -22,7 +22,8 @@
     "back": "နောက်သို့"
   },
   "footer": {
-    "copyright": "© {{year}} HR Go"
+    "copyright": "© {{year}} HR Go",
+    "patch_version": "ဗားရှင်း {{version}}"
   },
   "actions": {
     "submit": "တင်သွင်းရန်",
@@ -54,7 +55,13 @@
     "pending": "စောင့်ဆိုင်းနေသည်"
   },
   "table": {
-    "empty": "ရလဒ်မရှိပါ"
+    "empty": "ရလဒ်မရှိပါ",
+    "columns": "ကော်လံများ",
+    "toggle_columns": "ကော်လံများ ပြရန်/ဖျောက်ရန်",
+    "sort_asc": "အတက်စဉ် စီရန်",
+    "sort_desc": "အဆင်းစဉ် စီရန်",
+    "clear_sort": "စီခြင်း ရှင်းရန်",
+    "row_actions": "တန်းလုပ်ဆောင်ချက်များ"
   },
   "language": "ဘာသာစကား",
   "locale": {
