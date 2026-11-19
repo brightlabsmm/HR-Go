@@ -122,6 +122,11 @@ func NewEngine(deps Dependencies) *gin.Engine {
 	// API v1 Routing
 	v1 := engine.Group("/api/v1")
 	if deps.DB != nil {
+		// Public. Registered on the engine so it is outside every auth middleware group.
+		patchVersionRepo := patchversionrepo.New(deps.DB)
+		patchVersionService := patchversionsvc.New(patchVersionRepo)
+		patchversionroutes.Register(engine, patchversionhandler.New(patchVersionService))
+
 		// Control modules
 		ctrlAuthRepo := ctrlauthrepo.New(deps.DB)
 		ctrlAuthService := ctrlauthsvc.New(ctrlAuthRepo, tokenManager)
@@ -138,10 +143,6 @@ func NewEngine(deps Dependencies) *gin.Engine {
 		userRepo := userrepo.New(deps.DB)
 		userService := usersvc.New(userRepo)
 		userroutes.Register(v1, userhandler.New(userService), secMiddleware)
-
-		patchVersionRepo := patchversionrepo.New(deps.DB)
-		patchVersionService := patchversionsvc.New(patchVersionRepo)
-		patchversionroutes.Register(v1, patchversionhandler.New(patchVersionService))
 
 		// Workspace modules
 		wsAuthRepo := wsauthrepo.New(deps.DB)

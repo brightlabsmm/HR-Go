@@ -8,6 +8,7 @@ import (
 
 // Register exposes the current patch version without authentication.
 // Both the platform console and the organization portal read it on the login screen.
-func Register(rg *gin.RouterGroup, h *handler.Handler) {
-	rg.GET("/patch-version", h.GetCurrent)
+// The route is mounted on the engine, not on a RouterGroup that uses auth middleware.
+func Register(engine *gin.Engine, h *handler.Handler) {
+	engine.GET("/api/v1/patch-version", h.GetCurrent)
 }
