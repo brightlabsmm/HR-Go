@@ -24,4 +24,11 @@ mkdir -p "$cache"
 export GOCACHE="$cache"
 export GOTMPDIR="$cache"
 
+# Git's own hook process on Windows cannot launch the compiled Go binary.
+# PowerShell can. Unix machines run go directly.
+if command -v powershell.exe >/dev/null 2>&1; then
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -Command 'go run ./cmd/bump-patch-version; exit $LASTEXITCODE'
+  exit $?
+fi
+
 go run ./cmd/bump-patch-version
