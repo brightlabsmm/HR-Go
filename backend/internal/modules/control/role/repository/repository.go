@@ -7,6 +7,7 @@ import (
 
 	"hrgo/backend/internal/modules/control/role/models"
 	"hrgo/backend/internal/modules/control/role/request"
+	"hrgo/backend/internal/shared/filtering"
 	"hrgo/backend/internal/shared/sorting"
 )
 
@@ -30,6 +31,14 @@ func (r *repository) ListRoles(ctx context.Context, q request.ListRolesQuery) ([
 		Preload("Permissions", func(db *gorm.DB) *gorm.DB {
 			return db.Order("grouping ASC, resource ASC, action ASC")
 		})
+	db = filtering.Apply(db, q.Filter, filtering.Options{
+		Allowed: map[string]string{
+			"name":       "name",
+			"code":       "code",
+			"createdat":  "created_at",
+			"created_at": "created_at",
+		},
+	})
 	err := sorting.Apply(db, q.SortBy, q.Orders(), sorting.Options{
 		Allowed: map[string]string{
 			"name":       "name",
@@ -52,6 +61,17 @@ func (r *repository) ListPermissions(ctx context.Context, q request.ListPermissi
 		db = db.Where("grouping = ?", q.Grouping)
 	}
 
+	permFilterCols := map[string]string{
+		"grouping":   "grouping",
+		"resource":   "resource",
+		"action":     "action",
+		"code":       "code",
+		"scope":      "scope",
+		"createdat":  "created_at",
+		"created_at": "created_at",
+	}
+	db = filtering.Apply(db, q.Filter, filtering.Options{Allowed: permFilterCols})
+
 	var total int64
 	if err := db.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -69,15 +89,7 @@ func (r *repository) ListPermissions(ctx context.Context, q request.ListPermissi
 
 	var perms []models.Permission
 	err := sorting.Apply(db, q.SortBy, q.Orders(), sorting.Options{
-		Allowed: map[string]string{
-			"grouping":   "grouping",
-			"resource":   "resource",
-			"action":     "action",
-			"code":       "code",
-			"scope":      "scope",
-			"createdat":  "created_at",
-			"created_at": "created_at",
-		},
+		Allowed:      permFilterCols,
 		Default:      "grouping ASC, resource ASC, action ASC",
 		DefaultOrder: "ASC",
 	}).

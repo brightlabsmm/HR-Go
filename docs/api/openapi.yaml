@@ -136,6 +136,28 @@ components:
       description: |
         Deprecated alias for `sortOrder`. Prefer `sortOrder`. Still accepted
         for backward compatibility when `sortOrder` is not provided.
+    FilterParam:
+      name: filter
+      in: query
+      required: false
+      schema:
+        type: array
+        items:
+          type: string
+          example: status:eq:ACTIVE
+      style: form
+      explode: true
+      description: |
+        One or more column filters, AND-combined. Repeat the parameter
+        (`filter=status:eq:ACTIVE&filter=code:like:ACME`).
+
+        Each entry uses `field:op:value`. Value may contain `:` and `,`.
+        Supported ops: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `like`, `ilike`,
+        `in` (comma-separated values), `isnull`, `notnull` (value optional).
+        `like` / `ilike` wrap the value with `%…%`. Unknown fields and ops are
+        ignored. Allowed fields are endpoint-specific (same listable columns
+        as that endpoint's whitelist). Dedicated legacy params such as
+        `status` / `q` remain and combine with `filter` via AND.
 
   schemas:
     ErrorDetail:
@@ -953,6 +975,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
+        - $ref: "#/components/parameters/FilterParam"
         - $ref: "#/components/parameters/SortByParam"
         - $ref: "#/components/parameters/SortOrderParam"
         - $ref: "#/components/parameters/SortDirectionParam"
@@ -990,6 +1013,7 @@ paths:
           description: Filter by permission scope (`PLATFORM` or `ORG`)
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/FilterParam"
         - $ref: "#/components/parameters/SortByParam"
         - $ref: "#/components/parameters/SortOrderParam"
         - $ref: "#/components/parameters/SortDirectionParam"
@@ -1039,6 +1063,7 @@ paths:
             enum: [ACTIVE, INACTIVE]
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/FilterParam"
         - $ref: "#/components/parameters/SortByParam"
         - $ref: "#/components/parameters/SortOrderParam"
         - $ref: "#/components/parameters/SortDirectionParam"
@@ -1308,6 +1333,7 @@ paths:
             format: date
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/FilterParam"
         - $ref: "#/components/parameters/SortByParam"
         - $ref: "#/components/parameters/SortOrderParam"
         - $ref: "#/components/parameters/SortDirectionParam"
@@ -1498,6 +1524,7 @@ paths:
           required: true
           schema:
             type: string
+        - $ref: "#/components/parameters/FilterParam"
         - $ref: "#/components/parameters/SortByParam"
         - $ref: "#/components/parameters/SortOrderParam"
         - $ref: "#/components/parameters/SortDirectionParam"
@@ -1625,6 +1652,7 @@ paths:
             enum: [ACTIVE, INACTIVE]
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/FilterParam"
         - $ref: "#/components/parameters/SortByParam"
         - $ref: "#/components/parameters/SortOrderParam"
         - $ref: "#/components/parameters/SortDirectionParam"
@@ -1795,6 +1823,7 @@ paths:
             enum: [ACTIVE, INACTIVE]
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/FilterParam"
         - $ref: "#/components/parameters/SortByParam"
         - $ref: "#/components/parameters/SortOrderParam"
         - $ref: "#/components/parameters/SortDirectionParam"
@@ -1965,6 +1994,7 @@ paths:
             enum: [ACTIVE, INACTIVE]
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/FilterParam"
         - $ref: "#/components/parameters/SortByParam"
         - $ref: "#/components/parameters/SortOrderParam"
         - $ref: "#/components/parameters/SortDirectionParam"
@@ -2091,6 +2121,7 @@ paths:
       security:
         - BearerAuth: []
       parameters:
+        - $ref: "#/components/parameters/FilterParam"
         - $ref: "#/components/parameters/SortByParam"
         - $ref: "#/components/parameters/SortOrderParam"
         - $ref: "#/components/parameters/SortDirectionParam"

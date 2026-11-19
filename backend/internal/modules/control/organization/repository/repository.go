@@ -12,6 +12,7 @@ import (
 	"hrgo/backend/internal/modules/control/organization/models"
 	"hrgo/backend/internal/modules/control/organization/request"
 	"hrgo/backend/internal/shared/codeformat"
+	"hrgo/backend/internal/shared/filtering"
 	"hrgo/backend/internal/shared/sorting"
 )
 
@@ -125,6 +126,26 @@ func (r *repository) List(ctx context.Context, query request.ListOrganizationsQu
 		db = db.Where("status = ?", status)
 	}
 
+	orgFilterCols := map[string]string{
+		"code":          "code",
+		"legalname":     "legal_name",
+		"legal_name":    "legal_name",
+		"displayname":   "display_name",
+		"display_name":  "display_name",
+		"contactemail":  "contact_email",
+		"contact_email": "contact_email",
+		"contactphone":  "contact_phone",
+		"contact_phone": "contact_phone",
+		"country":       "country",
+		"address":       "address",
+		"status":        "status",
+		"createdat":     "created_at",
+		"created_at":    "created_at",
+		"updatedat":     "updated_at",
+		"updated_at":    "updated_at",
+	}
+	db = filtering.Apply(db, query.Filter, filtering.Options{Allowed: orgFilterCols})
+
 	var total int64
 	if err := db.Count(&total).Error; err != nil {
 		return nil, 0, err
@@ -225,6 +246,20 @@ func (r *repository) ListAdminAccounts(ctx context.Context, orgID string, q requ
 		Joins("JOIN org_user_roles our ON our.account_id = oa.id").
 		Joins("JOIN org_roles r ON r.id = our.role_id").
 		Where("oa.organization_id = ? AND r.code = ?", orgID, "ORG_ADMIN")
+	adminFilterCols := map[string]string{
+		"employeecode":  "ei.employee_code",
+		"employee_code": "ei.employee_code",
+		"firstname":     "ei.first_name",
+		"first_name":    "ei.first_name",
+		"lastname":      "ei.last_name",
+		"last_name":     "ei.last_name",
+		"email":         "ei.email",
+		"identifier":    "oa.identifier",
+		"status":        "oa.status",
+		"createdat":     "oa.created_at",
+		"created_at":    "oa.created_at",
+	}
+	db = filtering.Apply(db, q.Filter, filtering.Options{Allowed: adminFilterCols})
 	err := sorting.Apply(db, q.SortBy, q.Orders(), sorting.Options{
 		Allowed: map[string]string{
 			"employeecode":  "ei.employee_code",

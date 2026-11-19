@@ -7,6 +7,7 @@ import (
 
 	"hrgo/backend/internal/modules/workspace/role/models"
 	"hrgo/backend/internal/modules/workspace/role/request"
+	"hrgo/backend/internal/shared/filtering"
 	"hrgo/backend/internal/shared/sorting"
 )
 
@@ -31,15 +32,17 @@ func (r *repository) ListRoles(ctx context.Context, orgID string, q request.List
 			return db.Order("grouping ASC, resource ASC, action ASC")
 		}).
 		Where("organization_id IS NULL OR organization_id = ?", orgID)
+	roleFilterCols := map[string]string{
+		"name":       "name",
+		"code":       "code",
+		"issystem":   "is_system",
+		"is_system":  "is_system",
+		"createdat":  "created_at",
+		"created_at": "created_at",
+	}
+	db = filtering.Apply(db, q.Filter, filtering.Options{Allowed: roleFilterCols})
 	err := sorting.Apply(db, q.SortBy, q.Orders(), sorting.Options{
-		Allowed: map[string]string{
-			"name":       "name",
-			"code":       "code",
-			"issystem":   "is_system",
-			"is_system":  "is_system",
-			"createdat":  "created_at",
-			"created_at": "created_at",
-		},
+		Allowed:      roleFilterCols,
 		Default:      "is_system DESC, name ASC",
 		DefaultOrder: "ASC",
 	}).Find(&roles).Error

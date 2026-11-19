@@ -1,9 +1,13 @@
 package request
 
-import "hrgo/backend/internal/shared/sorting"
+import (
+	"hrgo/backend/internal/shared/filtering"
+	"hrgo/backend/internal/shared/sorting"
+)
 
 type ListRolesQuery struct {
 	sorting.Query
+	filtering.Params
 }
 
 type RoleAssignmentInput struct {
