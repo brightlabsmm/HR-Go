@@ -1,7 +1,9 @@
 #!/bin/sh
 # Insert the next application patch version before git sends the push.
-# Git has no database client. This script runs backend/cmd/bump-patch-version,
+# Git has no database client. This script runs backend/cmd/bumpversion,
 # which reads DATABASE_URL from the environment or backend/.env.
+# The binary is named bumpversion. Windows treats an executable whose name
+# contains "patch" as an installer and will not start it from this hook.
 set -eu
 
 updates=$(cat)
@@ -24,11 +26,4 @@ mkdir -p "$cache"
 export GOCACHE="$cache"
 export GOTMPDIR="$cache"
 
-# Git's own hook process on Windows cannot launch the compiled Go binary.
-# PowerShell can. Unix machines run go directly.
-if command -v powershell.exe >/dev/null 2>&1; then
-  powershell.exe -NoProfile -ExecutionPolicy Bypass -Command 'go run ./cmd/bump-patch-version; exit $LASTEXITCODE'
-  exit $?
-fi
-
-go run ./cmd/bump-patch-version
+go run ./cmd/bumpversion

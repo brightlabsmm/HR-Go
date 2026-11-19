@@ -60,11 +60,12 @@ Rules for this layout:
 
 Every `git push` reads the current row, bumps `patch_version`, and inserts one new row. Increment the last segment by 1. When a segment would pass `99`, set it to `00` and add 1 to the segment on its left (`01.00.99` becomes `01.01.00`, `01.99.99` becomes `02.00.00`). Do not bump past `99.99.99`. The new row's `patch_date_time` is the current time, its `is_current` is true, and the previous current row is set to false in the same database transaction.
 
-The hook script is `.githooks/pre-push`. It runs `go run ./cmd/bump-patch-version` in `backend/`. On Windows it starts that command through PowerShell, because the Git hook process cannot launch the compiled Go binary. That command reads `DATABASE_URL` from the environment or from `backend/.env` and inserts the row. It does not print the database URL. Git itself has no database client, so the hook's command is the write path. Copy `.githooks/pre-push` to `.git/hooks/pre-push` and mark it executable, or set `git config core.hooksPath .githooks`. A push with no reachable database fails the hook and inserts nothing. Do not pass `--no-verify`: that skips the insert. Git has no client hook after a successful push, and this repository's GitHub Actions do not connect to the application database. Apply migrations before the first bump so the seeded current row `01.00.01` exists.
+The hook script is `.githooks/pre-push`. It runs `go run ./cmd/bumpversion` in `backend/`. The program is named bumpversion because Windows treats an executable whose name contains patch as an installer and will not start it from the hook. That command reads `DATABASE_URL` from the environment or from `backend/.env` and inserts the row. It does not print the database URL. Git itself has no database client, so the hook's command is the write path. Copy `.githooks/pre-push` to `.git/hooks/pre-push` and mark it executable, or set `git config core.hooksPath .githooks`. A push with no reachable database fails the hook and inserts nothing. Do not pass `--no-verify`: that skips the insert. Git has no client hook after a successful push, and this repository's GitHub Actions do not connect to the application database. Apply migrations before the first bump so the seeded current row `01.00.01` exists.
 
 ## Changed Logs
 
 | Date | Time | Author | Change |
 |---|---|---|---|
+| 2026-11-19 | 15:45 | thanthtooaung-coding | Renamed the push bump command to bumpversion so Windows will launch the executable. |
 | 2026-11-19 | 15:42 | thanthtooaung-coding | Noted that the Windows git hook starts the patch-version bump through PowerShell. |
 | 2026-11-19 | 15:26 | thanthtooaung-coding | Added the application patch version bump rule for every git push. |
