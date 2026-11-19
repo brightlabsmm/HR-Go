@@ -1,0 +1,45 @@
+package codeformat
+
+import (
+	"fmt"
+	"regexp"
+	"strings"
+)
+
+const (
+	SettingKeyBranchCodeFormat     = "branch_code_format"
+	SettingKeyDepartmentCodeFormat = "department_code_format"
+
+	DefaultBranchCodeFormat     = "BR-{0000}"
+	DefaultDepartmentCodeFormat = "DEPT-{0000}"
+)
+
+var seqPlaceholderRegex = regexp.MustCompile(`\{([0N#]+)\}`)
+
+// Format generates a formatted entity code from a format template and 1-based sequence number.
+// Supported sequence placeholders include {0000}, {NNNN}, {000}, {NNN}, {00}, {NN}, etc.
+// If no placeholder is present in pattern, pattern is used as a prefix with 4-digit zero padding.
+func Format(pattern string, seq int, fallbackPattern string) string {
+	if seq < 1 {
+		seq = 1
+	}
+
+	tpl := strings.TrimSpace(pattern)
+	if tpl == "" {
+		tpl = fallbackPattern
+	}
+
+	if seqPlaceholderRegex.MatchString(tpl) {
+		return seqPlaceholderRegex.ReplaceAllStringFunc(tpl, func(match string) string {
+			inner := strings.Trim(match, "{}")
+			width := len(inner)
+			if width < 1 {
+				width = 4
+			}
+			return fmt.Sprintf("%0*d", width, seq)
+		})
+	}
+
+	prefix := strings.TrimRight(tpl, "-_")
+	return fmt.Sprintf("%s-%04d", prefix, seq)
+}

@@ -1,0 +1,58 @@
+package handler
+
+import (
+	"github.com/gin-gonic/gin"
+
+	"hrgo/backend/internal/modules/control/role/request"
+	"hrgo/backend/internal/modules/control/role/service"
+	apperrors "hrgo/backend/internal/shared/errors"
+	"hrgo/backend/internal/shared/responses"
+)
+
+type Handler struct {
+	svc service.Service
+}
+
+func New(svc service.Service) *Handler {
+	return &Handler{svc: svc}
+}
+
+func (h *Handler) ListRoles(c *gin.Context) {
+	var q request.ListRolesQuery
+	_ = c.ShouldBindQuery(&q)
+
+	roles, appErr := h.svc.ListRoles(c.Request.Context(), q)
+	if appErr != nil {
+		responses.Fail(c, appErr)
+		return
+	}
+	responses.OK(c, roles)
+}
+
+func (h *Handler) ListPermissions(c *gin.Context) {
+	var q request.ListPermissionsQuery
+	_ = c.ShouldBindQuery(&q)
+
+	items, page, pageSize, total, appErr := h.svc.ListPermissions(c.Request.Context(), q)
+	if appErr != nil {
+		responses.Fail(c, appErr)
+		return
+	}
+	responses.Page(c, items, page, pageSize, total)
+}
+
+func (h *Handler) UpdateRolePermissions(c *gin.Context) {
+	roleID := c.Param("roleId")
+	var req request.ReplaceRolePermissionsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		responses.Fail(c, apperrors.BadRequest("Invalid permission payload."))
+		return
+	}
+
+	role, appErr := h.svc.UpdateRolePermissions(c.Request.Context(), roleID, req)
+	if appErr != nil {
+		responses.Fail(c, appErr)
+		return
+	}
+	responses.OK(c, role)
+}

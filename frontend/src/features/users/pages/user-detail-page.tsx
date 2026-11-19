@@ -1,0 +1,120 @@
+import { PencilIcon } from "lucide-react"
+import { useTranslation } from "react-i18next"
+import { useNavigate, useParams } from "react-router"
+
+import { DetailList } from "@/components/common/detail-list"
+import { FormSkeleton } from "@/components/common/form-skeleton"
+import { MotionStack } from "@/components/common/motion-stack"
+import { NotFoundState } from "@/components/common/not-found-state"
+import { ProfileSummaryCard } from "@/components/common/profile-summary-card"
+import { StatusBadge } from "@/components/common/status-badge"
+import { ToneBadge } from "@/components/common/tone-badge"
+import { Button } from "@/components/ui/button"
+import { RolePermissionReview } from "@/features/users/components/role-permission-review"
+import { UserDetailHeader } from "@/features/users/components/user-detail-header"
+import { usePermissions } from "@/shared/hooks/use-permissions"
+import { useRolesQuery } from "@/shared/queries/role.query"
+import { useUserQuery } from "@/shared/queries/user.query"
+import { formatDateTime } from "@/util/format-date"
+import { getInitials } from "@/util/initials"
+
+export function UserDetailPage() {
+  const { t, i18n } = useTranslation("users")
+  const { t: tCommon } = useTranslation("common")
+  const navigate = useNavigate()
+  const { id = "" } = useParams()
+  const userQuery = useUserQuery(id)
+  const { can } = usePermissions()
+  const canUpdate = can("platform.user.update")
+  const rolesQuery = useRolesQuery()
+  const user = userQuery.data
+  const assignedRole =
+    rolesQuery.data?.find(
+      (role) => role.roleCode === user?.roles[0]?.roleCode
+    ) ?? null
+  const roleName = assignedRole?.roleName ?? user?.roles[0]?.roleName
+
+  if (!user && userQuery.isFetched) {
+    return (
+      <NotFoundState backTo="/users" backLabel={t("title")} description={t("not_found")} />
+    )
+  }
+
+  const name = user?.fullName ?? ""
+  const profileItems = [
+    { label: t("form.full_name"), value: user?.fullName },
+    { label: t("form.email"), value: user?.email },
+    {
+      label: t("last_login_at"),
+      value: user ? formatDateTime(user.lastLoginAt, i18n.language) : null,
+    },
+  ]
+  const roleBadge = roleName ? (
+    <ToneBadge tone="brand">{roleName}</ToneBadge>
+  ) : null
+
+  return (
+    <MotionStack className="flex flex-col gap-8 pb-2">
+      <UserDetailHeader
+        userId={id}
+        actions={
+          canUpdate ? (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void navigate(`/users/${id}/edit`)}
+            >
+              <PencilIcon className="size-4" />
+              {tCommon("actions.edit")}
+            </Button>
+          ) : null
+        }
+      />
+      <div className="grid items-start gap-12 lg:grid-cols-[18.75rem_minmax(0,1fr)]">
+        <ProfileSummaryCard
+          isLoading={userQuery.isPending}
+          avatarSize="xl"
+          title={name}
+          subtitle={user?.email}
+          initials={getInitials(...name.split(" "))}
+          badges={
+            user ? (
+              <>
+                <StatusBadge status={user.status} />
+                {roleBadge}
+              </>
+            ) : null
+          }
+        />
+        <div className="flex min-w-0 flex-col gap-8">
+          {userQuery.isPending ? (
+            <FormSkeleton fields={4} columns={2} />
+          ) : (
+            <>
+              <section className="border-t border-hair pt-6">
+                <h2 className="mb-6 text-body-2 font-semibold text-foreground">
+                  {t("sections.profile")}
+                </h2>
+                <DetailList columns={2} items={profileItems} />
+              </section>
+              <section className="border-t border-hair pt-6">
+                <h2 className="mb-6 text-body-2 font-semibold text-foreground">
+                  {t("sections.access")}
+                </h2>
+                <div className="flex flex-col gap-8">
+                  <DetailList items={[{ label: t("form.role"), value: roleBadge }]} />
+                  <div className="flex flex-col gap-3">
+                    <h3 className="text-small-1 font-medium text-foreground">
+                      {t("form.permissions")}
+                    </h3>
+                    <RolePermissionReview role={assignedRole} />
+                  </div>
+                </div>
+              </section>
+            </>
+          )}
+        </div>
+      </div>
+    </MotionStack>
+  )
+}

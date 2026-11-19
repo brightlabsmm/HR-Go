@@ -1,0 +1,108 @@
+{
+  "title": "组织",
+  "subtitle": "管理平台上的客户组织。",
+  "add": "添加组织",
+  "search_placeholder": "按代码或名称搜索",
+  "all_status": "全部状态",
+  "not_found": "未找到组织。",
+  "columns": {
+    "code": "代码",
+    "name": "名称",
+    "email": "邮箱",
+    "country": "国家",
+    "status": "状态",
+    "actions": "操作"
+  },
+  "detail": {
+    "title": "组织"
+  },
+  "updated_at": "更新时间",
+  "form": {
+    "create_title": "新建组织",
+    "create_subtitle": "创建客户组织账户。",
+    "code": "组织代码",
+    "code_placeholder": "ORG-001",
+    "legal_name": "法定名称",
+    "display_name": "显示名称",
+    "country": "国家",
+    "phone": "电话",
+    "email": "邮箱",
+    "address": "地址",
+    "create": "创建组织",
+    "edit_title": "编辑组织",
+    "edit_subtitle": "更新该组织。",
+    "save": "保存",
+    "cancel": "取消",
+    "errors": {
+      "code": "请填写代码。",
+      "legal_name": "请填写法定名称。",
+      "display_name": "请填写显示名称。",
+      "email": "请输入有效邮箱。",
+      "email_required": "请填写邮箱。",
+      "phone_required": "请填写电话号码。",
+      "country_required": "请填写国家。",
+      "address_required": "请填写地址。"
+    }
+  },
+  "empty": {
+    "title": "还没有组织",
+    "description": "创建第一个客户组织以开始使用。"
+  },
+  "sections": {
+    "identity": "身份信息",
+    "identity_description": "该组织的名称与标识。",
+    "contact": "联系方式",
+    "contact_description": "联系该组织的方式。",
+    "overview": "概览",
+    "administrators": "组织管理员",
+    "no_administrators": "尚未创建管理员账户。"
+  },
+  "create_admin": {
+    "title": "创建管理员账户",
+    "subtitle": "创建组织管理员员工及登录账户。",
+    "first_name": "名字",
+    "last_name": "姓氏",
+    "email": "电子邮箱",
+    "employee_code": "员工编号 / 登录标识",
+    "employee_code_placeholder": "例如 EMP-001",
+    "employee_code_hint": "该编号将同时用作员工编号与登录账号。",
+    "password": "密码",
+    "submit": "创建管理员账户",
+    "success": "管理员账户创建成功。登录标识: {{identifier}}",
+    "errors": {
+      "first_name_required": "必须填写名字。",
+      "last_name_required": "必须填写姓氏。",
+      "employee_code_required": "必须填写员工编号/标识。",
+      "password_required": "密码至少需要8个字符。"
+    }
+  },
+  "actions": {
+    "create_admin": "创建管理员账户"
+  },
+  "created_at": "创建时间",
+  "status_actions": {
+    "activate": "启用",
+    "suspend": "暂停",
+    "reactivate": "重新启用"
+  },
+  "status_confirm": {
+    "activate_title": "启用 {{name}}？",
+    "activate_description": "这将把 {{name}} 设置为正常状态，立即生效。",
+    "reactivate_title": "重新启用 {{name}}？",
+    "reactivate_description": "这将重新启用 {{name}} 并恢复其工作区访问权限。",
+    "suspend_title": "挂起 {{name}}？",
+    "suspend_description": "这将挂起 {{name}}。工作区用户将被强制登出且无法访问。"
+  },
+  "delete": {
+    "title": "删除 {{name}}？",
+    "description": "这将删除 {{name}}。工作区用户将被登出且无法再访问该组织。",
+    "confirm": "删除",
+    "success": "组织已成功删除。"
+  },
+  "status_change": {
+    "menu": "更改状态",
+    "title": "将状态改为{{status}}？",
+    "description": "这将把 {{name}} 设为 {{status}}。更改会立即生效。",
+    "confirm": "更改状态"
+  }
+}

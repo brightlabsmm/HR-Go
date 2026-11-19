@@ -1,0 +1,35 @@
+{
+  "title": "အဖွဲ့အစည်း ဆက်တင်များ",
+  "subtitle": "သင့်အဖွဲ့အစည်း၏ အချက်အလက်များနှင့် ဆက်တင်များကို စီမံပါ။",
+  "sections": {
+    "identity": "အထွေထွေ အချက်အလက်",
+    "identity_description": "သင့်အဖွဲ့အစည်းဆိုင်ရာ အထွေထွေ အချက်အလက်များ။",
+    "contact": "ဆက်သွယ်ရန်",
+    "contact_description": "သင့်အဖွဲ့အစည်းသို့ ဆက်သွယ်ရန် အချက်အလက်များ။",
+    "code_formats": "ကုဒ် ပုံစံများ",
+    "code_formats_description": "ဌာနခွဲနှင့် ဌာနများအတွက် အလိုအလျောက် ကုဒ်ဖန်တီးမည့် ပုံစံများ။"
+  },
+  "fields": {
+    "code": "အဖွဲ့အစည်း ကုဒ်",
+    "legal_name": "တရားဝင် အမည်",
+    "display_name": "ဖော်ပြမည့် အမည်",
+    "email": "အီးမေးလ်",
+    "phone": "ဖုန်းနံပါတ်",
+    "country": "နိုင်ငံ",
+    "address": "လိပ်စာ",
+    "branch_code_format": "ဌာနခွဲ ကုဒ် ပုံစံ",
+    "branch_code_format_placeholder": "BR-{0000}",
+    "department_code_format": "ဌာန ကုဒ် ပုံစံ",
+    "department_code_format_placeholder": "DEPT-{0000}"
+  },
+  "errors": {
+    "display_name_required": "ဖော်ပြမည့် အမည် လိုအပ်ပါသည်။",
+    "email_required": "အီးမေးလ် လိုအပ်ပါသည်။",
+    "email_invalid": "မှန်ကန်သော အီးမေးလ် လိပ်စာ ထည့်သွင်းပါ။",
+    "phone_required": "ဖုန်းနံပါတ် လိုအပ်ပါသည်။",
+    "country_required": "နိုင်ငံ လိုအပ်ပါသည်။",
+    "address_required": "လိပ်စာ လိုအပ်ပါသည်။"
+  },
+  "save": "ပြောင်းလဲမှုများ သိမ်းဆည်းရန်",
+  "save_success": "အဖွဲ့အစည်း ဆက်တင်များကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။"
+}

@@ -1,0 +1,12 @@
+{
+  "title": "我的账户",
+  "subtitle": "当前会话中的个人资料。",
+  "name": "姓名",
+  "email": "邮箱",
+  "employee_code": "员工编号",
+  "organization": "组织",
+  "roles": "角色",
+  "sections": {
+    "profile": "资料"
+  }
+}

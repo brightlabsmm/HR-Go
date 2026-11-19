@@ -1,0 +1,35 @@
+{
+  "title": "组织设置",
+  "subtitle": "管理组织资料、联系方式和偏好设置。",
+  "sections": {
+    "identity": "基本信息",
+    "identity_description": "组织的基本信息。",
+    "contact": "联系方式",
+    "contact_description": "组织的联系方式信息。",
+    "code_formats": "代码生成规则",
+    "code_formats_description": "自定义分支和部门的代码自动生成规则。"
+  },
+  "fields": {
+    "code": "组织代码",
+    "legal_name": "法定名称",
+    "display_name": "显示名称",
+    "email": "联系邮箱",
+    "phone": "联系电话",
+    "country": "国家/地区",
+    "address": "地址",
+    "branch_code_format": "分支代码规则",
+    "branch_code_format_placeholder": "BR-{0000}",
+    "department_code_format": "部门代码规则",
+    "department_code_format_placeholder": "DEPT-{0000}"
+  },
+  "errors": {
+    "display_name_required": "显示名称为必填项。",
+    "email_required": "联系邮箱为必填项。",
+    "email_invalid": "请输入有效的邮箱地址。",
+    "phone_required": "联系电话为必填项。",
+    "country_required": "国家/地区为必填项。",
+    "address_required": "地址为必填项。"
+  },
+  "save": "保存更改",
+  "save_success": "组织设置更新成功。"
+}

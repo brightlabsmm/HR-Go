@@ -1,0 +1,136 @@
+{
+  "app_name": "HR Go",
+  "nav": {
+    "home": "Home",
+    "login": "Log in",
+    "branches": "Branches",
+    "organizations": "Organizations",
+    "departments": "Departments",
+    "users": "Users",
+    "roles": "Roles",
+    "permissions": "Permissions",
+    "positions": "Positions",
+    "organization_settings": "Organization settings",
+    "account": "My account"
+  },
+  "header": {
+    "notifications": "Notifications",
+    "open_menu": "Open navigation",
+    "close_menu": "Close navigation",
+    "account": "Account",
+    "logout": "Log out",
+    "back": "Back"
+  },
+  "footer": {
+    "copyright": "© {{year}} HR Go"
+  },
+  "actions": {
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "close": "Close",
+    "edit": "Edit",
+    "delete": "Delete",
+    "view": "View details",
+    "back": "Back",
+    "reset_filters": "Reset filters",
+    "back_home": "Back to home"
+  },
+  "form": {
+    "show_password": "Show password",
+    "hide_password": "Hide password",
+    "generate_password": "Generate",
+    "select_placeholder": "Select an option",
+    "search_placeholder": "Search",
+    "clear_search": "Clear search",
+    "no_results": "No results found",
+    "phone_code": "Country code",
+    "phone_placeholder": "912345678",
+    "stay_after_create": "Stay on this page to add another"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "suspended": "Suspended",
+    "pending": "Pending"
+  },
+  "table": {
+    "empty": "No results found"
+  },
+  "language": "Language",
+  "locale": {
+    "en": "English",
+    "th": "ไทย",
+    "zh": "中文",
+    "my": "မြန်မာ"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "range": "{{from}}-{{to}} of {{count}} result",
+    "empty": "0 of 0 results",
+    "page_size": "Rows per page",
+    "previous": "Previous page",
+    "next": "Next page",
+    "page": "Page {{page}}"
+  },
+  "image": {
+    "crop": "Crop image",
+    "position": "{{current}} / {{total}}",
+    "more_count": "+{{count}}"
+  },
+  "errors": {
+    "generic": "Something went wrong.",
+    "forbidden": "You don't have permission to do this.",
+    "network": "Unable to reach the server.",
+    "page_title": "Something went wrong",
+    "page_description": "This page could not be loaded. Reload to try again, or go back home.",
+    "reload": "Reload page"
+  },
+  "nav_groups": {
+    "structure": "Structure",
+    "people": "People & access",
+    "organization": "Organization",
+    "compliance": "Compliance",
+    "tenants": "Tenants",
+    "reference": "Reference data",
+    "access": "Access control",
+    "account": "Account"
+  },
+  "portal": {
+    "organization": "Organization workspace",
+    "platform": "Platform console"
+  },
+  "theme": {
+    "toggle": "Toggle theme",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "breadcrumb": {
+    "label": "Breadcrumb"
+  },
+  "sidebar": {
+    "platform_admin": "Platform administrator",
+    "navigation": "Main navigation",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
+  },
+  "states": {
+    "not_found_title": "We couldn't find that",
+    "not_found_description": "It may have been removed, or the link may be incorrect.",
+    "page_not_found_code": "404",
+    "page_not_found_title": "Page not found",
+    "page_not_found_description": "This page doesn't exist. Check the address, or go back home.",
+    "no_results_title": "No matching results",
+    "no_results_description": "Try adjusting or clearing your filters.",
+    "loading": "Loading…",
+    "forbidden_title": "You don't have access",
+    "forbidden_description": "Your role doesn't allow this action.",
+    "forbidden_action": "Go to {{page}}"
+  },
+  "brand": {
+    "headline_organization": "Run your people operations in one place",
+    "headline_platform": "Operate every HR Go tenant from one console",
+    "feature_structure": "Branches, departments, and reporting lines",
+    "feature_access": "Role-based access for every team member",
+    "feature_audit": "A full audit trail of every change"
+  }
+}

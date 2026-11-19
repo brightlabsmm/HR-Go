@@ -1,0 +1,111 @@
+{
+  "title": "Role များ",
+  "columns": {
+    "code": "ကုဒ်",
+    "name": "အမည်",
+    "action": "လုပ်ဆောင်ချက်",
+    "grouping": "အုပ်စု",
+    "permission": "Permission",
+    "description": "ဖော်ပြချက်",
+    "scope": "Scope",
+    "grant": "ခွင့်ပြုရန်"
+  },
+  "form": {
+    "name": "အမည်",
+    "code": "ကုဒ်",
+    "description": "ဖော်ပြချက်",
+    "permissions": "Permission များ",
+    "system": "System"
+  },
+  "empty": {
+    "title": "Role မရှိသေးပါ",
+    "description": "Role များကို platform က ပေးထားသည်။",
+    "permissions_title": "Permission မတွေ့ပါ",
+    "permissions_desc": "ရှာဖွေမှု သို့မဟုတ် filter များကို ပြန်စစ်ပါ။"
+  },
+  "picker": {
+    "no_permissions": "Role မရှိပါ။"
+  },
+  "selected_count": "permission {{count}} ခု",
+  "actions": {
+    "read": "ကြည့်ရန်",
+    "create": "ဖန်တီးရန်",
+    "update": "ပြင်ဆင်ရန်",
+    "delete": "ဖျက်ရန်",
+    "deactivate": "ပိတ်ရန်",
+    "assign": "သတ်မှတ်ရန်",
+    "manage": "စီမံရန်",
+    "status_update": "အခြေအနေ ပြောင်းရန်"
+  },
+  "groupings": {
+    "branch": "ရုံးခွဲ",
+    "department": "ဌာန",
+    "position": "ရာထူး",
+    "organization": "အဖွဲ့အစည်း",
+    "user": "User",
+    "role": "Role",
+    "general": "အထွေထွေ"
+  },
+  "resources": {
+    "org_branch": "အဖွဲ့အစည်း / ဌာနခွဲ",
+    "org_department": "အဖွဲ့အစည်း / ဌာန",
+    "org_position": "အဖွဲ့အစည်း / ရာထူး",
+    "org_role": "အဖွဲ့အစည်း / Role",
+    "branch": "အဖွဲ့အစည်း / ဌာနခွဲ",
+    "department": "အဖွဲ့အစည်း / ဌာန",
+    "position": "အဖွဲ့အစည်း / ရာထူး",
+    "platform_user": "Platform / User",
+    "platform_role": "Platform / Role",
+    "organization": "Platform / အဖွဲ့အစည်း",
+    "permission": "Platform / Permission"
+  },
+  "filters": {
+    "all_groupings": "အုပ်စုအားလုံး",
+    "all_scopes": "Scope အားလုံး"
+  },
+  "scopes": {
+    "all": "အားလုံး",
+    "platform": "Platform",
+    "org": "အဖွဲ့အစည်း",
+    "platform_permissions": "Platform Permission များ",
+    "org_permissions": "အဖွဲ့အစည်း Permission များ"
+  },
+  "permissions_page_title": "Permission များ",
+  "permissions_page_subtitle": "အုပ်စုအလိုက် ဖွဲ့စည်းထားသော စနစ် Permission စာရင်း။",
+  "permissions_table_label": "Permission စာရင်း",
+  "search_placeholder": "Permission များ ရှာရန်...",
+  "system_title": "Platform role များ",
+  "system_subtitle": "Built-in platform role များနှင့် ၎င်းတို့၏ permission များ။",
+  "catalog_subtitle": "ဤအဖွဲ့အစည်းတွင် ရနိုင်သော role များနှင့် လုပ်ပိုင်ခွင့်များ။",
+  "catalog_heading": "ရရှိနိုင်သော Role များ",
+  "managed_hint": "Role များကို platform က စီမံသည်။ ပြောင်းလိုပါက admin ထံ ဆက်သွယ်ပါ။",
+  "not_found": "Role မတွေ့ပါ။",
+  "detail": {
+    "title": "Role"
+  },
+  "sections": {
+    "identity": "အထောက်အထား",
+    "permissions": "Permission များ",
+    "access": "Access",
+    "grant_permissions": "(Permission များ သတ်မှတ်ရန်)"
+  },
+  "save": "Permission များ သိမ်းဆည်းရန်",
+  "save_success": "Role ၏ permission များကို အောင်မြင်စွာ ပြင်ဆင်ပြီးပါပြီ။",
+  "select_all": "အားလုံး ရွေးရန်",
+  "deselect_all": "အားလုံး ပြန်ဖြုတ်ရန်",
+  "expand_all": "အားလုံး ဖွင့်ရန်",
+  "collapse_all": "အားလုံး ပိတ်ရန်",
+  "expand_list": "စာရင်း ဖွင့်ရန်",
+  "collapse_list": "စာရင်း ပိတ်ရန်",
+  "expand": "Permission များ ပြရန်",
+  "collapse": "ပိတ်ရန်",
+  "discard_changes": "အပြောင်းအလဲများ ပယ်ဖျက်ရန်",
+  "unsaved_changes": "မသိမ်းရသေးသော အပြောင်းအလဲများ",
+  "no_unsaved_changes": "အပြောင်းအလဲအားလုံး သိမ်းဆည်းပြီးပါပြီ။",
+  "selected_permissions_counter": "{{total}} ခုတွင် {{selected}} ခု ရွေးချယ်ထားသည်",
+  "select_role_prompt": "Permission များ သတ်မှတ်ရန် ဘယ်ဘက်မှ role တစ်ခုကို ရွေးပါ။",
+  "active_count": "ခွင့်ပြုထားသော permission {{count}} ခု",
+  "permissions": {
+    "none": "ဤ role တွင် permission မရှိပါ။"
+  }
+}

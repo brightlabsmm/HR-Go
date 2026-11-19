@@ -1,0 +1,42 @@
+{
+  "title": "Departments",
+  "not_found": "Department not found.",
+  "subtitle": "Organize departments, optionally by branch.",
+  "add": "Add department",
+  "all_status": "All status",
+  "all_branches": "All branches",
+  "columns": {
+    "code": "Code",
+    "name": "Name",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "deactivate": {
+    "title": "Deactivate department?",
+    "description": "This will deactivate {{name}}.",
+    "confirm": "Deactivate"
+  },
+  "form": {
+    "create_title": "Add department",
+    "edit_title": "Edit department",
+    "code": "Code",
+    "code_placeholder": "001",
+    "name": "Name",
+    "branch": "Branch",
+    "none": "None",
+    "create": "Create department",
+    "save": "Save",
+    "cancel": "Cancel",
+    "errors": {
+      "code": "Department code is required.",
+      "name": "Department name is required."
+    }
+  },
+  "empty": {
+    "title": "No departments yet",
+    "description": "Add departments to organize people by team."
+  },
+  "sections": {
+    "details": "Department details"
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "title": "Branches",
+  "not_found": "Branch not found.",
+  "subtitle": "Manage your organization's branches.",
+  "add": "Add branch",
+  "search_placeholder": "Search by code or branch name",
+  "all_status": "All status",
+  "reset_filters": "Reset filters",
+  "empty_value": "—",
+  "empty": {
+    "title": "No branches yet",
+    "description": "Create your first branch to get started."
+  },
+  "columns": {
+    "code": "Code",
+    "name": "Branch name",
+    "parent": "Parent branch",
+    "address": "Address",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "deactivate": {
+    "title": "Deactivate branch?",
+    "description": "This will deactivate {{name}}. You can keep using other branches.",
+    "confirm": "Deactivate"
+  },
+  "form": {
+    "title": "Add branch",
+    "subtitle": "Fill in the details below to create a new branch.",
+    "create": "Create branch",
+    "save": "Save",
+    "edit_title": "Edit branch",
+    "edit_subtitle": "Update this branch.",
+    "information": "Branch information",
+    "code": "Code",
+    "code_placeholder": "001",
+    "name": "Name",
+    "name_placeholder": "Enter branch name",
+    "parent": "Parent branch",
+    "none": "None",
+    "address": "Address",
+    "address_placeholder": "Street, township, city",
+    "errors": {
+      "code_required": "Branch code is required.",
+      "name_required": "Branch name is required."
+    }
+  }
+}

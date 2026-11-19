@@ -54,7 +54,26 @@ func TestEngineProbesAndNotFound(t *testing.T) {
 		}
 	})
 
-	t.Run("unknown route returns JSON 404 envelope", func(t *testing.T) {
+	t.Run("GET /ping returns 200 pong", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/ping", nil)
+		rec := httptest.NewRecorder()
+		engine.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200", rec.Code)
+		}
+		var payload struct {
+			Message string `json:"message"`
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+			t.Fatalf("invalid JSON: %v", err)
+		}
+		if payload.Message != "pong" {
+			t.Fatalf("payload = %+v, want message=pong", payload)
+		}
+	})
+
+	t.Run("unknown route returns JSON 404 error envelope", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/does-not-exist", nil)
 		rec := httptest.NewRecorder()
 		engine.ServeHTTP(rec, req)
@@ -66,8 +85,9 @@ func TestEngineProbesAndNotFound(t *testing.T) {
 		if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
 			t.Fatalf("invalid JSON: %v", err)
 		}
-		if payload["success"] != false {
-			t.Errorf("success = %v, want false", payload["success"])
+		errObj, ok := payload["error"].(map[string]any)
+		if !ok || errObj["code"] != "NOT_FOUND" {
+			t.Errorf("expected error envelope with NOT_FOUND, got: %v", payload)
 		}
 	})
 }

@@ -1,0 +1,108 @@
+{
+  "title": "Organizations",
+  "subtitle": "Manage customer organizations on the platform.",
+  "add": "Add organization",
+  "search_placeholder": "Search by code or name",
+  "all_status": "All status",
+  "not_found": "Organization not found.",
+  "columns": {
+    "code": "Code",
+    "name": "Name",
+    "email": "Email",
+    "country": "Country",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "detail": {
+    "title": "Organization"
+  },
+  "updated_at": "Updated",
+  "form": {
+    "create_title": "New organization",
+    "create_subtitle": "Create a customer organization account.",
+    "code": "Organization code",
+    "code_placeholder": "ORG-001",
+    "legal_name": "Legal name",
+    "display_name": "Display name",
+    "country": "Country",
+    "phone": "Phone",
+    "email": "Email",
+    "address": "Address",
+    "create": "Create organization",
+    "edit_title": "Edit organization",
+    "edit_subtitle": "Update this organization.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "errors": {
+      "code": "Code is required.",
+      "legal_name": "Legal name is required.",
+      "display_name": "Display name is required.",
+      "email": "Email must be a valid email address.",
+      "email_required": "Email is required.",
+      "phone_required": "Phone number is required.",
+      "country_required": "Country is required.",
+      "address_required": "Address is required."
+    }
+  },
+  "empty": {
+    "title": "No organizations yet",
+    "description": "Create your first customer organization to get started."
+  },
+  "sections": {
+    "identity": "Identity",
+    "identity_description": "How this organization is named and identified.",
+    "contact": "Contact",
+    "contact_description": "Where people can reach this organization.",
+    "overview": "Overview",
+    "administrators": "Organization Administrators",
+    "no_administrators": "No administrator accounts created yet."
+  },
+  "create_admin": {
+    "title": "Create Admin Account",
+    "subtitle": "Create an organization administrator employee and login account.",
+    "first_name": "First name",
+    "last_name": "Last name",
+    "email": "Email",
+    "employee_code": "Employee Code / Identifier",
+    "employee_code_placeholder": "e.g. EMP-001",
+    "employee_code_hint": "This code will be used as both the employee record code and the login ID.",
+    "password": "Password",
+    "submit": "Create Admin Account",
+    "success": "Admin account created successfully. Login identifier: {{identifier}}",
+    "errors": {
+      "first_name_required": "First name is required.",
+      "last_name_required": "Last name is required.",
+      "employee_code_required": "Employee code / identifier is required.",
+      "password_required": "Password must be at least 8 characters."
+    }
+  },
+  "actions": {
+    "create_admin": "Create Admin Account"
+  },
+  "created_at": "Created",
+  "status_actions": {
+    "activate": "Activate",
+    "suspend": "Suspend",
+    "reactivate": "Reactivate"
+  },
+  "status_confirm": {
+    "activate_title": "Activate {{name}}?",
+    "activate_description": "This will set {{name}} to Active. The change takes effect immediately.",
+    "reactivate_title": "Reactivate {{name}}?",
+    "reactivate_description": "This will reactivate {{name}} and restore workspace access.",
+    "suspend_title": "Suspend {{name}}?",
+    "suspend_description": "This will suspend {{name}}. Workspace users will be logged out and unable to access the organization."
+  },
+  "delete": {
+    "title": "Delete {{name}}?",
+    "description": "This will delete {{name}}. Workspace users will be logged out and unable to access the organization.",
+    "confirm": "Delete",
+    "success": "Organization deleted successfully."
+  },
+  "status_change": {
+    "menu": "Change status",
+    "title": "Change status to {{status}}?",
+    "description": "This will set {{name}} to {{status}}. The change takes effect immediately.",
+    "confirm": "Change status"
+  }
+}
