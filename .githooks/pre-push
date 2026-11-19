@@ -16,4 +16,12 @@ if ! command -v go >/dev/null 2>&1; then
   echo "bump patch version: go is not on PATH" >&2
   exit 1
 fi
+
+# Keep the build cache inside the repo tmp dir. A Git Bash build left in the
+# default user cache can produce a binary Windows refuses to start.
+cache="$root/backend/tmp/gocache"
+mkdir -p "$cache"
+export GOCACHE="$cache"
+export GOTMPDIR="$cache"
+
 go run ./cmd/bump-patch-version
