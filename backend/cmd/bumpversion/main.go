@@ -7,8 +7,11 @@ import (
 	"os"
 	"time"
 
+	"gorm.io/gorm"
+
 	"hrgo/backend/internal/config"
 	"hrgo/backend/internal/database"
+	"hrgo/backend/internal/modules/control/patchversion/bump"
 	"hrgo/backend/internal/modules/control/patchversion/repository"
 )
 
@@ -17,16 +20,21 @@ func main() {
 	if err != nil {
 		log.Fatalf("bump patch version: load config: %v", err)
 	}
-	if cfg.DatabaseURL == "" {
-		log.Fatal("bump patch version: DATABASE_URL is required (environment or backend/.env)")
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	db, err := database.Open(ctx, cfg.DatabaseURL)
+	// One configured URL only. Authentication failure stops the push.
+	var db *gorm.DB
+	err = bump.OpenConfigured(ctx, cfg.DatabaseURL, func(ctx context.Context, databaseURL string) error {
+		opened, openErr := database.Open(ctx, databaseURL)
+		if openErr != nil {
+			return openErr
+		}
+		db = opened
+		return nil
+	})
 	if err != nil {
-		log.Fatalf("bump patch version: open database: %v", err)
+		log.Fatalf("bump patch version: %v", err)
 	}
 	sqlDB, err := db.DB()
 	if err != nil {

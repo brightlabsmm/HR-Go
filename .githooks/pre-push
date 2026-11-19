@@ -2,6 +2,8 @@
 # Insert the next application patch version before git sends the push.
 # Git has no database client. This script runs backend/cmd/bumpversion,
 # which reads DATABASE_URL from the environment or backend/.env.
+# If that database rejects authentication or cannot be reached, the command
+# exits non-zero. It does not try another database.
 # The binary is named bumpversion. Windows treats an executable whose name
 # contains "patch" as an installer and will not start it from this hook.
 set -eu
