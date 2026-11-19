@@ -1,0 +1,65 @@
+{
+  "title": "Platform users",
+  "subtitle": "Create platform users and assign platform roles.",
+  "add": "Add user",
+  "search_placeholder": "Search by name or email",
+  "all_status": "All status",
+  "not_found": "User not found.",
+  "columns": {
+    "name": "Name",
+    "email": "Email",
+    "status": "Status",
+    "role": "Role",
+    "actions": "Actions"
+  },
+  "create": {
+    "title": "New platform user",
+    "subtitle": "Create a platform user and assign a role.",
+    "submit": "Create user"
+  },
+  "detail": {
+    "title": "User",
+    "deactivate": "Deactivate",
+    "reactivate": "Reactivate"
+  },
+  "deactivate": {
+    "title": "Deactivate user?",
+    "description": "This sets the platform user to inactive.",
+    "confirm": "Deactivate"
+  },
+  "form": {
+    "email": "Email",
+    "full_name": "Full name",
+    "password": "Temporary password",
+    "role": "Role",
+    "permissions": "Permissions",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit_subtitle": "Update this user.",
+    "errors": {
+      "email_required": "Email is required.",
+      "email_invalid": "Email must be a valid email address.",
+      "full_name": "Full name is required.",
+      "role": "Select a role.",
+      "password": "Password must be at least 8 characters and include 1 uppercase letter, 1 lowercase letter, and 1 digit."
+    }
+  },
+  "empty": {
+    "title": "No users yet",
+    "description": "Create the first platform user."
+  },
+  "sections": {
+    "profile": "Profile",
+    "profile_description": "Name and email for this user.",
+    "access": "Access",
+    "access_description": "The assigned role decides what this user can see and do.",
+    "danger": "Deactivate user",
+    "danger_description": "The user loses platform access immediately."
+  },
+  "self_roles_hint": "You can't change your own roles.",
+  "last_login_at": "Last login",
+  "permissions": {
+    "empty": "Select a role to review its permissions.",
+    "none": "This role has no permissions."
+  }
+}

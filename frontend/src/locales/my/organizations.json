@@ -1,0 +1,108 @@
+{
+  "title": "အဖွဲ့အစည်းများ",
+  "subtitle": "Platform ပေါ်ရှိ customer အဖွဲ့အစည်းများကို စီမံပါ။",
+  "add": "အဖွဲ့အစည်း ထည့်ရန်",
+  "search_placeholder": "ကုဒ် သို့မဟုတ် အမည်ဖြင့် ရှာရန်",
+  "all_status": "အခြေအနေအားလုံး",
+  "not_found": "အဖွဲ့အစည်း မတွေ့ပါ။",
+  "columns": {
+    "code": "ကုဒ်",
+    "name": "အမည်",
+    "email": "Email",
+    "country": "နိုင်ငံ",
+    "status": "အခြေအနေ",
+    "actions": "လုပ်ဆောင်ချက်များ"
+  },
+  "detail": {
+    "title": "အဖွဲ့အစည်း"
+  },
+  "updated_at": "ပြင်ဆင်သည့်ရက်",
+  "form": {
+    "create_title": "အဖွဲ့အစည်းအသစ်",
+    "create_subtitle": "Customer အဖွဲ့အစည်း account တစ်ခု ဖန်တီးပါ။",
+    "code": "အဖွဲ့အစည်းကုဒ်",
+    "code_placeholder": "ORG-001",
+    "legal_name": "တရားဝင်အမည်",
+    "display_name": "ပြသမည့်အမည်",
+    "country": "နိုင်ငံ",
+    "phone": "ဖုန်း",
+    "email": "Email",
+    "address": "လိပ်စာ",
+    "create": "အဖွဲ့အစည်း ဖန်တီးရန်",
+    "edit_title": "အဖွဲ့အစည်း ပြင်ဆင်ရန်",
+    "edit_subtitle": "ဤအဖွဲ့အစည်းကို ပြင်ဆင်ပါ။",
+    "save": "သိမ်းရန်",
+    "cancel": "ပယ်ဖျက်ရန်",
+    "errors": {
+      "code": "ကုဒ် လိုအပ်ပါသည်။",
+      "legal_name": "တရားဝင်အမည် လိုအပ်ပါသည်။",
+      "display_name": "ပြသမည့်အမည် လိုအပ်ပါသည်။",
+      "email": "Email လိပ်စာ မှန်ကန်ရပါမည်။",
+      "email_required": "Email လိုအပ်ပါသည်။",
+      "phone_required": "ဖုန်းနံပါတ် လိုအပ်ပါသည်။",
+      "country_required": "နိုင်ငံ လိုအပ်ပါသည်။",
+      "address_required": "လိပ်စာ လိုအပ်ပါသည်။"
+    }
+  },
+  "empty": {
+    "title": "အဖွဲ့အစည်း မရှိသေးပါ",
+    "description": "စတင်ရန် ပထမဆုံး customer အဖွဲ့အစည်းကို ဖန်တီးပါ။"
+  },
+  "sections": {
+    "identity": "အထောက်အထား",
+    "identity_description": "ဤအဖွဲ့အစည်းကို ခွဲခြားသတ်မှတ်ပုံ။",
+    "contact": "ဆက်သွယ်ရန်",
+    "contact_description": "ဤအဖွဲ့အစည်းကို ဆက်သွယ်နိုင်သည့် နည်းလမ်း။",
+    "overview": "အနှစ်ချုပ်",
+    "administrators": "အဖွဲ့အစည်း စီမံခန့်ခွဲသူများ",
+    "no_administrators": "စီမံခန့်ခွဲသူ အကောင့် မရှိသေးပါ။"
+  },
+  "create_admin": {
+    "title": "Admin အကောင့် ဖန်တီးရန်",
+    "subtitle": "အဖွဲ့အစည်း စီမံခန့်ခွဲသူ ဝန်ထမ်းနှင့် login အကောင့် ဖန်တီးပါ။",
+    "first_name": "အမည်ရှေ့ပိုင်း",
+    "last_name": "အမည်နောက်ပိုင်း",
+    "email": "အီးမေးလ်",
+    "employee_code": "ဝန်ထမ်းကုဒ် / Identifier",
+    "employee_code_placeholder": "ဥပမာ - EMP-001",
+    "employee_code_hint": "ဤကုဒ်ကို ဝန်ထမ်းကုဒ်အဖြစ်ရော login ID အဖြစ်ပါ အသုံးပြုပါမည်။",
+    "password": "စကားဝှက်",
+    "submit": "Admin အကောင့် ဖန်တီးရန်",
+    "success": "Admin အကောင့် အောင်မြင်စွာ ဖန်တီးပြီးပါပြီ။ Login identifier: {{identifier}}",
+    "errors": {
+      "first_name_required": "အမည်ရှေ့ပိုင်း ထည့်ရန် လိုအပ်ပါသည်။",
+      "last_name_required": "အမည်နောက်ပိုင်း ထည့်ရန် လိုအပ်ပါသည်။",
+      "employee_code_required": "ဝန်ထမ်းကုဒ် ထည့်ရန် လိုအပ်ပါသည်။",
+      "password_required": "စကားဝှက်သည် အနည်းဆုံး ၈ လုံး ရှိရပါမည်။"
+    }
+  },
+  "actions": {
+    "create_admin": "Admin အကောင့် ဖန်တီးရန်"
+  },
+  "created_at": "ဖန်တီးသည့်ရက်",
+  "status_actions": {
+    "activate": "ဖွင့်ရန်",
+    "suspend": "ယာယီရပ်ဆိုင်းရန်",
+    "reactivate": "ပြန်လည်ဖွင့်ရန်"
+  },
+  "status_confirm": {
+    "activate_title": "{{name}} ကို အသုံးပြုခွင့်ပေးမလား?",
+    "activate_description": "၎င်းသည် {{name}} ကို Active အဖြစ်ပြောင်းလဲပေးမည်ဖြစ်သည်။ ချက်ချင်းသက်ရောက်မှုရှိပါမည်။",
+    "reactivate_title": "{{name}} ကို ပြန်လည်အသုံးပြုခွင့်ပေးမလား?",
+    "reactivate_description": "၎င်းသည် {{name}} ကို ပြန်လည်အသုံးပြုခွင့်ပေးပြီး workspace အသုံးပြုခွင့်ကို ပြန်လည်ရရှိစေပါမည်။",
+    "suspend_title": "{{name}} ကို ရပ်ဆိုင်းမလား?",
+    "suspend_description": "၎င်းသည် {{name}} ကို ယာယီရပ်ဆိုင်းမည်ဖြစ်သည်။ Workspace အသုံးပြုသူများ အလိုအလျောက် ထွက်သွားမည်ဖြစ်ပြီး ဝင်ရောက်၍ မရတော့ပါ။"
+  },
+  "delete": {
+    "title": "{{name}} ကို ဖျက်မလား?",
+    "description": "၎င်းသည် {{name}} ကို ဖျက်ပစ်မည်ဖြစ်သည်။ Workspace အသုံးပြုသူများ အလိုအလျောက် ထွက်သွားမည်ဖြစ်ပြီး ဝင်ရောက်၍ မရတော့ပါ။",
+    "confirm": "ဖျက်ရန်",
+    "success": "အဖွဲ့အစည်းကို အောင်မြင်စွာ ဖျက်ပြီးပါပြီ။"
+  },
+  "status_change": {
+    "menu": "အခြေအနေ ပြောင်းရန်",
+    "title": "အခြေအနေကို {{status}} သို့ ပြောင်းမလား။",
+    "description": "{{name}} ကို {{status}} သို့ ပြောင်းပါမည်။ ချက်ချင်း အကျိုးသက်ရောက်မည်။",
+    "confirm": "အခြေအနေ ပြောင်းရန်"
+  }
+}

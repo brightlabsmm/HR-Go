@@ -1,0 +1,43 @@
+name: Frontend CI
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    name: Lint, typecheck, test, and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Unit tests
+        run: yarn test
+
+      - name: Build organization portal
+        run: yarn build:org # tsc -b && vite build --mode organization
+
+      - name: Build platform portal
+        run: yarn build:platform # tsc -b && vite build --mode platform

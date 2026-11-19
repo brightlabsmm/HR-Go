@@ -1,0 +1,136 @@
+{
+  "app_name": "HR Go",
+  "nav": {
+    "home": "首页",
+    "login": "登录",
+    "branches": "分支机构",
+    "organizations": "组织",
+    "departments": "部门",
+    "users": "用户",
+    "roles": "角色",
+    "permissions": "权限",
+    "positions": "职位",
+    "organization_settings": "组织设置",
+    "account": "我的账户"
+  },
+  "header": {
+    "notifications": "通知",
+    "open_menu": "打开导航",
+    "close_menu": "关闭导航",
+    "account": "账户",
+    "logout": "退出登录",
+    "back": "返回"
+  },
+  "footer": {
+    "copyright": "© {{year}} HR Go"
+  },
+  "actions": {
+    "submit": "提交",
+    "cancel": "取消",
+    "close": "关闭",
+    "edit": "编辑",
+    "delete": "删除",
+    "view": "查看详情",
+    "back": "返回",
+    "reset_filters": "重置筛选",
+    "back_home": "返回首页"
+  },
+  "form": {
+    "show_password": "显示密码",
+    "hide_password": "隐藏密码",
+    "generate_password": "生成",
+    "select_placeholder": "请选择",
+    "search_placeholder": "搜索",
+    "clear_search": "清除搜索",
+    "no_results": "未找到结果",
+    "phone_code": "国家区号",
+    "phone_placeholder": "912345678",
+    "stay_after_create": "保存后留在此页以继续新增"
+  },
+  "status": {
+    "active": "启用",
+    "inactive": "停用",
+    "suspended": "已暂停",
+    "pending": "待处理"
+  },
+  "table": {
+    "empty": "暂无数据"
+  },
+  "language": "语言",
+  "locale": {
+    "en": "English",
+    "th": "ไทย",
+    "zh": "中文",
+    "my": "မြန်မာ"
+  },
+  "pagination": {
+    "label": "分页",
+    "range": "第 {{from}}-{{to}} 条，共 {{count}} 条",
+    "empty": "共 0 条",
+    "page_size": "每页条数",
+    "previous": "上一页",
+    "next": "下一页",
+    "page": "第 {{page}} 页"
+  },
+  "image": {
+    "crop": "裁剪图片",
+    "position": "{{current}} / {{total}}",
+    "more_count": "+{{count}}"
+  },
+  "errors": {
+    "generic": "出错了。",
+    "forbidden": "你没有执行此操作的权限。",
+    "network": "无法连接服务器。",
+    "page_title": "出错了",
+    "page_description": "无法加载此页面。请刷新重试，或返回首页。",
+    "reload": "刷新页面"
+  },
+  "nav_groups": {
+    "structure": "组织架构",
+    "people": "人员与权限",
+    "organization": "组织",
+    "compliance": "合规",
+    "tenants": "租户",
+    "reference": "参考数据",
+    "access": "访问控制",
+    "account": "账户"
+  },
+  "portal": {
+    "organization": "组织工作台",
+    "platform": "平台控制台"
+  },
+  "theme": {
+    "toggle": "切换主题",
+    "light": "浅色",
+    "dark": "深色"
+  },
+  "breadcrumb": {
+    "label": "面包屑导航"
+  },
+  "sidebar": {
+    "platform_admin": "平台管理员",
+    "navigation": "主导航",
+    "collapse": "折叠侧边栏",
+    "expand": "展开侧边栏"
+  },
+  "states": {
+    "not_found_title": "未找到相关内容",
+    "not_found_description": "内容可能已被删除，或链接不正确。",
+    "page_not_found_code": "404",
+    "page_not_found_title": "找不到页面",
+    "page_not_found_description": "该页面不存在。请检查链接，或返回首页。",
+    "no_results_title": "没有匹配的结果",
+    "no_results_description": "请尝试调整或清除筛选条件。",
+    "loading": "加载中…",
+    "forbidden_title": "没有访问权限",
+    "forbidden_description": "你的角色不允许执行此操作。",
+    "forbidden_action": "前往{{page}}"
+  },
+  "brand": {
+    "headline_organization": "在一个地方管理所有人事工作",
+    "headline_platform": "在一个控制台中管理所有 HR Go 租户",
+    "feature_structure": "分支、部门与汇报关系",
+    "feature_access": "为每位成员提供基于角色的权限",
+    "feature_audit": "完整记录每一次变更"
+  }
+}

@@ -1,0 +1,136 @@
+{
+  "app_name": "HR Go",
+  "nav": {
+    "home": "ပင်မစာမျက်နှာ",
+    "login": "ဝင်ရောက်ရန်",
+    "branches": "ဌာနခွဲများ",
+    "organizations": "အဖွဲ့အစည်းများ",
+    "departments": "ဌာနများ",
+    "users": "User များ",
+    "roles": "Role များ",
+    "permissions": "Permission များ",
+    "positions": "ရာထူးများ",
+    "organization_settings": "အဖွဲ့အစည်း ဆက်တင်များ",
+    "account": "ကျွန်ုပ်၏ account"
+  },
+  "header": {
+    "notifications": "အကြောင်းကြားချက်များ",
+    "open_menu": "လမ်းညွှန်မီနူးဖွင့်ရန်",
+    "close_menu": "လမ်းညွှန်မီနူးပိတ်ရန်",
+    "account": "Account",
+    "logout": "ထွက်ရန်",
+    "back": "နောက်သို့"
+  },
+  "footer": {
+    "copyright": "© {{year}} HR Go"
+  },
+  "actions": {
+    "submit": "တင်သွင်းရန်",
+    "cancel": "ပယ်ဖျက်ရန်",
+    "close": "ပိတ်ရန်",
+    "edit": "ပြင်ဆင်ရန်",
+    "delete": "ဖျက်ရန်",
+    "view": "အသေးစိတ် ကြည့်ရန်",
+    "back": "နောက်သို့",
+    "reset_filters": "စစ်ထုတ်မှု ပြန်စရန်",
+    "back_home": "ပင်မစာမျက်နှာသို့"
+  },
+  "form": {
+    "show_password": "Password ပြရန်",
+    "hide_password": "Password ဖျောက်ရန်",
+    "generate_password": "ဖန်တီးရန်",
+    "select_placeholder": "ရွေးချယ်ပါ",
+    "search_placeholder": "ရှာရန်",
+    "clear_search": "ရှာဖွေမှုရှင်းရန်",
+    "no_results": "ရလဒ်မတွေ့ပါ",
+    "phone_code": "နိုင်ငံကုဒ်",
+    "phone_placeholder": "912345678",
+    "stay_after_create": "နောက်တစ်ခု ထပ်ထည့်ရန် ဤစာမျက်နှာတွင် ဆက်နေရန်"
+  },
+  "status": {
+    "active": "အသုံးပြုနေသည်",
+    "inactive": "အသုံးမပြုပါ",
+    "suspended": "ဆိုင်းငံ့ထားသည်",
+    "pending": "စောင့်ဆိုင်းနေသည်"
+  },
+  "table": {
+    "empty": "ရလဒ်မရှိပါ"
+  },
+  "language": "ဘာသာစကား",
+  "locale": {
+    "en": "English",
+    "th": "ไทย",
+    "zh": "中文",
+    "my": "မြန်မာ"
+  },
+  "pagination": {
+    "label": "စာမျက်နှာခွဲခြင်း",
+    "range": "{{count}} ခုအနက် {{from}}-{{to}}",
+    "empty": "ရလဒ် 0 ခု",
+    "page_size": "တစ်မျက်နှာလျှင်",
+    "previous": "ယခင်စာမျက်နှာ",
+    "next": "နောက်စာမျက်နှာ",
+    "page": "စာမျက်နှာ {{page}}"
+  },
+  "image": {
+    "crop": "ပုံဖြတ်ရန်",
+    "position": "{{current}} / {{total}}",
+    "more_count": "+{{count}}"
+  },
+  "errors": {
+    "generic": "တစ်ခုခု မှားယွင်းသွားသည်။",
+    "forbidden": "ဤလုပ်ဆောင်ချက်ကို ခွင့်ပြုမထားပါ။",
+    "network": "ဆာဗာသို့ ချိတ်ဆက်၍ မရပါ။",
+    "page_title": "တစ်ခုခု မှားယွင်းနေသည်",
+    "page_description": "ဤစာမျက်နှာကို ဖွင့်၍ မရပါ။ ပြန်ဖွင့်ကြည့်ပါ သို့မဟုတ် ပင်မစာမျက်နှာသို့ ပြန်သွားပါ။",
+    "reload": "ပြန်ဖွင့်ရန်"
+  },
+  "nav_groups": {
+    "structure": "ဖွဲ့စည်းပုံ",
+    "people": "ဝန်ထမ်းနှင့် permission",
+    "organization": "အဖွဲ့အစည်း",
+    "compliance": "စစ်ဆေးမှု",
+    "tenants": "Tenant များ",
+    "reference": "ကိုးကားဒေတာ",
+    "access": "ဝင်ရောက်ခွင့် ထိန်းချုပ်မှု",
+    "account": "Account"
+  },
+  "portal": {
+    "organization": "အဖွဲ့အစည်း လုပ်ငန်းခွင်",
+    "platform": "Platform ကွန်ဆိုး"
+  },
+  "theme": {
+    "toggle": "အပြင်အဆင် ပြောင်းရန်",
+    "light": "အလင်း",
+    "dark": "အမှောင်"
+  },
+  "breadcrumb": {
+    "label": "လမ်းကြောင်းပြ"
+  },
+  "sidebar": {
+    "platform_admin": "Platform admin",
+    "navigation": "ပင်မ မီနူး",
+    "collapse": "ဘေးမီနူး ခေါက်ရန်",
+    "expand": "ဘေးမီနူး ဖြန့်ရန်"
+  },
+  "states": {
+    "not_found_title": "ရှာမတွေ့ပါ",
+    "not_found_description": "ဖျက်ပြီးသား ဖြစ်နိုင်သည် သို့မဟုတ် လင့်ခ် မှားနေနိုင်သည်။",
+    "page_not_found_code": "404",
+    "page_not_found_title": "စာမျက်နှာ ရှာမတွေ့ပါ",
+    "page_not_found_description": "ဤစာမျက်နှာ မရှိပါ။ လင့်ခ်ကို စစ်ပါ၊ သို့မဟုတ် ပင်မစာမျက်နှာသို့ ပြန်သွားပါ။",
+    "no_results_title": "ကိုက်ညီသော ရလဒ် မရှိပါ",
+    "no_results_description": "စစ်ထုတ်မှုများကို ပြင်ဆင်ပါ သို့မဟုတ် ရှင်းလင်းပါ။",
+    "loading": "ဖွင့်နေသည်…",
+    "forbidden_title": "ဝင်ခွင့် မရှိပါ",
+    "forbidden_description": "သင့် role သည် ဤလုပ်ဆောင်ချက်ကို ခွင့်မပြုပါ။",
+    "forbidden_action": "{{page}} သို့ သွားရန်"
+  },
+  "brand": {
+    "headline_organization": "ဝန်ထမ်းရေးရာ လုပ်ငန်းအားလုံးကို တစ်နေရာတည်းတွင် စီမံပါ",
+    "headline_platform": "HR Go tenant အားလုံးကို console တစ်ခုတည်းမှ စီမံပါ",
+    "feature_structure": "ဌာနခွဲ၊ ဌာနနှင့် အစီရင်ခံမှု အဆင့်ဆင့်",
+    "feature_access": "အဖွဲ့ဝင်တိုင်းအတွက် role အလိုက် permission",
+    "feature_audit": "ပြောင်းလဲမှုတိုင်း၏ မှတ်တမ်း အပြည့်အစုံ"
+  }
+}

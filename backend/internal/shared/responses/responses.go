@@ -8,58 +8,69 @@ import (
 	apperrors "hrgo/backend/internal/shared/errors"
 )
 
-// Meta carries pagination metadata for list responses.
-type Meta struct {
+// PaginatedResponse matches Section 3.5:
+// {"items": [], "page": 1, "pageSize": 20, "totalItems": 0, "totalPages": 0}
+type PaginatedResponse[T any] struct {
+	Items      []T   `json:"items"`
 	Page       int   `json:"page"`
-	Limit      int   `json:"limit"`
-	Total      int64 `json:"total"`
-	TotalPages int   `json:"total_pages"`
+	PageSize   int   `json:"pageSize"`
+	TotalItems int64 `json:"totalItems"`
+	TotalPages int   `json:"totalPages"`
 }
 
-type envelope struct {
-	Success bool       `json:"success"`
-	Data    any        `json:"data,omitempty"`
-	Meta    *Meta      `json:"meta,omitempty"`
-	Error   *errorBody `json:"error,omitempty"`
-}
+// Single resource / generic success responses: Section 3.6
+// For single-resource operations, the API returns the resource directly.
 
-type errorBody struct {
-	Code    string                 `json:"code"`
-	Message string                 `json:"message"`
-	Details []apperrors.FieldIssue `json:"details,omitempty"`
-}
-
-// OK writes a 200 JSON success envelope.
+// OK writes 200 with the data directly as JSON.
 func OK(c *gin.Context, data any) {
-	c.JSON(http.StatusOK, envelope{Success: true, Data: data})
+	c.JSON(http.StatusOK, data)
 }
 
-// Created writes a 201 JSON success envelope.
+// Created writes 201 with the created data directly as JSON.
 func Created(c *gin.Context, data any) {
-	c.JSON(http.StatusCreated, envelope{Success: true, Data: data})
+	c.JSON(http.StatusCreated, data)
 }
 
-// NoContent writes a 204 empty response.
+// NoContent writes 204 without body.
 func NoContent(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// Page writes a 200 JSON list envelope with pagination metadata.
-func Page(c *gin.Context, data any, meta Meta) {
-	c.JSON(http.StatusOK, envelope{Success: true, Data: data, Meta: &meta})
+// Page writes standard Section 3.5 paginated JSON.
+func Page[T any](c *gin.Context, items []T, page, pageSize int, totalItems int64) {
+	if items == nil {
+		items = []T{}
+	}
+	totalPages := 0
+	if pageSize > 0 {
+		totalPages = int((totalItems + int64(pageSize) - 1) / int64(pageSize))
+	}
+	c.JSON(http.StatusOK, PaginatedResponse[T]{
+		Items:      items,
+		Page:       page,
+		PageSize:   pageSize,
+		TotalItems: totalItems,
+		TotalPages: totalPages,
+	})
 }
 
-// Fail writes an application error using the standard JSON error envelope.
+// Fail writes error envelope matching Section 3.7:
+// {"error": {"code": "...", "message": "...", "details": [...], "traceId": "..."}}
 func Fail(c *gin.Context, err *apperrors.Error) {
 	if err == nil {
 		err = apperrors.Internal()
 	}
-	c.JSON(err.Status, envelope{
-		Success: false,
-		Error: &errorBody{
+	traceID := ""
+	if val, exists := c.Get("request_id"); exists {
+		traceID, _ = val.(string)
+	}
+
+	c.JSON(err.Status, gin.H{
+		"error": apperrors.ErrorBody{
 			Code:    err.Code,
 			Message: err.Message,
 			Details: err.Details,
+			TraceID: traceID,
 		},
 	})
 }

@@ -1,0 +1,65 @@
+{
+  "title": "Platform user များ",
+  "subtitle": "Platform user များ ဖန်တီးပြီး role များ သတ်မှတ်ပါ။",
+  "add": "User ထည့်ရန်",
+  "search_placeholder": "အမည် သို့မဟုတ် email ဖြင့် ရှာရန်",
+  "all_status": "အခြေအနေအားလုံး",
+  "not_found": "User မတွေ့ပါ။",
+  "columns": {
+    "name": "အမည်",
+    "email": "Email",
+    "status": "အခြေအနေ",
+    "role": "Role",
+    "actions": "လုပ်ဆောင်ချက်များ"
+  },
+  "create": {
+    "title": "Platform user အသစ်",
+    "subtitle": "Platform user တစ်ဦး ဖန်တီးပြီး role တစ်ခု သတ်မှတ်ပါ။",
+    "submit": "User ဖန်တီးရန်"
+  },
+  "detail": {
+    "title": "User",
+    "deactivate": "ပိတ်ရန်",
+    "reactivate": "ပြန်ဖွင့်ရန်"
+  },
+  "deactivate": {
+    "title": "User ကို ပိတ်မလား?",
+    "description": "ဤ platform user ကို inactive အဖြစ် သတ်မှတ်မည်။",
+    "confirm": "ပိတ်ရန်"
+  },
+  "form": {
+    "email": "Email",
+    "full_name": "အမည်အပြည့်",
+    "password": "ယာယီ password",
+    "role": "Role",
+    "permissions": "Permission များ",
+    "save": "သိမ်းရန်",
+    "cancel": "ပယ်ဖျက်ရန်",
+    "edit_subtitle": "ဤ user ကို ပြင်ဆင်ပါ။",
+    "errors": {
+      "email_required": "Email လိုအပ်ပါသည်။",
+      "email_invalid": "Email လိပ်စာ မှန်ကန်ရပါမည်။",
+      "full_name": "အမည်အပြည့် လိုအပ်ပါသည်။",
+      "role": "Role တစ်ခု ရွေးပါ။",
+      "password": "Password သည် အနည်းဆုံး စာလုံး ၈ လုံး ရှိရမည်ဖြစ်ပြီး စာလုံးအကြီး ၁ လုံး၊ စာလုံးအသေး ၁ လုံးနှင့် ဂဏန်း ၁ လုံး ပါရမည်။"
+    }
+  },
+  "empty": {
+    "title": "User မရှိသေးပါ",
+    "description": "ပထမဆုံး platform user ကို ဖန်တီးပါ။"
+  },
+  "sections": {
+    "profile": "Profile",
+    "profile_description": "ဤ user ၏ အမည်နှင့် email။",
+    "access": "အသုံးပြုခွင့်",
+    "access_description": "သတ်မှတ်ထားသော role က ဤ user လုပ်နိုင်သည်များကို ဆုံးဖြတ်သည်။",
+    "danger": "User ပိတ်ရန်",
+    "danger_description": "User သည် platform သို့ ချက်ချင်း ဝင်မရတော့ပါ။"
+  },
+  "self_roles_hint": "ကိုယ့် role များကို ပြောင်း၍ မရပါ။",
+  "last_login_at": "နောက်ဆုံး ဝင်ရောက်သည့်အချိန်",
+  "permissions": {
+    "empty": "Permission များကို ကြည့်ရန် role တစ်ခု ရွေးပါ။",
+    "none": "ဤ role တွင် permission မရှိပါ။"
+  }
+}

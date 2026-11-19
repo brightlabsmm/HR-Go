@@ -1,4 +1,4 @@
-name: Server Pipeline
+name: CI / CD Pipeline
 
 on:
   push:
@@ -8,34 +8,62 @@ on:
       - prod
     paths:
       - "backend/**"
+      - "frontend/**"
       - ".github/workflows/**"
   pull_request:
     branches:
       - dev
       - staging
       - prod
-    paths:
-      - "backend/**"
-      - ".github/workflows/**"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: server-${{ github.ref }}
+  group: ci-cd-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  changes:
+    name: Detect changed areas
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.backend == 'true' }}
+      frontend: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.frontend == 'true' }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Filter changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - "backend/**"
+              - ".github/workflows/**"
+            frontend:
+              - "frontend/**"
+              - ".github/workflows/**"
+
   ci:
     name: Server CI
     uses: ./.github/workflows/server-ci.yaml
 
+  frontend-ci:
+    name: Frontend CI
+    uses: ./.github/workflows/frontend-ci.yaml
+
   push-ghcr:
     name: Push GHCR Image
-    needs: ci
+    needs: [changes, ci]
     if: >-
       github.event_name == 'push' &&
+      needs.changes.outputs.backend == 'true' &&
       (github.ref == 'refs/heads/dev' ||
        github.ref == 'refs/heads/staging' ||
        github.ref == 'refs/heads/prod')
@@ -46,21 +74,21 @@ jobs:
 
   deploy-dev:
     name: Deploy Dev
-    needs: [ci, push-ghcr]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    needs: [changes, ci, push-ghcr]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev' && needs.changes.outputs.backend == 'true'
     uses: ./.github/workflows/deploy-dev.yaml
     secrets: inherit
 
   deploy-staging:
     name: Deploy Staging
-    needs: [ci, push-ghcr]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    needs: [changes, ci, push-ghcr]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging' && needs.changes.outputs.backend == 'true'
     uses: ./.github/workflows/deploy-staging.yaml
     secrets: inherit
 
   deploy-prod:
     name: Deploy Prod
-    needs: [ci, push-ghcr]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
+    needs: [changes, ci, push-ghcr]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/prod' && needs.changes.outputs.backend == 'true'
     uses: ./.github/workflows/deploy-prod.yaml
     secrets: inherit

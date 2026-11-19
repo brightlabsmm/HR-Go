@@ -1,0 +1,42 @@
+{
+  "title": "部门",
+  "not_found": "未找到部门。",
+  "subtitle": "管理部门，可选关联分支。",
+  "add": "添加部门",
+  "all_status": "全部状态",
+  "all_branches": "全部分支",
+  "columns": {
+    "code": "代码",
+    "name": "名称",
+    "status": "状态",
+    "actions": "操作"
+  },
+  "deactivate": {
+    "title": "停用该部门？",
+    "description": "将停用 {{name}}。",
+    "confirm": "停用"
+  },
+  "form": {
+    "create_title": "添加部门",
+    "edit_title": "编辑部门",
+    "code": "代码",
+    "code_placeholder": "001",
+    "name": "名称",
+    "branch": "分支",
+    "none": "无",
+    "create": "创建部门",
+    "save": "保存",
+    "cancel": "取消",
+    "errors": {
+      "code": "请填写部门代码。",
+      "name": "请填写部门名称。"
+    }
+  },
+  "empty": {
+    "title": "还没有部门",
+    "description": "添加部门以便按团队组织人员。"
+  },
+  "sections": {
+    "details": "部门详情"
+  }
+}

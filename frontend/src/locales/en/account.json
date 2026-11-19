@@ -1,0 +1,12 @@
+{
+  "title": "My account",
+  "subtitle": "Your profile in this session.",
+  "name": "Name",
+  "email": "Email",
+  "employee_code": "Employee code",
+  "organization": "Organization",
+  "roles": "Roles",
+  "sections": {
+    "profile": "Profile"
+  }
+}

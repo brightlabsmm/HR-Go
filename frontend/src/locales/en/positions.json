@@ -1,0 +1,42 @@
+{
+  "title": "Positions",
+  "not_found": "Position not found.",
+  "subtitle": "Manage positions, optionally by department.",
+  "add": "Add position",
+  "all_status": "All status",
+  "all_departments": "All departments",
+  "columns": {
+    "code": "Code",
+    "name": "Name",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "deactivate": {
+    "title": "Deactivate position?",
+    "description": "This will deactivate {{name}}.",
+    "confirm": "Deactivate"
+  },
+  "form": {
+    "create_title": "Add position",
+    "edit_title": "Edit position",
+    "code": "Code",
+    "code_placeholder": "001",
+    "name": "Name",
+    "department": "Department",
+    "none": "None",
+    "create": "Create position",
+    "save": "Save",
+    "cancel": "Cancel",
+    "errors": {
+      "code": "Position code is required.",
+      "name": "Position name is required."
+    }
+  },
+  "empty": {
+    "title": "No positions yet",
+    "description": "Add positions to define job titles in your organization."
+  },
+  "sections": {
+    "details": "Position details"
+  }
+}
