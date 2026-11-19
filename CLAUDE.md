@@ -18,7 +18,7 @@ go test -race ./test/unit/...                # what CI runs
 go test ./test/unit/config -run TestName     # single package / single test
 go run ./cmd/server                          # needs DATABASE_URL (see .env.example); without it, starts with NO /api/v1 routes
 go run ./cmd/migrate                         # applies migrations/*.sql (hand-written SQL, no AutoMigrate)
-go run ./cmd/seed                            # seeds data; also resets the superadmin password
+go run ./cmd/seed                            # seeds data; also resets the superadmin password and sets default code formats
 ```
 
 Frontend (run from `frontend/`, Yarn):
@@ -44,6 +44,8 @@ Layered monolith. Dependencies are wired by hand in `internal/bootstrap/app.go` 
 - Tenant isolation is by convention. Workspace services take `orgID` from the token claims and every repository query must filter on `organization_id`. A new workspace repository method without that filter is a cross-tenant leak.
 - Services return `*apperrors.Error` (`internal/shared/errors`), and handlers render it via `internal/shared/responses`. Services and repositories must not import Gin.
 - Paginated lists clamp `pageSize` to 1–100 (default 20) and whitelist sort columns.
+- Branch and department codes are generated server-side: the repository `Create` runs in a transaction, reads `branch_code_format` / `department_code_format` from `organization_settings` (defaults `BR-{0000}`, `DEPT-{0000}`, from `internal/shared/codeformat`), and takes the next free sequence number. The create requests carry no code. Positions still take `positionCode` from the client. Organization creation seeds the default settings.
+- Migrations are `backend/migrations/NNN_*.sql`, applied in order by `cmd/migrate`. `organization_settings` is defined in both `001` (fresh installs) and `002` (existing databases), so both must stay idempotent and agree.
 - The API contract is `docs/api/openapi.yaml`, and `backend/internal/apidocs/openapi.yaml` is an identical copy served by the app. Update both together.
 - Tests live under `test/unit/`, not next to the code. Domain modules currently have none.
 

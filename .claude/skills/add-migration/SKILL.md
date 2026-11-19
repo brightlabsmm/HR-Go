@@ -5,7 +5,7 @@ description: Use when changing the database schema or seeding permissions and ro
 
 # Add a migration
 
-Migrations are hand-written SQL in `backend/migrations/`. There is no GORM `AutoMigrate`. `backend/cmd/migrate/main.go` applies each `*.sql` file in filename order, one transaction per file, and records the name in `schema_migrations`. A file is never re-run once recorded, so **never edit an applied migration**; add a new one.
+Migrations are hand-written SQL in `backend/migrations/`. There is no GORM `AutoMigrate`. `backend/cmd/migrate/main.go` applies each `*.sql` file in filename order, one transaction per file, and records the name in `schema_migrations`. A file is never re-run once recorded, so **never edit an applied migration** expecting existing databases to change; add a new one. (Exception already in the repo: `organization_settings` was added to `001` for fresh installs and also created by `002` for existing databases. If you mirror a table into an earlier file like this, make both definitions identical and idempotent. Prefer a new migration only.)
 
 ## Steps
 
@@ -13,7 +13,7 @@ Migrations are hand-written SQL in `backend/migrations/`. There is no GORM `Auto
    ```bash
    ls backend/migrations
    ```
-   Take the highest `NNN_` prefix, add one (zero-padded to 3 digits), and name it `NNN_<short_snake_description>.sql`. Today the only file is `001_phase0_phase1_schema.sql`, so the next is `002_...`.
+   Take the highest `NNN_` prefix, add one (zero-padded to 3 digits), and name it `NNN_<short_snake_description>.sql`. Today the files are `001_phase0_phase1_schema.sql` and `002_organization_settings.sql`, so the next is `003_...`.
 
 2. **Write idempotent statements** (`CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `ON CONFLICT ... DO NOTHING`). The runner splits on `;` outside `$$ ... $$` blocks, so avoid stray semicolons in comments or strings, and keep DO blocks inside `$$`.
 
@@ -29,7 +29,9 @@ Migrations are hand-written SQL in `backend/migrations/`. There is no GORM `Auto
 
 6. **Permissions.** For a new resource insert codes into `permissions` (`scope` `'ORG'` or `'PLATFORM'`, `resource`, `action`, `description`) following `org.<resource>.<create|read|update|deactivate>`, with `ON CONFLICT (code) DO NOTHING`. Then attach them explicitly to roles (`org_role_permissions` for `ORG_ADMIN`, `platform_role_permissions` for `SUPERADMIN`), since the earlier `CROSS JOIN` seed only covered permissions that existed when migration 001 ran. Permission and role changes only reach users at their next login (tokens carry permissions for 24h).
 
-7. **Rollback note.** The runner has no down migrations. Put a comment block at the top of the file:
+7. **Backfill existing tenants.** When a change needs a row per organization (settings, default roles), insert it for existing organizations in the same migration, as `002` does with `INSERT ... SELECT ... FROM organizations ON CONFLICT DO NOTHING`, and seed it for new organizations in code (`control/organization/repository`) and `cmd/seed`.
+
+8. **Rollback note.** The runner has no down migrations. Put a comment block at the top of the file:
    ```sql
    -- Rollback (manual, not run by cmd/migrate):
    --   DROP TABLE IF EXISTS widgets;
@@ -37,9 +39,9 @@ Migrations are hand-written SQL in `backend/migrations/`. There is no GORM `Auto
    ```
    Prefer additive, backward-compatible changes (new nullable columns, new tables). For destructive changes, split into two migrations across releases.
 
-8. **Match the code.** Update the GORM model in `backend/internal/modules/**/models/models.go` (types, `not null`, defaults) so it agrees with the SQL.
+9. **Match the code.** Update the GORM model in `backend/internal/modules/**/models/models.go` (types, `not null`, defaults) so it agrees with the SQL.
 
-9. **Apply and verify** against a scratch database (needs `DATABASE_URL`):
+10. **Apply and verify** against a scratch database (needs `DATABASE_URL`):
    ```bash
    cd backend && go run ./cmd/migrate
    ```
