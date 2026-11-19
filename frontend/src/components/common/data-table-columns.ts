@@ -1,24 +1,7 @@
-import {
-  createTableHook,
-  metaHelper,
-  tableFeatures,
-} from "@tanstack/react-table"
-
-export interface DataTableColumnMeta {
-  align?: "start" | "end"
-  headerClassName?: string
-  cellClassName?: string
-}
-
-const features = tableFeatures({
-  columnMeta: metaHelper<DataTableColumnMeta>(),
-})
-
-export const {
-  createAppColumnHelper: createDataTableColumns,
-  useAppTable: useDataTable,
-} = createTableHook({
-  features,
-})
-
-export { features as dataTableFeatures }
+export {
+  createDataTableColumns,
+  dataTableFeatures,
+  useDataTable,
+  useDataTableContext,
+} from "@/components/common/data-table/data-table-columns"
+export type { DataTableColumnMeta } from "@/components/common/data-table/data-table-columns"

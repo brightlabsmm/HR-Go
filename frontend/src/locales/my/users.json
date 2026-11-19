@@ -27,6 +27,11 @@
     "description": "ဤ platform user ကို inactive အဖြစ် သတ်မှတ်မည်။",
     "confirm": "ပိတ်ရန်"
   },
+  "reactivate": {
+    "title": "User ကို ပြန်ဖွင့်မလား?",
+    "description": "ဤ platform user ကို active အဖြစ် ပြန်သတ်မှတ်မည်။",
+    "confirm": "ပြန်ဖွင့်ရန်"
+  },
   "form": {
     "email": "Email",
     "full_name": "အမည်အပြည့်",

@@ -2,7 +2,7 @@ import { apiClient } from "@/app/api/client"
 import { unwrap, unwrapPage } from "@/app/api/http"
 import { workspacePath } from "@/app/api/paths"
 import { compactParams } from "@/util/compact-params"
-import { toListQuery } from "@/util/list-query"
+import { toListQuery, type ListQueryParams } from "@/util/list-query"
 
 export type DepartmentStatus = "ACTIVE" | "INACTIVE"
 
@@ -17,12 +17,8 @@ export interface Department {
   updatedAt: string
 }
 
-export interface DepartmentListParams {
-  page?: number
-  limit?: number
+export interface DepartmentListParams extends ListQueryParams {
   branchId?: string
-  status?: string
-  search?: string
 }
 
 export interface DepartmentInput {
@@ -33,13 +29,7 @@ export interface DepartmentInput {
 export function listDepartments(params?: DepartmentListParams) {
   return unwrapPage<Department>(
     apiClient.get(workspacePath("/departments"), {
-      params: toListQuery({
-        page: params?.page,
-        limit: params?.limit,
-        search: params?.search,
-        status: params?.status,
-        branchId: params?.branchId,
-      }),
+      params: toListQuery(params),
     })
   )
 }

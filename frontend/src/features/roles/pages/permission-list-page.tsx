@@ -1,8 +1,7 @@
 import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 
-import { DataTable } from "@/components/common/data-table"
-import { createDataTableColumns } from "@/components/common/data-table-columns"
+import { createDataTableColumns, DataTable } from "@/components/common/data-table"
 import { FilterBar } from "@/components/common/filter-bar"
 import { FilterSelect } from "@/components/common/filter-select"
 import { ListCard } from "@/components/common/list-card"
@@ -14,6 +13,7 @@ import { TableSkeleton } from "@/components/common/table-skeleton"
 import { ToneBadge } from "@/components/common/tone-badge"
 import { resolvePermissionGrouping } from "@/features/roles/group-permissions"
 import { usePermissionLabels } from "@/features/roles/use-permission-labels"
+import { useListSort } from "@/shared/hooks/use-list-sort"
 import { usePermissionsQuery } from "@/shared/queries/role.query"
 
 import type { Permission } from "@/shared/services/role.service"
@@ -27,8 +27,20 @@ export function PermissionListPage() {
   const [scopeFilter, setScopeFilter] = useState<string>("all")
   const [groupingFilter, setGroupingFilter] = useState<string>("all")
   const [search, setSearch] = useState<string>("")
+  const hasFilters =
+    Boolean(search.trim()) || groupingFilter !== "all" || scopeFilter !== "all"
 
-  const permissionsQuery = usePermissionsQuery()
+  function resetFilters() {
+    setSearch("")
+    setGroupingFilter("all")
+    setScopeFilter("all")
+  }
+  const { sorting, setSorting, listSortParams } = useListSort()
+
+  const permissionsQuery = usePermissionsQuery({
+    ...listSortParams,
+    limit: 100,
+  })
   const rawPermissions = useMemo(
     () => permissionsQuery.data?.items ?? [],
     [permissionsQuery.data?.items]
@@ -72,6 +84,7 @@ export function PermissionListPage() {
       column.columns([
         column.accessor("grouping", {
           header: t("columns.grouping", { defaultValue: "Grouping" }),
+          enableSorting: true,
           cell: ({ row }) => {
             const grouping = resolvePermissionGrouping(row.original)
             return (
@@ -84,6 +97,7 @@ export function PermissionListPage() {
         column.display({
           id: "permission",
           header: t("columns.permission", { defaultValue: "Permission" }),
+          enableSorting: false,
           cell: ({ row }) => (
             <span className="font-normal text-foreground">
               {permissionLabel(row.original)}
@@ -92,6 +106,7 @@ export function PermissionListPage() {
         }),
         column.accessor("code", {
           header: t("columns.code", { defaultValue: "Code" }),
+          enableSorting: true,
           cell: ({ getValue }) => (
             <span className="font-mono text-small-2 text-muted-foreground">
               {getValue()}
@@ -100,6 +115,7 @@ export function PermissionListPage() {
         }),
         column.accessor("scope", {
           header: t("columns.scope", { defaultValue: "Scope" }),
+          enableSorting: true,
           cell: ({ getValue }) => {
             const scope = getValue() ?? "PLATFORM"
             return (
@@ -111,6 +127,7 @@ export function PermissionListPage() {
         }),
         column.accessor("description", {
           header: t("columns.description", { defaultValue: "Description" }),
+          enableSorting: false,
           cell: ({ getValue }) => (
             <span className="text-small-2 text-muted-foreground">
               {getValue() || "—"}
@@ -139,64 +156,73 @@ export function PermissionListPage() {
 
     return (
       <DataTable
+        tableId="permissions"
         columns={columns}
         data={filteredPermissions}
         getRowId={(item) => item.id || item.code}
         label={t("permissions_table_label", { defaultValue: "Permissions catalogue" })}
+        sorting={sorting}
+        onSortingChange={setSorting}
       />
     )
   }
 
   return (
-    <MotionStack className="flex h-full min-h-0 flex-col gap-6">
+    <MotionStack className="flex h-full min-h-0 flex-col gap-8">
       <PageHeader
         title={t("permissions_page_title", { defaultValue: "Permissions" })}
         description={t("permissions_page_subtitle", {
           defaultValue: "System permissions catalog organized by grouping.",
         })}
       />
-
-      <FilterBar>
-        <SearchBox
-          value={search}
-          onValueChange={setSearch}
-          placeholder={t("search_placeholder", {
-            defaultValue: "Search permissions...",
-          })}
-        />
-
-        <FilterSelect
-          value={groupingFilter}
-          label={t("columns.grouping", { defaultValue: "Grouping" })}
-          onValueChange={setGroupingFilter}
-          items={[
-            {
-              value: "all",
-              label: t("filters.all_groupings", { defaultValue: "All groupings" }),
-            },
-            ...availableGroupings.map((g) => ({
-              value: g,
-              label: groupingLabel(g),
-            })),
-          ]}
-        />
-
-        <FilterSelect
-          value={scopeFilter}
-          label={t("columns.scope", { defaultValue: "Scope" })}
-          onValueChange={setScopeFilter}
-          items={[
-            {
-              value: "all",
-              label: t("filters.all_scopes", { defaultValue: "All scopes" }),
-            },
-            { value: "PLATFORM", label: "PLATFORM" },
-            { value: "ORG", label: "ORG" },
-          ]}
-        />
-      </FilterBar>
-
-      <ListCard>{renderContent()}</ListCard>
+      <ListCard
+        toolbar={
+          <FilterBar hasFilters={hasFilters} onReset={resetFilters}>
+            <SearchBox
+              value={search}
+              onValueChange={setSearch}
+              placeholder={t("search_placeholder", {
+                defaultValue: "Search permissions...",
+              })}
+              className="w-80 max-w-full shrink-0"
+            />
+            <FilterSelect
+              value={groupingFilter}
+              label={t("columns.grouping", { defaultValue: "Grouping" })}
+              onValueChange={setGroupingFilter}
+              items={[
+                {
+                  value: "all",
+                  label: t("filters.all_groupings", {
+                    defaultValue: "All groupings",
+                  }),
+                },
+                ...availableGroupings.map((g) => ({
+                  value: g,
+                  label: groupingLabel(g),
+                })),
+              ]}
+            />
+            <FilterSelect
+              value={scopeFilter}
+              label={t("columns.scope", { defaultValue: "Scope" })}
+              onValueChange={setScopeFilter}
+              items={[
+                {
+                  value: "all",
+                  label: t("filters.all_scopes", {
+                    defaultValue: "All scopes",
+                  }),
+                },
+                { value: "PLATFORM", label: "PLATFORM" },
+                { value: "ORG", label: "ORG" },
+              ]}
+            />
+          </FilterBar>
+        }
+      >
+        {renderContent()}
+      </ListCard>
     </MotionStack>
   )
 }

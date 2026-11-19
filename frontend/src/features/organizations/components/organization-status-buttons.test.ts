@@ -9,17 +9,9 @@ describe("organization-status-buttons", () => {
     expect(STATUS_ACTION_CONFIG.reactivate).toBeDefined()
   })
 
-  it("assigns appropriate color classes for each action", () => {
-    // activate -> success/green
-    expect(STATUS_ACTION_CONFIG.activate.className).toContain("text-success")
-    expect(STATUS_ACTION_CONFIG.activate.className).toContain("border-success")
-
-    // suspend -> warning/amber
-    expect(STATUS_ACTION_CONFIG.suspend.className).toContain("text-warning")
-    expect(STATUS_ACTION_CONFIG.suspend.className).toContain("border-warning")
-
-    // reactivate -> success/green
-    expect(STATUS_ACTION_CONFIG.reactivate.className).toContain("text-success")
-    expect(STATUS_ACTION_CONFIG.reactivate.className).toContain("border-success")
+  it("assigns appropriate color tones for each action", () => {
+    expect(STATUS_ACTION_CONFIG.activate.tone).toBe("success")
+    expect(STATUS_ACTION_CONFIG.suspend.tone).toBe("warning")
+    expect(STATUS_ACTION_CONFIG.reactivate.tone).toBe("success")
   })
 })

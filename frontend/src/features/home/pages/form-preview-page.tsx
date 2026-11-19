@@ -15,6 +15,7 @@ import { FormTextInput } from "@/components/common/form/form-text-input"
 import { SearchBox } from "@/components/common/search-box"
 import { Button } from "@/components/ui/button"
 import { usePaginationQuery } from "@/shared/hooks/use-pagination-query"
+import { optionalE164Phone } from "@/util/phone"
 
 const previewSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -23,7 +24,7 @@ const previewSchema = z.object({
   status: z.string().min(1, "Status is required"),
   city: z.string().min(1, "City is required"),
   isActive: z.boolean().refine((value) => value, "Must be enabled"),
-  phone: z.string(),
+  phone: optionalE164Phone("Enter a valid phone number."),
 })
 
 type PreviewFormValues = z.infer<typeof previewSchema>

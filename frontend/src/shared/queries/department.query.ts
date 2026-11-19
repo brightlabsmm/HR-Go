@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 
 import {
   createDepartment,
@@ -27,6 +32,7 @@ export function useDepartmentsQuery(params?: DepartmentListParams) {
     queryKey: departmentKeys.list(params),
     queryFn: () => listDepartments(params),
     enabled: Boolean(accessToken),
+    placeholderData: keepPreviousData,
   })
 }
 

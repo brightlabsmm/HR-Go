@@ -1,7 +1,10 @@
-import { PencilIcon } from "lucide-react"
+import { useState } from "react"
+import { CheckCircleIcon, PencilIcon, Trash2Icon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router"
 
+import { ConfirmDialog } from "@/components/common/confirm-dialog"
+import { DetailActionButton } from "@/components/common/detail-action-button"
 import { DetailList } from "@/components/common/detail-list"
 import { FormSkeleton } from "@/components/common/form-skeleton"
 import { MotionStack } from "@/components/common/motion-stack"
@@ -9,12 +12,16 @@ import { NotFoundState } from "@/components/common/not-found-state"
 import { ProfileSummaryCard } from "@/components/common/profile-summary-card"
 import { StatusBadge } from "@/components/common/status-badge"
 import { ToneBadge } from "@/components/common/tone-badge"
-import { Button } from "@/components/ui/button"
 import { RolePermissionReview } from "@/features/users/components/role-permission-review"
 import { UserDetailHeader } from "@/features/users/components/user-detail-header"
 import { usePermissions } from "@/shared/hooks/use-permissions"
+import { useCurrentUserQuery } from "@/shared/queries/auth.query"
 import { useRolesQuery } from "@/shared/queries/role.query"
-import { useUserQuery } from "@/shared/queries/user.query"
+import {
+  useDeactivateUserMutation,
+  useReactivateUserMutation,
+  useUserQuery,
+} from "@/shared/queries/user.query"
 import { formatDateTime } from "@/util/format-date"
 import { getInitials } from "@/util/initials"
 
@@ -24,10 +31,18 @@ export function UserDetailPage() {
   const navigate = useNavigate()
   const { id = "" } = useParams()
   const userQuery = useUserQuery(id)
+  const meQuery = useCurrentUserQuery()
   const { can } = usePermissions()
   const canUpdate = can("platform.user.update")
+  const canDeactivate = can("platform.user.deactivate")
+  const deactivateMutation = useDeactivateUserMutation()
+  const reactivateMutation = useReactivateUserMutation()
+  const [showDeactivateDialog, setShowDeactivateDialog] = useState(false)
+  const [showReactivateDialog, setShowReactivateDialog] = useState(false)
   const rolesQuery = useRolesQuery()
   const user = userQuery.data
+  const isSelf = meQuery.data?.id === id
+  const isInactive = user?.status.toUpperCase() === "INACTIVE"
   const assignedRole =
     rolesQuery.data?.find(
       (role) => role.roleCode === user?.roles[0]?.roleCode
@@ -58,16 +73,35 @@ export function UserDetailPage() {
       <UserDetailHeader
         userId={id}
         actions={
-          canUpdate ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => void navigate(`/users/${id}/edit`)}
-            >
-              <PencilIcon className="size-4" />
-              {tCommon("actions.edit")}
-            </Button>
-          ) : null
+          <>
+            {canUpdate ? (
+              <DetailActionButton
+                onClick={() => void navigate(`/users/${id}/edit`)}
+              >
+                <PencilIcon />
+                {tCommon("actions.edit")}
+              </DetailActionButton>
+            ) : null}
+            {canUpdate && user && isInactive && !isSelf ? (
+              <DetailActionButton
+                tone="success"
+                loading={reactivateMutation.isPending}
+                onClick={() => setShowReactivateDialog(true)}
+              >
+                <CheckCircleIcon />
+                {t("detail.reactivate")}
+              </DetailActionButton>
+            ) : null}
+            {canDeactivate && user && !isInactive && !isSelf ? (
+              <DetailActionButton
+                tone="destructive"
+                onClick={() => setShowDeactivateDialog(true)}
+              >
+                <Trash2Icon />
+                {t("detail.deactivate")}
+              </DetailActionButton>
+            ) : null}
+          </>
         }
       />
       <div className="grid items-start gap-12 lg:grid-cols-[18.75rem_minmax(0,1fr)]">
@@ -115,6 +149,33 @@ export function UserDetailPage() {
           )}
         </div>
       </div>
+      <ConfirmDialog
+        open={showDeactivateDialog}
+        title={t("deactivate.title")}
+        description={t("deactivate.description")}
+        confirmLabel={t("deactivate.confirm")}
+        confirmVariant="destructive"
+        isPending={deactivateMutation.isPending}
+        onOpenChange={setShowDeactivateDialog}
+        onConfirm={() => {
+          deactivateMutation.mutate(id, {
+            onSuccess: () => setShowDeactivateDialog(false),
+          })
+        }}
+      />
+      <ConfirmDialog
+        open={showReactivateDialog}
+        title={t("reactivate.title")}
+        description={t("reactivate.description")}
+        confirmLabel={t("reactivate.confirm")}
+        isPending={reactivateMutation.isPending}
+        onOpenChange={setShowReactivateDialog}
+        onConfirm={() => {
+          reactivateMutation.mutate(id, {
+            onSuccess: () => setShowReactivateDialog(false),
+          })
+        }}
+      />
     </MotionStack>
   )
 }

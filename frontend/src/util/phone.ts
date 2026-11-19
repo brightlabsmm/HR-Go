@@ -1,3 +1,5 @@
+import { z } from "zod"
+
 const E164_PATTERN = /^\+[1-9]\d{7,14}$/
 
 export interface PhoneDialCode {
@@ -30,6 +32,18 @@ export function isValidE164Phone(value: string) {
 
 export function isOptionalE164Phone(value: string) {
   return compactPhone(value) === "" || isValidE164Phone(value)
+}
+
+export function requiredE164Phone(requiredMessage: string, invalidMessage: string) {
+  return z
+    .string()
+    .trim()
+    .min(1, requiredMessage)
+    .refine(isValidE164Phone, invalidMessage)
+}
+
+export function optionalE164Phone(invalidMessage: string) {
+  return z.string().trim().refine(isOptionalE164Phone, invalidMessage)
 }
 
 export function isValidBranchPhone(value: string) {

@@ -40,6 +40,7 @@
       "email": "Email လိပ်စာ မှန်ကန်ရပါမည်။",
       "email_required": "Email လိုအပ်ပါသည်။",
       "phone_required": "ဖုန်းနံပါတ် လိုအပ်ပါသည်။",
+      "phone_invalid": "မှန်ကန်သော ဖုန်းနံပါတ် ထည့်ပါ။",
       "country_required": "နိုင်ငံ လိုအပ်ပါသည်။",
       "address_required": "လိပ်စာ လိုအပ်ပါသည်။"
     }

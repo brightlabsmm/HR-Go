@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 
 import {
   createPosition,
@@ -27,6 +32,7 @@ export function usePositionsQuery(params?: PositionListParams) {
     queryKey: positionKeys.list(params),
     queryFn: () => listPositions(params),
     enabled: Boolean(accessToken),
+    placeholderData: keepPreviousData,
   })
 }
 

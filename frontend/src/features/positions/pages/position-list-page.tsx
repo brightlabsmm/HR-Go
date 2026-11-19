@@ -4,9 +4,11 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useSearchParams } from "react-router"
 
 import { ConfirmDialog } from "@/components/common/confirm-dialog"
-import { DataTable } from "@/components/common/data-table"
-import { DataTableActions } from "@/components/common/data-table-actions"
-import { createDataTableColumns } from "@/components/common/data-table-columns"
+import {
+  createDataTableColumns,
+  DataTable,
+  DataTableActions,
+} from "@/components/common/data-table"
 import { FilterBar } from "@/components/common/filter-bar"
 import { FilterSelect } from "@/components/common/filter-select"
 import { ListCard } from "@/components/common/list-card"
@@ -18,6 +20,7 @@ import { StatusBadge } from "@/components/common/status-badge"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { Button } from "@/components/ui/button"
 import { PAGE_PARAM, PAGE_SIZE_PARAM } from "@/constants/pagination"
+import { useListSort } from "@/shared/hooks/use-list-sort"
 import { useDepartmentsQuery } from "@/shared/queries/department.query"
 import {
   useDeactivatePositionMutation,
@@ -35,6 +38,7 @@ export function PositionListPage() {
   const { t: tCommon } = useTranslation("common")
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { sorting, setSorting, listSortParams } = useListSort()
   const status =
     searchParams.get("status") === "inactive" ||
     searchParams.get("status") === "active"
@@ -49,6 +53,7 @@ export function PositionListPage() {
     limit,
     status: status ?? undefined,
     departmentId,
+    ...listSortParams,
   })
   const departmentsQuery = useDepartmentsQuery({ limit: 100 })
   const deactivateMutation = useDeactivatePositionMutation()
@@ -96,15 +101,22 @@ export function PositionListPage() {
     })),
   ]
   const columns = column.columns([
-    column.accessor("positionName", { header: t("columns.name") }),
+    column.accessor("positionName", {
+      id: "name",
+      header: t("columns.name"),
+      enableSorting: true,
+    }),
     column.accessor("positionCode", {
+      id: "code",
       header: t("columns.code"),
+      enableSorting: true,
       cell: ({ getValue }) => (
         <span className="font-mono text-small-2 text-muted-foreground">{getValue()}</span>
       ),
     }),
     column.accessor("departmentId", {
       header: t("form.department"),
+      enableSorting: false,
       cell: ({ getValue }) => {
         const value = getValue()
         return value ? (departmentNames.get(value) ?? "—") : "—"
@@ -112,11 +124,14 @@ export function PositionListPage() {
     }),
     column.accessor("status", {
       header: t("columns.status"),
+      enableSorting: true,
       cell: ({ getValue }) => <StatusBadge status={getValue()} />,
     }),
     column.display({
       id: "actions",
       header: t("columns.actions"),
+      enableSorting: false,
+      enableHiding: false,
       meta: { align: "end" },
       cell: ({ row }) => (
         <DataTableActions
@@ -166,10 +181,13 @@ export function PositionListPage() {
 
     return (
       <DataTable
+        tableId="positions"
         columns={columns}
         data={rows}
         getRowId={(position) => position.id}
         label={t("title")}
+        sorting={sorting}
+        onSortingChange={setSorting}
         onRowClick={(position) => void navigate(`/positions/${position.id}`)}
       />
     )

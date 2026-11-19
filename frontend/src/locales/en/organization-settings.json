@@ -27,6 +27,7 @@
     "email_required": "Contact email is required.",
     "email_invalid": "Please enter a valid email address.",
     "phone_required": "Contact phone is required.",
+    "phone_invalid": "Enter a valid phone number.",
     "country_required": "Country is required.",
     "address_required": "Address is required."
   },

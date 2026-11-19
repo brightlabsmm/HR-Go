@@ -2,7 +2,7 @@ import { apiClient } from "@/app/api/client"
 import { unwrap, unwrapEmpty, unwrapPage } from "@/app/api/http"
 import { controlPath } from "@/app/api/paths"
 import { compactParams } from "@/util/compact-params"
-import { toListQuery } from "@/util/list-query"
+import { toListQuery, type ListQueryParams } from "@/util/list-query"
 
 export type OrganizationStatus = "PENDING" | "ACTIVE" | "SUSPENDED"
 
@@ -20,11 +20,7 @@ export interface Organization {
   updatedAt: string
 }
 
-export interface OrganizationListParams {
-  page?: number
-  limit?: number
-  search?: string
-  status?: string
+export interface OrganizationListParams extends ListQueryParams {
   organizationCode?: string
 }
 

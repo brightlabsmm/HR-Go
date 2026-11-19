@@ -2,6 +2,7 @@ import { isPlatformPortal } from "@/app/portal"
 import { apiClient } from "@/app/api/client"
 import { unwrap, unwrapPage } from "@/app/api/http"
 import { controlPath, workspacePath } from "@/app/api/paths"
+import { toListQuery, type ListQueryParams } from "@/util/list-query"
 
 export interface Permission {
   id: string
@@ -22,20 +23,30 @@ export interface Role {
   permissions: Permission[]
 }
 
+export type RoleListParams = Pick<ListQueryParams, "sortBy" | "sortOrder" | "filter">
+
+export interface PermissionListParams extends ListQueryParams {
+  scope?: "PLATFORM" | "ORG"
+  grouping?: string
+}
+
 function rolesPath() {
   return isPlatformPortal() ? controlPath("/roles") : workspacePath("/roles")
 }
 
-export function listRoles() {
-  return unwrap<Role[]>(apiClient.get(rolesPath())).then((body) =>
-    Array.isArray(body) ? body : []
-  )
+export function listRoles(params?: RoleListParams) {
+  return unwrap<Role[]>(
+    apiClient.get(rolesPath(), { params: toListQuery(params) })
+  ).then((body) => (Array.isArray(body) ? body : []))
 }
 
-export function listPermissions(scope?: "PLATFORM" | "ORG") {
+export function listPermissions(params?: PermissionListParams | "PLATFORM" | "ORG") {
+  const query =
+    typeof params === "string" ? { scope: params } : params
+
   return unwrapPage<Permission>(
     apiClient.get(controlPath("/permissions"), {
-      params: scope ? { scope } : undefined,
+      params: toListQuery(query),
     })
   )
 }

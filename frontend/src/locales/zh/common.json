@@ -54,7 +54,13 @@
     "pending": "待处理"
   },
   "table": {
-    "empty": "暂无数据"
+    "empty": "暂无数据",
+    "columns": "列",
+    "toggle_columns": "显示或隐藏列",
+    "sort_asc": "升序排列",
+    "sort_desc": "降序排列",
+    "clear_sort": "清除排序",
+    "row_actions": "行操作"
   },
   "language": "语言",
   "locale": {

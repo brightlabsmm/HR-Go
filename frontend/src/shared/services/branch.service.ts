@@ -1,7 +1,7 @@
 import { apiClient } from "@/app/api/client"
 import { unwrap, unwrapPage } from "@/app/api/http"
 import { workspacePath } from "@/app/api/paths"
-import { toListQuery } from "@/util/list-query"
+import { toListQuery, type ListQueryParams } from "@/util/list-query"
 
 export type BranchStatus = "ACTIVE" | "INACTIVE"
 
@@ -17,12 +17,7 @@ export interface Branch {
   updatedAt: string
 }
 
-export interface BranchListParams {
-  page?: number
-  limit?: number
-  status?: string
-  search?: string
-}
+export type BranchListParams = ListQueryParams
 
 export interface BranchInput {
   branchName: string

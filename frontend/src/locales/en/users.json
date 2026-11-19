@@ -27,6 +27,11 @@
     "description": "This sets the platform user to inactive.",
     "confirm": "Deactivate"
   },
+  "reactivate": {
+    "title": "Reactivate user?",
+    "description": "This restores the platform user to active.",
+    "confirm": "Reactivate"
+  },
   "form": {
     "email": "Email",
     "full_name": "Full name",

@@ -7,6 +7,7 @@ import { z } from "zod"
 
 import { applyApiFieldErrors } from "@/app/api/feedback"
 import { ForbiddenState } from "@/components/common/forbidden-state"
+import { FormPhoneInput } from "@/components/common/form/form-phone-input"
 import { FormTextInput } from "@/components/common/form/form-text-input"
 import { FormTextareaInput } from "@/components/common/form/form-textarea-input"
 import { FormActions } from "@/components/common/form-actions"
@@ -18,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import { useStayAfterCreate } from "@/shared/hooks/use-stay-after-create"
 import { useCreateOrganizationMutation } from "@/shared/queries/organization.query"
+import { requiredE164Phone } from "@/util/phone"
 
 const CODE_PATTERN = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/
 
@@ -44,10 +46,10 @@ export function OrganizationCreatePage() {
           .trim()
           .min(1, t("form.errors.email_required", "Email is required."))
           .email(t("form.errors.email")),
-        contactPhone: z
-          .string()
-          .trim()
-          .min(1, t("form.errors.phone_required", "Phone number is required.")),
+        contactPhone: requiredE164Phone(
+          t("form.errors.phone_required"),
+          t("form.errors.phone_invalid")
+        ),
         country: z
           .string()
           .trim()
@@ -157,7 +159,7 @@ export function OrganizationCreatePage() {
               label={t("form.email")}
               disabled={isPending}
             />
-            <FormTextInput
+            <FormPhoneInput
               control={control}
               name="contactPhone"
               required

@@ -1,23 +1,30 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { isPlatformPortal } from "@/app/portal"
-import { listPermissions, listRoles, updateRolePermissions } from "@/shared/services/role.service"
+import {
+  listPermissions,
+  listRoles,
+  updateRolePermissions,
+  type PermissionListParams,
+  type RoleListParams,
+} from "@/shared/services/role.service"
 import { useAuthStore } from "@/shared/stores/auth.store"
 
 export const roleKeys = {
   all: ["roles"] as const,
-  list: () => [...roleKeys.all, "list"] as const,
-  permissions: (scope?: "PLATFORM" | "ORG") =>
-    [...roleKeys.all, "permissions", scope ?? "all"] as const,
+  list: (params?: RoleListParams) => [...roleKeys.all, "list", params ?? {}] as const,
+  permissions: (params?: PermissionListParams | "PLATFORM" | "ORG") =>
+    [...roleKeys.all, "permissions", params ?? "all"] as const,
 }
 
-export function useRolesQuery() {
+export function useRolesQuery(params?: RoleListParams) {
   const accessToken = useAuthStore((state) => state.accessToken)
 
   return useQuery({
-    queryKey: roleKeys.list(),
-    queryFn: listRoles,
+    queryKey: roleKeys.list(params),
+    queryFn: () => listRoles(params),
     enabled: Boolean(accessToken),
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -31,13 +38,16 @@ export function useRoleQuery(id: string) {
   }
 }
 
-export function usePermissionsQuery(scope?: "PLATFORM" | "ORG") {
+export function usePermissionsQuery(
+  params?: PermissionListParams | "PLATFORM" | "ORG"
+) {
   const accessToken = useAuthStore((state) => state.accessToken)
 
   return useQuery({
-    queryKey: roleKeys.permissions(scope),
-    queryFn: () => listPermissions(scope),
+    queryKey: roleKeys.permissions(params),
+    queryFn: () => listPermissions(params),
     enabled: Boolean(accessToken && isPlatformPortal()),
+    placeholderData: keepPreviousData,
   })
 }
 
