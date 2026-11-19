@@ -12,6 +12,7 @@ import (
 	"hrgo/backend/internal/modules/control/organization/models"
 	"hrgo/backend/internal/modules/control/organization/request"
 	"hrgo/backend/internal/shared/codeformat"
+	"hrgo/backend/internal/shared/sorting"
 )
 
 type Repository interface {
@@ -23,7 +24,7 @@ type Repository interface {
 	SoftDelete(ctx context.Context, id string) error
 	List(ctx context.Context, q request.ListOrganizationsQuery) ([]models.Organization, int64, error)
 	CreateAdminAccount(ctx context.Context, emp *models.EmployeeIdentity, acc *models.OrganizationAccount) (*models.AdminAccountDetail, error)
-	ListAdminAccounts(ctx context.Context, orgID string) ([]models.AdminAccountDetail, error)
+	ListAdminAccounts(ctx context.Context, orgID string, q request.ListAdminAccountsQuery) ([]models.AdminAccountDetail, error)
 	FindEmployeeByCode(ctx context.Context, orgID string, code string) (*models.EmployeeIdentity, error)
 	FindAccountByIdentifier(ctx context.Context, orgID string, identifier string) (*models.OrganizationAccount, error)
 }
@@ -139,23 +140,20 @@ func (r *repository) List(ctx context.Context, query request.ListOrganizationsQu
 	}
 	offset := (page - 1) * pageSize
 
-	sortBy := "created_at"
-	switch strings.ToLower(query.SortBy) {
-	case "code":
-		sortBy = "code"
-	case "legalname":
-		sortBy = "legal_name"
-	case "status":
-		sortBy = "status"
-	}
-
-	orderDir := "DESC"
-	if strings.EqualFold(query.SortDirection, "ASC") {
-		orderDir = "ASC"
-	}
-
 	var list []models.Organization
-	err := db.Order(fmt.Sprintf("%s %s", sortBy, orderDir)).
+	err := sorting.Apply(db, query.SortBy, query.Orders(), sorting.Options{
+		Allowed: map[string]string{
+			"code":        "code",
+			"legalname":   "legal_name",
+			"legal_name":  "legal_name",
+			"status":      "status",
+			"createdat":   "created_at",
+			"created_at":  "created_at",
+			"displayname": "display_name",
+		},
+		Default:      "created_at DESC",
+		DefaultOrder: "DESC",
+	}).
 		Limit(pageSize).
 		Offset(offset).
 		Find(&list).Error
@@ -217,18 +215,32 @@ func (r *repository) CreateAdminAccount(ctx context.Context, emp *models.Employe
 	return &detail, nil
 }
 
-func (r *repository) ListAdminAccounts(ctx context.Context, orgID string) ([]models.AdminAccountDetail, error) {
+func (r *repository) ListAdminAccounts(ctx context.Context, orgID string, q request.ListAdminAccountsQuery) ([]models.AdminAccountDetail, error) {
 	var details []models.AdminAccountDetail
-	err := r.db.WithContext(ctx).Table("organization_accounts oa").
+	db := r.db.WithContext(ctx).Table("organization_accounts oa").
 		Select(`oa.id as account_id, oa.organization_id, oa.employee_id, oa.identifier,
 		        ei.employee_code, ei.first_name, ei.last_name, ei.email,
 		        r.code as role_code, r.name as role_name, oa.status, oa.last_login_at, oa.created_at`).
 		Joins("JOIN employee_identities ei ON ei.id = oa.employee_id").
 		Joins("JOIN org_user_roles our ON our.account_id = oa.id").
 		Joins("JOIN org_roles r ON r.id = our.role_id").
-		Where("oa.organization_id = ? AND r.code = ?", orgID, "ORG_ADMIN").
-		Order("oa.created_at DESC").
-		Scan(&details).Error
+		Where("oa.organization_id = ? AND r.code = ?", orgID, "ORG_ADMIN")
+	err := sorting.Apply(db, q.SortBy, q.Orders(), sorting.Options{
+		Allowed: map[string]string{
+			"employeecode":  "ei.employee_code",
+			"employee_code": "ei.employee_code",
+			"firstname":     "ei.first_name",
+			"first_name":    "ei.first_name",
+			"lastname":      "ei.last_name",
+			"last_name":     "ei.last_name",
+			"identifier":    "oa.identifier",
+			"status":        "oa.status",
+			"createdat":     "oa.created_at",
+			"created_at":    "oa.created_at",
+		},
+		Default:      "oa.created_at DESC",
+		DefaultOrder: "DESC",
+	}).Scan(&details).Error
 	return details, err
 }
 

@@ -93,17 +93,49 @@ components:
       in: query
       required: false
       schema:
-        type: string
-      description: Field to sort by
+        type: array
+        items:
+          type: string
+      style: form
+      explode: true
+      description: |
+        One or more fields to sort by (multi-column). Repeat the parameter
+        (`sortBy=status&sortBy=code`) or pass a comma-separated list
+        (`sortBy=status,code`). Unknown fields are ignored. When empty, the
+        endpoint default sort applies. A single value remains valid for
+        callers that previously sent one field.
+    SortOrderParam:
+      name: sortOrder
+      in: query
+      required: false
+      schema:
+        type: array
+        items:
+          type: string
+          enum: [asc, desc]
+      style: form
+      explode: true
+      description: |
+        Sort direction per `sortBy` entry (`asc` or `desc`), index-aligned.
+        Repeat the parameter or pass a comma-separated list. If a single value
+        is provided, it applies to every `sortBy` column. When omitted, the
+        endpoint default direction is used. Legacy alias `sortDirection` is
+        still accepted with the same array/single semantics.
     SortDirectionParam:
       name: sortDirection
       in: query
       required: false
+      deprecated: true
       schema:
-        type: string
-        enum: [asc, desc]
-        default: desc
-      description: Sort direction (`asc` or `desc`)
+        type: array
+        items:
+          type: string
+          enum: [asc, desc]
+      style: form
+      explode: true
+      description: |
+        Deprecated alias for `sortOrder`. Prefer `sortOrder`. Still accepted
+        for backward compatibility when `sortOrder` is not provided.
 
   schemas:
     ErrorDetail:
@@ -920,6 +952,10 @@ paths:
       description: List platform roles and their permission summaries. Requires `platform.role.read`.
       security:
         - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortOrderParam"
+        - $ref: "#/components/parameters/SortDirectionParam"
       responses:
         "200":
           description: List of platform roles
@@ -954,6 +990,9 @@ paths:
           description: Filter by permission scope (`PLATFORM` or `ORG`)
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
+        - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortOrderParam"
+        - $ref: "#/components/parameters/SortDirectionParam"
       responses:
         "200":
           description: Paginated list of permissions
@@ -1001,6 +1040,7 @@ paths:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
         - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortOrderParam"
         - $ref: "#/components/parameters/SortDirectionParam"
       responses:
         "200":
@@ -1269,6 +1309,7 @@ paths:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
         - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortOrderParam"
         - $ref: "#/components/parameters/SortDirectionParam"
       responses:
         "200":
@@ -1457,6 +1498,9 @@ paths:
           required: true
           schema:
             type: string
+        - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortOrderParam"
+        - $ref: "#/components/parameters/SortDirectionParam"
       responses:
         "200":
           description: List of administrator accounts
@@ -1582,6 +1626,7 @@ paths:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
         - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortOrderParam"
         - $ref: "#/components/parameters/SortDirectionParam"
       responses:
         "200":
@@ -1751,6 +1796,7 @@ paths:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
         - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortOrderParam"
         - $ref: "#/components/parameters/SortDirectionParam"
       responses:
         "200":
@@ -1920,6 +1966,7 @@ paths:
         - $ref: "#/components/parameters/PageParam"
         - $ref: "#/components/parameters/PageSizeParam"
         - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortOrderParam"
         - $ref: "#/components/parameters/SortDirectionParam"
       responses:
         "200":
@@ -2043,6 +2090,10 @@ paths:
       description: List organization roles available to the authenticated organization. Requires `org.role.read`.
       security:
         - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/SortByParam"
+        - $ref: "#/components/parameters/SortOrderParam"
+        - $ref: "#/components/parameters/SortDirectionParam"
       responses:
         "200":
           description: Organization role catalogue

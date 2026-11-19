@@ -117,7 +117,10 @@ func (h *Handler) CreateAdminAccount(c *gin.Context) {
 
 func (h *Handler) ListAdminAccounts(c *gin.Context) {
 	orgID := c.Param("organizationId")
-	res, appErr := h.svc.ListAdminAccounts(c.Request.Context(), orgID)
+	var q request.ListAdminAccountsQuery
+	_ = c.ShouldBindQuery(&q)
+
+	res, appErr := h.svc.ListAdminAccounts(c.Request.Context(), orgID, q)
 	if appErr != nil {
 		responses.Fail(c, appErr)
 		return

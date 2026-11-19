@@ -18,7 +18,10 @@ func New(svc service.Service) *Handler {
 }
 
 func (h *Handler) ListRoles(c *gin.Context) {
-	roles, appErr := h.svc.ListRoles(c.Request.Context())
+	var q request.ListRolesQuery
+	_ = c.ShouldBindQuery(&q)
+
+	roles, appErr := h.svc.ListRoles(c.Request.Context(), q)
 	if appErr != nil {
 		responses.Fail(c, appErr)
 		return

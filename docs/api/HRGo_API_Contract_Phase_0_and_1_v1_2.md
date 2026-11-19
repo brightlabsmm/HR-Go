@@ -191,8 +191,9 @@ List endpoints use the following query convention:
 |---|---|---|
 | `page` | integer | 1-based page number; default `1`. |
 | `pageSize` | integer | Requested page size; server applies a configured maximum. |
-| `sortBy` | string | Approved sortable field. |
-| `sortDirection` | `asc` / `desc` | Sort direction. |
+| `sortBy` | string or string[] | One or more approved sortable fields (multi-column). Query form: repeat (`sortBy=status&sortBy=code`) or comma-separated (`sortBy=status,code`). A single value remains valid. |
+| `sortOrder` | `asc` / `desc` or array of those | Direction per `sortBy` entry (index-aligned). A single value applies to every column. Defaults when omitted follow each endpoint. |
+| `sortDirection` | `asc` / `desc` or array | Deprecated alias for `sortOrder`; still accepted when `sortOrder` is absent. |
 | `q` | string | Optional text search where supported. |
 | `status` | string | Optional status filter where supported. |
 
@@ -704,7 +705,7 @@ Supported query parameters:
 | `createdFrom` | Inclusive creation date lower bound. |
 | `createdTo` | Inclusive creation date upper bound. |
 | `page`, `pageSize` | Pagination. |
-| `sortBy`, `sortDirection` | Sorting. |
+| `sortBy`, `sortOrder` (legacy `sortDirection`) | Multi-column sorting. |
 
 Success: `200 OK` with the standard paginated response.
 
@@ -844,7 +845,7 @@ Rules:
 
 Permission: `org.branch.read`
 
-Query parameters: `q`, `status`, `page`, `pageSize`, `sortBy`, `sortDirection`.
+Query parameters: `q`, `status`, `page`, `pageSize`, `sortBy`, `sortOrder` (legacy `sortDirection`).
 
 Returns only branches belonging to the authenticated organization.
 
@@ -920,7 +921,7 @@ Rules:
 
 Permission: `org.department.read`.
 
-Query parameters: `q`, `branchId`, `status`, `page`, `pageSize`, `sortBy`, `sortDirection`.
+Query parameters: `q`, `branchId`, `status`, `page`, `pageSize`, `sortBy`, `sortOrder` (legacy `sortDirection`).
 
 Returns only departments belonging to the authenticated organization.
 
@@ -993,7 +994,7 @@ Rules:
 
 Permission: `org.position.read`.
 
-Query parameters: `q`, `departmentId`, `status`, `page`, `pageSize`, `sortBy`, `sortDirection`.
+Query parameters: `q`, `departmentId`, `status`, `page`, `pageSize`, `sortBy`, `sortOrder` (legacy `sortDirection`).
 
 #### `GET /api/v1/workspace/positions/{positionId}`
 
@@ -1267,6 +1268,7 @@ The following items are not fully specified by the SRS or selected ERD area and 
 
 | Date | Author | Change |
 |---|---|---|
+| 2026-11-19 | thanthtooaung-coding | Documented multi-column `sortBy` / `sortOrder` query arrays on list APIs; kept legacy `sortDirection` as an alias. |
 | 2026-11-12 | LCN-Alvin | Initial Phase 0 and Phase 1 API contract draft. Limited ERD review to Platform & Shared Permissions and Organization Structure & Identity. |
 | 2026-11-13 | LCN-Alvin | Added a consolidated API endpoint summary table grouped by Control, Workspace, and operational endpoints. |
 | 2026-11-12 | LCN-Alvin | Simplified all API routes into `/api/v1/control/` for Platform Admin and `/api/v1/workspace/` for Organization and Employee APIs. |

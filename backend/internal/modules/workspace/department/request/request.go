@@ -1,5 +1,7 @@
 package request
 
+import "hrgo/backend/internal/shared/sorting"
+
 type CreateDepartmentRequest struct {
 	DepartmentName string  `json:"departmentName" binding:"required"`
 	BranchID       *string `json:"branchId"`
@@ -11,11 +13,10 @@ type UpdateDepartmentRequest struct {
 }
 
 type ListDepartmentsQuery struct {
-	Q             string  `form:"q"`
-	BranchID      *string `form:"branchId"`
-	Status        string  `form:"status"`
-	Page          int     `form:"page,default=1"`
-	PageSize      int     `form:"pageSize,default=20"`
-	SortBy        string  `form:"sortBy"`
-	SortDirection string  `form:"sortDirection"`
+	Q        string  `form:"q"`
+	BranchID *string `form:"branchId"`
+	Status   string  `form:"status"`
+	Page     int     `form:"page,default=1"`
+	PageSize int     `form:"pageSize,default=20"`
+	sorting.Query
 }

@@ -14,7 +14,7 @@ import (
 )
 
 type Service interface {
-	ListRoles(ctx context.Context) ([]response.RoleResponse, *apperrors.Error)
+	ListRoles(ctx context.Context, q request.ListRolesQuery) ([]response.RoleResponse, *apperrors.Error)
 	ListPermissions(ctx context.Context, q request.ListPermissionsQuery) ([]response.PermissionResponse, int, int, int64, *apperrors.Error)
 	UpdateRolePermissions(ctx context.Context, roleID string, req request.ReplaceRolePermissionsRequest) (*response.RoleResponse, *apperrors.Error)
 }
@@ -27,8 +27,8 @@ func New(repo repository.Repository) Service {
 	return &service{repo: repo}
 }
 
-func (s *service) ListRoles(ctx context.Context) ([]response.RoleResponse, *apperrors.Error) {
-	roles, err := s.repo.ListRoles(ctx)
+func (s *service) ListRoles(ctx context.Context, q request.ListRolesQuery) ([]response.RoleResponse, *apperrors.Error) {
+	roles, err := s.repo.ListRoles(ctx, q)
 	if err != nil {
 		return nil, apperrors.Internal()
 	}

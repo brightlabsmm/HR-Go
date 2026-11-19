@@ -9,6 +9,7 @@ import (
 
 	"hrgo/backend/internal/modules/control/user/models"
 	"hrgo/backend/internal/modules/control/user/request"
+	"hrgo/backend/internal/shared/sorting"
 )
 
 type Repository interface {
@@ -114,8 +115,18 @@ func (r *repository) List(ctx context.Context, q request.ListUsersQuery) ([]mode
 	offset := (page - 1) * pageSize
 
 	var list []models.PlatformUser
-	err := db.Preload("Roles").
-		Order("created_at DESC").
+	err := sorting.Apply(db.Preload("Roles"), q.SortBy, q.Orders(), sorting.Options{
+		Allowed: map[string]string{
+			"fullname":   "full_name",
+			"full_name":  "full_name",
+			"email":      "email",
+			"status":     "status",
+			"createdat":  "created_at",
+			"created_at": "created_at",
+		},
+		Default:      "created_at DESC",
+		DefaultOrder: "DESC",
+	}).
 		Limit(pageSize).
 		Offset(offset).
 		Find(&list).Error
