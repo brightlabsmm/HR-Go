@@ -7,6 +7,7 @@ import { isPlatformPortal } from "@/app/portal"
 import { Logo } from "@/assets/icons/logo"
 import { LanguageSwitcher } from "@/components/core/language-switcher"
 import { useMotionVariants } from "@/shared/hooks/use-motion-variants"
+import { useCurrentPatchVersionQuery } from "@/shared/queries/patch-version.query"
 import { useAuthStore } from "@/shared/stores/auth.store"
 
 const FEATURES = [
@@ -19,6 +20,7 @@ function BrandPanel() {
   const { t } = useTranslation("common")
   const { staggerContainer, staggerItem } = useMotionVariants()
   const isPlatform = isPlatformPortal()
+  const { data: patchVersion } = useCurrentPatchVersionQuery()
 
   return (
     <aside className="relative hidden overflow-hidden bg-secondary text-secondary-foreground lg:flex lg:flex-col lg:justify-between lg:p-12">
@@ -62,9 +64,14 @@ function BrandPanel() {
         </ul>
       </motion.div>
 
-      <p className="relative z-1 text-small-2 text-white/60">
-        {t("footer.copyright", { year: new Date().getFullYear() })}
-      </p>
+      <div className="relative z-1 flex items-center justify-between gap-6 text-small-2 text-white/60">
+        <p>{t("footer.copyright", { year: new Date().getFullYear() })}</p>
+        {patchVersion?.patchVersion ? (
+          <p aria-label={t("footer.patch_version", { version: patchVersion.patchVersion })}>
+            {patchVersion.patchVersion}
+          </p>
+        ) : null}
+      </div>
     </aside>
   )
 }

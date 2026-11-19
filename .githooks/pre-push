@@ -1,0 +1,15 @@
+#!/bin/sh
+# Insert the next application patch version before git sends the push.
+# Git has no database client. This script runs backend/cmd/bump-patch-version,
+# which reads DATABASE_URL from the environment or backend/.env.
+set -eu
+
+updates=$(cat)
+trimmed=$(printf '%s' "$updates" | tr -d '[:space:]')
+if [ -z "$trimmed" ]; then
+  exit 0
+fi
+
+root=$(git rev-parse --show-toplevel)
+cd "$root/backend"
+go run ./cmd/bump-patch-version

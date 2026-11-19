@@ -22,7 +22,8 @@
     "back": "Back"
   },
   "footer": {
-    "copyright": "© {{year}} HR Go"
+    "copyright": "© {{year}} HR Go",
+    "patch_version": "Patch version {{version}}"
   },
   "actions": {
     "submit": "Submit",

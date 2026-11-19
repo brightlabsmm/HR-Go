@@ -22,7 +22,8 @@
     "back": "返回"
   },
   "footer": {
-    "copyright": "© {{year}} HR Go"
+    "copyright": "© {{year}} HR Go",
+    "patch_version": "补丁版本 {{version}}"
   },
   "actions": {
     "submit": "提交",
