@@ -932,6 +932,7 @@ paths:
       description: |
         Public. No authentication. Returns the single current row from `application_patch_versions`.
         Both the platform console and the organization portal show `patchVersion` on the login screen.
+      security: []
       responses:
         "200":
           description: Current patch version

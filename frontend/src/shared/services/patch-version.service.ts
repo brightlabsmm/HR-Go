@@ -8,5 +8,5 @@ export interface PatchVersion {
 }
 
 export function getCurrentPatchVersion() {
-  return unwrap<PatchVersion>(apiClient.get("/patch-version"))
+  return unwrap<PatchVersion>(apiClient.get("/patch-version", { skipAuth: true }))
 }
