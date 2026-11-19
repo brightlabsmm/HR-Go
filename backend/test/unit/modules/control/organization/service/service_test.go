@@ -92,7 +92,7 @@ func (m *mockOrgRepo) CreateAdminAccount(ctx context.Context, emp *models.Employ
 	}, nil
 }
 
-func (m *mockOrgRepo) ListAdminAccounts(ctx context.Context, orgID string) ([]models.AdminAccountDetail, error) {
+func (m *mockOrgRepo) ListAdminAccounts(ctx context.Context, orgID string, q request.ListAdminAccountsQuery) ([]models.AdminAccountDetail, error) {
 	return m.adminDetails, nil
 }
 

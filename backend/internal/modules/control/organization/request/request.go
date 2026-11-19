@@ -1,5 +1,7 @@
 package request
 
+import "hrgo/backend/internal/shared/sorting"
+
 type CreateOrganizationRequest struct {
 	OrganizationCode string `json:"organizationCode" binding:"required"`
 	LegalName        string `json:"legalName" binding:"required"`
@@ -40,6 +42,9 @@ type ListOrganizationsQuery struct {
 	Status           string `form:"status"`
 	Page             int    `form:"page,default=1"`
 	PageSize         int    `form:"pageSize,default=20"`
-	SortBy           string `form:"sortBy"`
-	SortDirection    string `form:"sortDirection"`
+	sorting.Query
+}
+
+type ListAdminAccountsQuery struct {
+	sorting.Query
 }

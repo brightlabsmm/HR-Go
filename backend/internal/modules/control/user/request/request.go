@@ -1,5 +1,7 @@
 package request
 
+import "hrgo/backend/internal/shared/sorting"
+
 type CreatePlatformUserRequest struct {
 	FullName string   `json:"fullName" binding:"required"`
 	Email    string   `json:"email" binding:"required,email"`
@@ -21,4 +23,5 @@ type ListUsersQuery struct {
 	Status   string `form:"status"`
 	Page     int    `form:"page,default=1"`
 	PageSize int    `form:"pageSize,default=20"`
+	sorting.Query
 }

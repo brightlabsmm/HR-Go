@@ -20,7 +20,10 @@ func New(svc service.Service) *Handler {
 
 func (h *Handler) ListRoles(c *gin.Context) {
 	claims := security.GetClaims(c)
-	roles, appErr := h.svc.ListRoles(c.Request.Context(), claims.OrganizationID)
+	var q request.ListRolesQuery
+	_ = c.ShouldBindQuery(&q)
+
+	roles, appErr := h.svc.ListRoles(c.Request.Context(), claims.OrganizationID, q)
 	if appErr != nil {
 		responses.Fail(c, appErr)
 		return
