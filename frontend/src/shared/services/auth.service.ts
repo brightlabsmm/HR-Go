@@ -20,6 +20,7 @@ export interface AuthProfile {
   status: string
   roles: AuthRole[]
   permissions: string[]
+  mustChangePassword?: boolean
 }
 
 export interface AuthSession {
@@ -54,12 +55,14 @@ interface WorkspaceUserPayload {
   accountStatus?: string
   roles?: AuthRole[]
   permissions?: string[]
+  mustChangePassword?: boolean
 }
 
 interface LoginPayload {
   accessToken: string
   tokenType?: string
   expiresIn?: number
+  mustChangePassword?: boolean
   user: PlatformUserPayload | WorkspaceUserPayload
 }
 
@@ -84,6 +87,7 @@ function mapWorkspaceUser(user: WorkspaceUserPayload): AuthProfile {
     status: user.accountStatus ?? "ACTIVE",
     roles: user.roles ?? [],
     permissions: user.permissions ?? [],
+    mustChangePassword: Boolean(user.mustChangePassword),
   }
 }
 
@@ -101,12 +105,18 @@ export function login(input: LoginInput) {
     : { identifier: input.identifier, password: input.password }
 
   return unwrap<LoginPayload>(apiClient.post(portalAuthPath("/login"), body)).then(
-    (payload) => ({
-      accessToken: payload.accessToken,
-      tokenType: payload.tokenType ?? "Bearer",
-      expiresIn: payload.expiresIn ?? 0,
-      user: mapProfile(payload.user),
-    })
+    (payload) => {
+      const profile = mapProfile(payload.user)
+      if (payload.mustChangePassword !== undefined) {
+        profile.mustChangePassword = payload.mustChangePassword
+      }
+      return {
+        accessToken: payload.accessToken,
+        tokenType: payload.tokenType ?? "Bearer",
+        expiresIn: payload.expiresIn ?? 0,
+        user: profile,
+      }
+    }
   )
 }
 
@@ -118,4 +128,16 @@ export function getCurrentUser() {
   return unwrap<PlatformUserPayload | WorkspaceUserPayload>(
     apiClient.get(portalAuthPath("/me"))
   ).then(mapProfile)
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
+export function changePassword(input: ChangePasswordInput) {
+  return unwrap<{ message: string }>(
+    apiClient.post(portalAuthPath("/change-password"), input)
+  )
 }
