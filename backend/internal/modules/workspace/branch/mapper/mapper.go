@@ -14,6 +14,8 @@ func ToBranchResponse(b *models.Branch) response.BranchResponse {
 		BranchName:     b.Name,
 		Address:        b.Address,
 		Status:         b.Status,
+		CreatedAt:      b.CreatedAt,
+		UpdatedAt:      b.UpdatedAt,
 	}
 }
 

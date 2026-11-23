@@ -150,6 +150,8 @@ func (r *repository) List(ctx context.Context, orgID string, q request.ListBranc
 			"status":     "status",
 			"createdat":  "created_at",
 			"created_at": "created_at",
+			"updatedat":  "updated_at",
+			"updated_at": "updated_at",
 		},
 		Default:      "created_at DESC",
 		DefaultOrder: "DESC",
