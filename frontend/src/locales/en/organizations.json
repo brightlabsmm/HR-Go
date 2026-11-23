@@ -75,7 +75,9 @@
       "first_name_required": "First name is required.",
       "last_name_required": "Last name is required.",
       "employee_code_required": "Employee code / identifier is required.",
-      "password_required": "Password must be at least 8 characters."
+      "password_required": "Password must be at least 8 characters.",
+      "password_complexity": "Password must be at least 8 characters and include 1 uppercase letter, 1 lowercase letter, and 1 number.",
+      "password_common": "This password is too common or weak. Please choose a stronger password."
     }
   },
   "actions": {

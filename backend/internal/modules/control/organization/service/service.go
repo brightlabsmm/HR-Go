@@ -465,6 +465,12 @@ func (s *service) CreateAdminAccount(ctx context.Context, orgID string, req requ
 		})
 	}
 
+	if err := security.ValidatePasswordStrength(req.Password); err != nil {
+		return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "password", Message: err.Error()},
+		})
+	}
+
 	existingEmp, err := s.repo.FindEmployeeByCode(ctx, orgID, code)
 	if err != nil {
 		return nil, apperrors.Internal()

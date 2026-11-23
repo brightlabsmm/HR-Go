@@ -324,6 +324,24 @@ func TestCreateAdminAccount(t *testing.T) {
 			t.Fatalf("expected 404, got %v", appErr)
 		}
 	})
+
+	t.Run("rejects weak password with only digits or common words", func(t *testing.T) {
+		repo := &mockOrgRepo{org: org}
+		svc := service.New(repo)
+
+		for _, weakPw := range []string{"12345678", "password", "Admin123", "Short1"} {
+			_, appErr := svc.CreateAdminAccount(context.Background(), "org-1", request.CreateAdminAccountRequest{
+				FirstName:    "John",
+				LastName:     "Doe",
+				EmployeeCode: "EMP-NEW",
+				Password:     weakPw,
+			})
+
+			if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+				t.Errorf("expected VALIDATION_ERROR for weak password %q, got %v", weakPw, appErr)
+			}
+		}
+	})
 }
 
 func TestCreateOrganization(t *testing.T) {
