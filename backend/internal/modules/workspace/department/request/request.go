@@ -6,12 +6,12 @@ import (
 )
 
 type CreateDepartmentRequest struct {
-	DepartmentName string  `json:"departmentName" binding:"required"`
+	DepartmentName string  `json:"departmentName" binding:"required,max=150"`
 	BranchID       *string `json:"branchId"`
 }
 
 type UpdateDepartmentRequest struct {
-	DepartmentName *string `json:"departmentName"`
+	DepartmentName *string `json:"departmentName" binding:"omitempty,max=150"`
 	BranchID       *string `json:"branchId"`
 }
 
