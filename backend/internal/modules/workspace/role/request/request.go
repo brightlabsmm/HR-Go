@@ -19,3 +19,15 @@ type RoleAssignmentInput struct {
 type ReplaceAccountRolesRequest struct {
 	Assignments []RoleAssignmentInput `json:"assignments" binding:"required"`
 }
+
+type ListPermissionsQuery struct {
+	Scope    string `form:"scope"`
+	Grouping string `form:"grouping"`
+	Search   string `form:"search"`
+	Page     int    `form:"page,default=1"`
+	PageSize int    `form:"pageSize,default=50"`
+}
+
+type ReplaceRolePermissionsRequest struct {
+	PermissionIDs []string `json:"permissionIds" binding:"required"`
+}
