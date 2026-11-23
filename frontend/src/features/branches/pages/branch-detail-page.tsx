@@ -17,7 +17,7 @@ import {
   useBranchQuery,
   useDeactivateBranchMutation,
 } from "@/shared/queries/branch.query"
-import { formatDate } from "@/util/format-date"
+import { formatDateTime } from "@/util/format-date"
 import { getInitials } from "@/util/initials"
 
 export function BranchDetailPage() {
@@ -56,11 +56,11 @@ export function BranchDetailPage() {
     { label: t("columns.address"), value: branch?.address || "—" },
     {
       label: tCommon("created_at", "Created"),
-      value: branch ? formatDate(branch.createdAt, i18n.language) : null,
+      value: branch ? formatDateTime(branch.createdAt, i18n.language) : null,
     },
     {
       label: tCommon("updated_at", "Updated"),
-      value: branch ? formatDate(branch.updatedAt, i18n.language) : null,
+      value: branch ? formatDateTime(branch.updatedAt, i18n.language) : null,
     },
   ]
 
