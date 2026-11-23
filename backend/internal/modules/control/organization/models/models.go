@@ -7,18 +7,24 @@ import (
 )
 
 type Organization struct {
-	ID           string `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	Code         string `gorm:"uniqueIndex;not null"`
-	LegalName    string `gorm:"not null"`
-	DisplayName  string `gorm:"not null"`
-	ContactEmail string
-	ContactPhone string
-	Country      string `gorm:"default:'MM'"`
-	Address      string
-	Status       string `gorm:"default:'PENDING'"`
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	DeletedAt    gorm.DeletedAt `gorm:"index"`
+	ID                 string `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	Code               string `gorm:"uniqueIndex;not null"`
+	LegalName          string `gorm:"not null"`
+	DisplayName        string `gorm:"not null"`
+	ContactEmail       string
+	ContactPhone       string
+	Country            string `gorm:"default:'MM'"`
+	Address            string
+	Status             string     `gorm:"default:'PENDING'"`
+	SuspendNotifyFrom  *time.Time `gorm:"column:suspend_notify_from"`
+	SuspendNotifyTo    *time.Time `gorm:"column:suspend_notify_to"`
+	ScheduledSuspendAt *time.Time `gorm:"column:scheduled_suspend_at"`
+	SuspendReason      *string    `gorm:"column:suspend_reason"`
+	SuspendedAt        *time.Time `gorm:"column:suspended_at"`
+	SessionsRevokedAt  *time.Time `gorm:"column:sessions_revoked_at"`
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+	DeletedAt          gorm.DeletedAt `gorm:"index"`
 }
 
 func (Organization) TableName() string {
@@ -111,4 +117,20 @@ type AdminAccountDetail struct {
 	Status         string     `gorm:"column:status"`
 	LastLoginAt    *time.Time `gorm:"column:last_login_at"`
 	CreatedAt      time.Time  `gorm:"column:created_at"`
+}
+
+type WorkspaceSession struct {
+	ID             string     `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	OrganizationID string     `gorm:"type:uuid;not null"`
+	AccountID      string     `gorm:"type:uuid;not null"`
+	IPAddress      *string    `gorm:"column:ip_address"`
+	UserAgent      *string    `gorm:"column:user_agent"`
+	CreatedAt      time.Time  `gorm:"column:created_at"`
+	ExpiresAt      time.Time  `gorm:"column:expires_at"`
+	RevokedAt      *time.Time `gorm:"column:revoked_at"`
+	RevokedReason  *string    `gorm:"column:revoked_reason"`
+}
+
+func (WorkspaceSession) TableName() string {
+	return "workspace_sessions"
 }

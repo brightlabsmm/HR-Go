@@ -17,10 +17,14 @@ const (
 // OrgStatusChecker checks the live status of an organization.
 type OrgStatusChecker func(ctx context.Context, orgID string) (string, error)
 
+// WorkspaceSessionChecker checks if a workspace session is valid and not revoked.
+type WorkspaceSessionChecker func(ctx context.Context, claims *Claims) (bool, error)
+
 // Middleware provides authentication and authorization guards.
 type Middleware struct {
-	tokens           *TokenManager
-	orgStatusChecker OrgStatusChecker
+	tokens                  *TokenManager
+	orgStatusChecker        OrgStatusChecker
+	workspaceSessionChecker WorkspaceSessionChecker
 }
 
 // NewMiddleware creates security middleware.
@@ -31,6 +35,11 @@ func NewMiddleware(tokens *TokenManager) *Middleware {
 // SetOrgStatusChecker sets the callback for validating organization status.
 func (m *Middleware) SetOrgStatusChecker(checker OrgStatusChecker) {
 	m.orgStatusChecker = checker
+}
+
+// SetWorkspaceSessionChecker sets the callback for validating workspace session revocation.
+func (m *Middleware) SetWorkspaceSessionChecker(checker WorkspaceSessionChecker) {
+	m.workspaceSessionChecker = checker
 }
 
 // RequirePlatform enforces that the request has a valid PLATFORM JWT.
@@ -61,6 +70,15 @@ func (m *Middleware) RequireWorkspace() gin.HandlerFunc {
 			status, err := m.orgStatusChecker(c.Request.Context(), claims.OrganizationID)
 			if err != nil || status != "ACTIVE" {
 				responses.Fail(c, apperrors.Unauthorized("Organization is not active or has been suspended."))
+				c.Abort()
+				return
+			}
+		}
+
+		if m.workspaceSessionChecker != nil {
+			valid, err := m.workspaceSessionChecker(c.Request.Context(), claims)
+			if err != nil || !valid {
+				responses.Fail(c, apperrors.Unauthorized("Your session has been revoked or expired. Please sign in again."))
 				c.Abort()
 				return
 			}

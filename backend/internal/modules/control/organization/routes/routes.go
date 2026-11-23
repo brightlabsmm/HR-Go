@@ -17,6 +17,7 @@ func Register(rg *gin.RouterGroup, h *handler.Handler, sec *security.Middleware)
 		group.PATCH("/:organizationId", sec.RequirePermission("platform.organization.update"), h.Update)
 		group.DELETE("/:organizationId", sec.RequirePermission("platform.organization.delete"), h.Delete)
 		group.POST("/:organizationId/status", sec.RequirePermission("platform.organization.status.update"), h.UpdateStatus)
+		group.DELETE("/:organizationId/suspend-schedule", sec.RequirePermission("platform.organization.status.update"), h.CancelSuspendSchedule)
 		group.POST("/:organizationId/admin-account", sec.RequirePermission("platform.organization.update"), h.CreateAdminAccount)
 		group.GET("/:organizationId/admin-accounts", sec.RequirePermission("platform.organization.read"), h.ListAdminAccounts)
 	}
