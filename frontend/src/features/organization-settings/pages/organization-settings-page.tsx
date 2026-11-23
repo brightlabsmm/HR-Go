@@ -196,7 +196,7 @@ export function OrganizationSettingsPage() {
                     name="displayName"
                     required
                     label={t("fields.display_name")}
-                    className="md:col-span-2"
+                    className="lg:col-span-2"
                   />
                 </FormFieldGrid>
               )}
@@ -235,7 +235,7 @@ export function OrganizationSettingsPage() {
                     name="address"
                     required
                     label={t("fields.address")}
-                    className="md:col-span-2"
+                    className="lg:col-span-2"
                   />
                 </FormFieldGrid>
               )}

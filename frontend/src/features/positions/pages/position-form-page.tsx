@@ -140,7 +140,7 @@ export function PositionFormPage() {
                 control={control}
                 name="departmentId"
                 label={t("form.department")}
-                className="md:col-span-2"
+                className="lg:col-span-2"
                 options={departmentOptions}
                 disabled={isPending}
               />

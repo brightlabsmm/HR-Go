@@ -26,7 +26,7 @@ export function FormSection({
   return (
     <FieldSet
       className={cn(
-        "grid gap-6 border-t border-hair py-8 md:grid-cols-[17.5rem_minmax(0,1fr)] md:gap-12",
+        "grid gap-6 border-t border-hair py-8 xl:grid-cols-[17.5rem_minmax(0,1fr)] xl:gap-12",
         className
       )}
     >

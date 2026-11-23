@@ -132,7 +132,7 @@ export function UserCreatePage() {
               generatable
               label={t("form.password")}
               autoComplete="new-password"
-              className="md:col-span-2"
+              className="lg:col-span-2"
               disabled={isPending}
             />
           </FormFieldGrid>
