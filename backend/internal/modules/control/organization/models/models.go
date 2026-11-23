@@ -57,15 +57,16 @@ func (EmployeeIdentity) TableName() string {
 }
 
 type OrganizationAccount struct {
-	ID             string `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	OrganizationID string `gorm:"type:uuid;not null"`
-	EmployeeID     string `gorm:"type:uuid;not null"`
-	Identifier     string `gorm:"not null"`
-	PasswordHash   string `gorm:"not null"`
-	Status         string `gorm:"default:'ACTIVE'"`
-	LastLoginAt    *time.Time
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
+	ID                 string `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	OrganizationID     string `gorm:"type:uuid;not null"`
+	EmployeeID         string `gorm:"type:uuid;not null"`
+	Identifier         string `gorm:"not null"`
+	PasswordHash       string `gorm:"not null"`
+	Status             string `gorm:"default:'ACTIVE'"`
+	MustChangePassword bool   `gorm:"column:must_change_password;default:true"`
+	LastLoginAt        *time.Time
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 func (OrganizationAccount) TableName() string {
