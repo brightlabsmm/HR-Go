@@ -57,6 +57,10 @@ import (
 	wsrolerepo "hrgo/backend/internal/modules/workspace/role/repository"
 	wsroleroutes "hrgo/backend/internal/modules/workspace/role/routes"
 	wsrolesvc "hrgo/backend/internal/modules/workspace/role/service"
+	wsuserhandler "hrgo/backend/internal/modules/workspace/user/handler"
+	wsuserrepo "hrgo/backend/internal/modules/workspace/user/repository"
+	wsuserroutes "hrgo/backend/internal/modules/workspace/user/routes"
+	wsusersvc "hrgo/backend/internal/modules/workspace/user/service"
 	apperrors "hrgo/backend/internal/shared/errors"
 	"hrgo/backend/internal/shared/responses"
 	"hrgo/backend/internal/shared/security"
@@ -168,6 +172,10 @@ func NewEngine(deps Dependencies) *gin.Engine {
 		wsOrgRepo := wsorgrepo.New(deps.DB)
 		wsOrgService := wsorgsvc.New(wsOrgRepo)
 		wsorgroutes.Register(v1, wsorghandler.New(wsOrgService), secMiddleware)
+
+		wsUserRepo := wsuserrepo.New(deps.DB)
+		wsUserService := wsusersvc.New(wsUserRepo)
+		wsuserroutes.Register(v1, wsuserhandler.New(wsUserService), secMiddleware)
 	}
 
 	engine.GET("/ping", func(c *gin.Context) {
