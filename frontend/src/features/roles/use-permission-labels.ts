@@ -51,6 +51,13 @@ export function usePermissionLabels() {
       })
     },
     permissionLabel: (perm: { code: string; action?: string; description?: string | null }) => {
+      const cleanKey = perm.code.replaceAll(".", "_").toLowerCase()
+      const specificKey = `permissions.${cleanKey}`
+      const translated = t(specificKey)
+      if (translated && translated !== specificKey) {
+        return translated
+      }
+
       const { action } = splitPermission(perm.code)
       const actionKey = (perm.action ?? action).replaceAll(".", "_")
       return t(`actions.${actionKey}`, {
