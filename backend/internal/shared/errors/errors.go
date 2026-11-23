@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -71,6 +72,22 @@ func BindError(err error) *Error {
 			})
 		}
 		return ValidationFailed(details)
+	}
+
+	var ute *json.UnmarshalTypeError
+	if errors.As(err, &ute) {
+		field := toLowerCamel(ute.Field)
+		if field == "" {
+			field = "general"
+		}
+		return ValidationFailed([]FieldIssue{
+			{Field: field, Message: fmt.Sprintf("Invalid data type for %s.", field)},
+		})
+	}
+
+	var syntaxErr *json.SyntaxError
+	if errors.As(err, &syntaxErr) {
+		return BadRequest("Malformed JSON syntax in request body.")
 	}
 
 	return BadRequest("Invalid request payload.")

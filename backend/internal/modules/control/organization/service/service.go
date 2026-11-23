@@ -351,6 +351,18 @@ func mapDbError(err error) *apperrors.Error {
 			{Field: "displayName", Message: "One or more fields exceed maximum allowed length."},
 		})
 	}
+	if strings.Contains(msg, "null value in column \"legal_name\"") {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{{Field: "legalName", Message: "Legal name is required."}})
+	}
+	if strings.Contains(msg, "null value in column \"display_name\"") {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{{Field: "displayName", Message: "Display name is required."}})
+	}
+	if strings.Contains(msg, "null value in column \"code\"") {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{{Field: "organizationCode", Message: "Organization code is required."}})
+	}
+	if strings.Contains(msg, "null value in column \"country\"") {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{{Field: "country", Message: "Country is required."}})
+	}
 	if strings.Contains(msg, "chk_organizations_country") {
 		return apperrors.ValidationFailed([]apperrors.FieldIssue{
 			{Field: "country", Message: "Please select a valid country from the allowed list."},

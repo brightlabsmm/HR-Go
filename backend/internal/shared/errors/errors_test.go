@@ -51,6 +51,21 @@ func TestBindError(t *testing.T) {
 		}
 	})
 
+	t.Run("converts unmarshal type errors to field issues", func(t *testing.T) {
+		typeErr := json.Unmarshal([]byte(`{"organizationCode": 12345, "contactEmail": "test@acme.com"}`), &sampleRequest{})
+		if typeErr == nil {
+			t.Fatal("expected unmarshal type error, got nil")
+		}
+
+		appErr := apperrors.BindError(typeErr)
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" || len(appErr.Details) == 0 {
+			t.Fatalf("expected VALIDATION_ERROR with field details, got %+v", appErr)
+		}
+		if appErr.Details[0].Field != "organizationCode" {
+			t.Errorf("expected field organizationCode, got %s", appErr.Details[0].Field)
+		}
+	})
+
 	t.Run("returns bad request for non-validation error", func(t *testing.T) {
 		syntaxErr := json.Unmarshal([]byte("invalid json"), &sampleRequest{})
 		appErr := apperrors.BindError(syntaxErr)
