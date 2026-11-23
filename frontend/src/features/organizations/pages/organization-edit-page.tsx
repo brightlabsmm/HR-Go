@@ -146,6 +146,14 @@ export function OrganizationEditPage() {
           }
         })}
       >
+        {formState.errors.root?.message ? (
+          <div
+            role="alert"
+            className="rounded-input border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
+          >
+            {formState.errors.root.message}
+          </div>
+        ) : null}
         <FormSection
           legend={t("sections.identity")}
           description={t("sections.identity_description")}

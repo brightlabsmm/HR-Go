@@ -82,7 +82,7 @@ export function OrganizationCreatePage() {
 
   type FormValues = z.infer<typeof schema>
 
-  const { control, handleSubmit, setError, reset } = useForm<FormValues>({
+  const { control, handleSubmit, setError, reset, formState } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       organizationCode: "",
@@ -137,6 +137,14 @@ export function OrganizationCreatePage() {
           }
         })}
       >
+        {formState.errors.root?.message ? (
+          <div
+            role="alert"
+            className="rounded-input border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
+          >
+            {formState.errors.root.message}
+          </div>
+        ) : null}
         <FormSection
           legend={t("sections.identity")}
           description={t("sections.identity_description")}
