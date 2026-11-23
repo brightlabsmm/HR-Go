@@ -116,7 +116,7 @@ export function OrganizationCreateAdminPage() {
   }
 
   return (
-    <form className={formStackClassName} onSubmit={handleSubmit(onSubmit)}>
+    <form className={formStackClassName} onSubmit={handleSubmit(onSubmit)} autoComplete="off">
       <FormPageHeader
         title={t("create_admin.title")}
         subtitle={t("create_admin.subtitle")}
@@ -130,6 +130,7 @@ export function OrganizationCreateAdminPage() {
             label={t("create_admin.first_name")}
             required
             disabled={createMutation.isPending}
+            autoComplete="off"
           />
           <FormTextInput
             control={control}
@@ -137,6 +138,7 @@ export function OrganizationCreateAdminPage() {
             label={t("create_admin.last_name")}
             required
             disabled={createMutation.isPending}
+            autoComplete="off"
           />
           <FormTextInput
             control={control}
@@ -146,18 +148,21 @@ export function OrganizationCreateAdminPage() {
             description={t("create_admin.employee_code_hint")}
             required
             disabled={createMutation.isPending}
+            autoComplete="off"
           />
           <FormTextInput
             control={control}
             name="email"
             label={t("create_admin.email")}
             disabled={createMutation.isPending}
+            autoComplete="off"
           />
           <FormPasswordInput
             control={control}
             name="password"
             label={t("create_admin.password")}
             required
+            autoComplete="new-password"
             className="md:col-span-2"
             disabled={createMutation.isPending}
           />
