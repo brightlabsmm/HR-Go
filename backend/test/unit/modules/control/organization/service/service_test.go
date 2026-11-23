@@ -426,21 +426,19 @@ func TestUpdateOrganization(t *testing.T) {
 		}
 	}
 
-	t.Run("updates organization code and contact fields successfully", func(t *testing.T) {
+	t.Run("updates contact fields successfully while keeping organization code", func(t *testing.T) {
 		repo := &mockOrgRepo{org: newTestOrg()}
 		svc := service.New(repo)
 
-		newCode := "ORG-NEW"
 		newEmail := "new@acme.com"
 		res, appErr := svc.Update(context.Background(), "org-1", request.UpdateOrganizationRequest{
-			OrganizationCode: &newCode,
-			ContactEmail:     &newEmail,
+			ContactEmail: &newEmail,
 		})
 
 		if appErr != nil {
 			t.Fatalf("unexpected error: %v", appErr)
 		}
-		if res.OrganizationCode != "ORG-NEW" || res.ContactEmail != "new@acme.com" {
+		if res.OrganizationCode != "ORG-001" || res.ContactEmail != "new@acme.com" {
 			t.Errorf("unexpected response: %+v", res)
 		}
 	})
@@ -479,20 +477,38 @@ func TestUpdateOrganization(t *testing.T) {
 		}
 	})
 
-	t.Run("rejects duplicate organization code on update", func(t *testing.T) {
+	t.Run("rejects changing organization code on update (OBS-02)", func(t *testing.T) {
 		repo := &mockOrgRepo{
-			org:          newTestOrg(),
-			existingCode: &models.Organization{ID: "other-org", Code: "ORG-TAKEN"},
+			org: newTestOrg(),
 		}
 		svc := service.New(repo)
 
-		takenCode := "ORG-TAKEN"
+		newCode := "ORG-CHANGED"
 		_, appErr := svc.Update(context.Background(), "org-1", request.UpdateOrganizationRequest{
-			OrganizationCode: &takenCode,
+			OrganizationCode: &newCode,
 		})
 
-		if appErr == nil || appErr.Code != "CONFLICT" {
-			t.Fatalf("expected CONFLICT, got %v", appErr)
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" || len(appErr.Details) == 0 || appErr.Details[0].Field != "organizationCode" {
+			t.Fatalf("expected VALIDATION_ERROR on organizationCode, got %+v", appErr)
+		}
+	})
+
+	t.Run("allows submitting same organization code on update", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: newTestOrg(),
+		}
+		svc := service.New(repo)
+
+		sameCode := repo.org.Code
+		res, appErr := svc.Update(context.Background(), "org-1", request.UpdateOrganizationRequest{
+			OrganizationCode: &sameCode,
+		})
+
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if res.OrganizationCode != repo.org.Code {
+			t.Errorf("expected code %s, got %s", repo.org.Code, res.OrganizationCode)
 		}
 	})
 }

@@ -22,6 +22,7 @@
     "create_subtitle": "สร้างบัญชีองค์กรลูกค้า",
     "code": "รหัสองค์กร",
     "code_placeholder": "ORG-001",
+    "code_readonly_hint": "ไม่สามารถเปลี่ยนรหัสองค์กรได้หลังจากสร้างแล้ว",
     "legal_name": "ชื่อตามกฎหมาย",
     "display_name": "ชื่อที่แสดง",
     "country": "ประเทศ",

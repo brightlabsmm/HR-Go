@@ -22,6 +22,7 @@
     "create_subtitle": "Customer အဖွဲ့အစည်း account တစ်ခု ဖန်တီးပါ။",
     "code": "အဖွဲ့အစည်းကုဒ်",
     "code_placeholder": "ORG-001",
+    "code_readonly_hint": "အဖွဲ့အစည်းကုဒ်ကို ဖန်တီးပြီးနောက် ပြင်ဆင်၍မရပါ။",
     "legal_name": "တရားဝင်အမည်",
     "display_name": "ပြသမည့်အမည်",
     "country": "နိုင်ငံ",
