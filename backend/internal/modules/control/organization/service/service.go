@@ -208,22 +208,10 @@ func (s *service) Update(ctx context.Context, id string, req request.UpdateOrgan
 
 	if req.OrganizationCode != nil {
 		newCode := strings.TrimSpace(*req.OrganizationCode)
-		if newCode == "" {
-			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "organizationCode", Message: "Organization code is required."})
-		} else if len(newCode) > 50 {
-			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "organizationCode", Message: "Organization code must not exceed 50 characters."})
-		} else if !codeRegex.MatchString(newCode) {
-			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "organizationCode", Message: "Organization code can only contain letters, numbers, and hyphens."})
-		} else if !strings.EqualFold(newCode, org.Code) {
-			existing, err := s.repo.FindByCode(ctx, newCode)
-			if err != nil {
-				return nil, apperrors.Internal()
-			}
-			if existing != nil && existing.ID != org.ID {
-				return nil, apperrors.Conflict("Organization code already in use")
-			} else {
-				org.Code = newCode
-			}
+		if newCode != "" && !strings.EqualFold(newCode, org.Code) {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "organizationCode", Message: "Organization code cannot be changed after creation."},
+			})
 		}
 	}
 
