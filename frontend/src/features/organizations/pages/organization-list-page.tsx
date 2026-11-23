@@ -121,7 +121,7 @@ export function OrganizationListPage() {
               value={params.search}
               onValueChange={params.setSearch}
               placeholder={t("search_placeholder")}
-              className="w-80 max-w-full shrink-0"
+              className="w-full sm:w-80"
             />
             <FilterSelect
               items={statusItems}

@@ -515,12 +515,12 @@ export function RolePermissionGrantEditor({
       {/* Role Header Card */}
       <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-5 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <ShieldCheckIcon className="size-4.5" />
             </span>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
+            <div className="flex min-w-0 flex-col">
+              <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-body-1 font-semibold text-foreground">
                   {role.roleName}
                 </h2>
@@ -546,14 +546,14 @@ export function RolePermissionGrantEditor({
 
       {/* Access Section (Direct Permission List) */}
       <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <KeyRoundIcon className="size-4 text-muted-foreground" />
             <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               {t("sections.access", { defaultValue: "Access" })}
             </h3>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="text-small-2 text-muted-foreground">
               {t("active_count", {
                 count: role.permissions.length,
@@ -676,7 +676,7 @@ export function RolePermissionGrantEditor({
               })}
             </h3>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="text-small-2 font-medium text-foreground">
               {t("selected_permissions_counter", {
                 selected: selectedIds.size,
@@ -708,7 +708,7 @@ export function RolePermissionGrantEditor({
         <div className="rounded-lg border border-border bg-surface p-2 shadow-xs">
           <div className="flex flex-wrap items-center justify-between gap-2">
             {/* Left Tools: Scope Tabs + Grouping Dropdown */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {/* Scope Tabs - Only in Platform Console where multiple scopes exist */}
               {isPlatform ? (
                 <div className="flex items-center gap-0.5 rounded-md border border-border bg-muted/20 p-0.5">
@@ -767,7 +767,7 @@ export function RolePermissionGrantEditor({
             </div>
 
             {/* Right Tools: Search + Expand/Select Actions */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <SearchBox
                 value={search}
                 onValueChange={setSearch}
@@ -861,7 +861,7 @@ export function RolePermissionGrantEditor({
         )}
 
         {/* Bottom Save Bar */}
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface p-3.5 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface p-3.5 shadow-xs">
           <div className="flex items-center gap-2">
             {isDirty ? (
               <Button

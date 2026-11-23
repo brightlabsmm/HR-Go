@@ -47,7 +47,7 @@ export function PageHeader({
         </Link>
       ) : null}
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <div className="flex min-w-0 flex-1 basis-64 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="min-w-0 truncate text-title-2 font-semibold text-secondary">
               {title}
@@ -61,7 +61,7 @@ export function PageHeader({
           ) : null}
         </div>
         {actions ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <div className="flex max-w-full flex-wrap items-center gap-2">
             {actions}
           </div>
         ) : null}

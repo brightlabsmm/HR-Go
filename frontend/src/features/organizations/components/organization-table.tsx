@@ -24,6 +24,10 @@ import type {
 
 const column = createDataTableColumns<Organization>()
 
+// Below md only Name, Status and Actions stay, so the table fits a phone without sideways scroll.
+const DESKTOP_ONLY_CLASS = "hidden md:table-cell"
+const COMPACT_CELL_CLASS = "px-2 md:px-4"
+
 interface OrganizationTableProps {
   data: Organization[]
   sorting: SortingState
@@ -50,6 +54,7 @@ export function OrganizationTable({
       id: "displayName",
       header: t("columns.name"),
       enableSorting: true,
+      meta: { headerClassName: COMPACT_CELL_CLASS, cellClassName: COMPACT_CELL_CLASS },
       cell: ({ row }) => (
         <IdentityCell
           name={row.original.displayName}
@@ -61,6 +66,7 @@ export function OrganizationTable({
       id: "code",
       header: t("columns.code"),
       enableSorting: true,
+      meta: { headerClassName: DESKTOP_ONLY_CLASS, cellClassName: DESKTOP_ONLY_CLASS },
       cell: ({ getValue }) => (
         <span className="font-mono text-small-2 text-muted-foreground">{getValue()}</span>
       ),
@@ -68,21 +74,25 @@ export function OrganizationTable({
     column.accessor("contactEmail", {
       header: t("columns.email"),
       enableSorting: false,
+      meta: { headerClassName: DESKTOP_ONLY_CLASS, cellClassName: DESKTOP_ONLY_CLASS },
       cell: ({ getValue }) => getValue() || "—",
     }),
     column.accessor("country", {
       header: t("columns.country"),
       enableSorting: false,
+      meta: { headerClassName: DESKTOP_ONLY_CLASS, cellClassName: DESKTOP_ONLY_CLASS },
       cell: ({ getValue }) => getCountryLabel(getValue()),
     }),
     column.accessor("status", {
       header: t("columns.status"),
       enableSorting: true,
+      meta: { headerClassName: COMPACT_CELL_CLASS, cellClassName: COMPACT_CELL_CLASS },
       cell: ({ getValue }) => <StatusBadge status={getValue()} />,
     }),
     column.accessor("createdAt", {
       header: t("created_at"),
       enableSorting: true,
+      meta: { headerClassName: DESKTOP_ONLY_CLASS, cellClassName: DESKTOP_ONLY_CLASS },
       cell: ({ getValue }) => (
         <span className="text-muted-foreground">{formatDate(getValue(), i18n.language)}</span>
       ),
@@ -92,7 +102,11 @@ export function OrganizationTable({
       header: () => <span className="sr-only">{t("columns.actions")}</span>,
       enableSorting: false,
       enableHiding: false,
-      meta: { align: "end" },
+      meta: {
+        align: "end",
+        headerClassName: COMPACT_CELL_CLASS,
+        cellClassName: COMPACT_CELL_CLASS,
+      },
       cell: ({ row }) => {
         const organization = row.original
         const statusItems =

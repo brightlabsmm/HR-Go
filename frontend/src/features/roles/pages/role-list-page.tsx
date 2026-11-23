@@ -76,7 +76,7 @@ export function RoleListPage() {
       ) : (
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
           {/* L: Roles Sidebar List */}
-          <aside className="flex flex-col gap-3 lg:col-span-4 xl:col-span-3">
+          <aside className="flex min-w-0 flex-col gap-3 lg:col-span-4 xl:col-span-3">
             <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               {t("catalog_heading", { defaultValue: "Roles" })}
             </h2>
@@ -137,7 +137,7 @@ export function RoleListPage() {
           </aside>
 
           {/* Right Panel: Role Permission Editor */}
-          <main className="flex flex-col lg:col-span-8 xl:col-span-9">
+          <main className="flex min-w-0 flex-col lg:col-span-8 xl:col-span-9">
             {selectedRole ? (
               <RolePermissionGrantEditor
                 role={selectedRole}
