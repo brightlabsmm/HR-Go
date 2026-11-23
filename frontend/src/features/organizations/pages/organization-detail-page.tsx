@@ -241,6 +241,9 @@ export function OrganizationDetailPage() {
                 setStatusTarget(null)
                 void organizationQuery.refetch()
               },
+              onError: () => {
+                setStatusTarget(null)
+              },
             }
           )
         }}
@@ -267,6 +270,9 @@ export function OrganizationDetailPage() {
               setShowDeleteDialog(false)
               toast.success(t("delete.success"))
               void navigate("/")
+            },
+            onError: () => {
+              setShowDeleteDialog(false)
             },
           })
         }}

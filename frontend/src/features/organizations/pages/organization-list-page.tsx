@@ -188,6 +188,9 @@ export function OrganizationListPage() {
                     setStatusTarget(null)
                     void organizationsQuery.refetch()
                   },
+                  onError: () => {
+                    setStatusTarget(null)
+                  },
                 }
               )
             }}
@@ -217,6 +220,9 @@ export function OrganizationListPage() {
             onSuccess: () => {
               setDeleteTarget(null)
               toast.success(t("delete.success"))
+            },
+            onError: () => {
+              setDeleteTarget(null)
             },
           })
         }}
