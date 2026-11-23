@@ -237,7 +237,10 @@ export function OrganizationDetailPage() {
               },
             },
             {
-              onSuccess: () => setStatusTarget(null),
+              onSuccess: () => {
+                setStatusTarget(null)
+                void organizationQuery.refetch()
+              },
             }
           )
         }}
