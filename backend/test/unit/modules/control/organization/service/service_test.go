@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -52,6 +53,9 @@ func (m *mockOrgRepo) FindByContactEmail(ctx context.Context, email string) (*mo
 }
 
 func (m *mockOrgRepo) Create(ctx context.Context, org *models.Organization) error {
+	if m.err != nil {
+		return m.err
+	}
 	org.ID = "org-created"
 	m.org = org
 	return nil
@@ -518,4 +522,79 @@ func TestDeleteOrganization(t *testing.T) {
 			t.Fatalf("expected 404 NotFound, got %+v", appErr)
 		}
 	})
+}
+
+func TestOrganizationValidation(t *testing.T) {
+	t.Run("rejects invalid phone and country (BUG-01, BUG-02, BUG-03)", func(t *testing.T) {
+		repo := &mockOrgRepo{}
+		svc := service.New(repo)
+
+		_, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ACME-CORP",
+			LegalName:        "Acme Corporation",
+			DisplayName:      "Acme",
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "abcdefg!!!",
+			Country:          "Myanmar123!@#",
+			Address:          "Yangon, Myanmar",
+		})
+
+		if appErr == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+		if appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected VALIDATION_ERROR, got %s", appErr.Code)
+		}
+
+		fieldErrors := make(map[string]string)
+		for _, issue := range appErr.Details {
+			fieldErrors[issue.Field] = issue.Message
+		}
+
+		if _, ok := fieldErrors["contactPhone"]; !ok {
+			t.Errorf("expected field error on contactPhone, got details: %+v", appErr.Details)
+		}
+		if _, ok := fieldErrors["country"]; !ok {
+			t.Errorf("expected field error on country, got details: %+v", appErr.Details)
+		}
+	})
+
+	t.Run("maps DB string length truncation to validation error not 500", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			err: fmt.Errorf("pq: value too long for type character varying(10)"),
+		}
+		svc := service.New(repo)
+
+		_, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ACME-CORP",
+			LegalName:        "Acme Corporation",
+			DisplayName:      "Acme",
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "+95912345678",
+			Country:          "MM",
+			Address:          "Yangon",
+		})
+
+		if appErr == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if appErr.Status != http.StatusBadRequest || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected 400 VALIDATION_ERROR, got %+v", appErr)
+		}
+	})
+}
+
+type mockFailingCreateRepo struct {
+	repository.Repository
+	err error
+}
+
+func (m mockFailingCreateRepo) FindByCode(ctx context.Context, code string) (*models.Organization, error) {
+	return nil, nil
+}
+func (m mockFailingCreateRepo) FindByContactEmail(ctx context.Context, email string) (*models.Organization, error) {
+	return nil, nil
+}
+func (m mockFailingCreateRepo) Create(ctx context.Context, org *models.Organization) error {
+	return m.err
 }

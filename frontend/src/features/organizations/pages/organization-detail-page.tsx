@@ -12,6 +12,7 @@ import { NotFoundState } from "@/components/common/not-found-state"
 import { ProfileSummaryCard } from "@/components/common/profile-summary-card"
 import { StatusBadge } from "@/components/common/status-badge"
 import { Button } from "@/components/ui/button"
+import { getCountryLabel } from "@/constants/countries"
 import { OrganizationDetailHeader } from "@/features/organizations/components/organization-detail-header"
 import { OrganizationStatusButtons } from "@/features/organizations/components/organization-status-buttons"
 import {
@@ -64,7 +65,7 @@ export function OrganizationDetailPage() {
   const contactItems = [
     { label: t("form.email"), value: organization?.contactEmail },
     { label: t("form.phone"), value: organization?.contactPhone },
-    { label: t("form.country"), value: organization?.country },
+    { label: t("form.country"), value: getCountryLabel(organization?.country) },
     { label: t("form.address"), value: organization?.address },
   ]
 

@@ -5,11 +5,13 @@ import { useTranslation } from "react-i18next"
 import { z } from "zod"
 
 import { applyApiFieldErrors } from "@/app/api/feedback"
+import { COUNTRY_OPTIONS } from "@/constants/countries"
 import { FormActions } from "@/components/common/form-actions"
 import { FormFieldGrid } from "@/components/common/form-field-grid"
 import { FormSkeleton } from "@/components/common/form-skeleton"
 import { FormSection, formStackClassName } from "@/components/common/form-section"
 import { FormPhoneInput } from "@/components/common/form/form-phone-input"
+import { FormSelectInput } from "@/components/common/form/form-select-input"
 import { FormTextInput } from "@/components/common/form/form-text-input"
 import { FormTextareaInput } from "@/components/common/form/form-textarea-input"
 import { MotionStack } from "@/components/common/motion-stack"
@@ -38,11 +40,13 @@ export function OrganizationSettingsPage() {
         displayName: z
           .string()
           .trim()
-          .min(1, t("errors.display_name_required")),
+          .min(1, t("errors.display_name_required"))
+          .max(255),
         contactEmail: z
           .string()
           .trim()
           .min(1, t("errors.email_required"))
+          .max(255)
           .email(t("errors.email_invalid")),
         contactPhone: requiredE164Phone(
           t("errors.phone_required"),
@@ -51,11 +55,13 @@ export function OrganizationSettingsPage() {
         country: z
           .string()
           .trim()
-          .min(1, t("errors.country_required")),
+          .min(1, t("errors.country_required"))
+          .max(10),
         address: z
           .string()
           .trim()
-          .min(1, t("errors.address_required")),
+          .min(1, t("errors.address_required"))
+          .max(2000),
         branchCodeFormat: z.string().trim().optional(),
         departmentCodeFormat: z.string().trim().optional(),
       }),
@@ -189,11 +195,12 @@ export function OrganizationSettingsPage() {
                     required
                     label={t("fields.phone")}
                   />
-                  <FormTextInput
+                  <FormSelectInput
                     control={control}
                     name="country"
                     required
                     label={t("fields.country")}
+                    options={COUNTRY_OPTIONS}
                   />
                   <FormTextareaInput
                     control={control}

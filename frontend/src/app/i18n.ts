@@ -105,7 +105,9 @@ const resources = {
 }
 
 const setDocumentLanguage = (locale: string) => {
-  document.documentElement.lang = locale
+  if (typeof document !== "undefined") {
+    document.documentElement.lang = locale
+  }
 }
 
 void i18n.use(initReactI18next).init({
@@ -146,9 +148,9 @@ const syncLocale = (locale: string) => {
   }
 }
 
-if (useLocaleStore.persist.hasHydrated()) {
+if (useLocaleStore.persist?.hasHydrated?.()) {
   syncLocale(useLocaleStore.getState().locale)
-} else {
+} else if (useLocaleStore.persist?.onFinishHydration) {
   useLocaleStore.persist.onFinishHydration((state) => {
     syncLocale(state.locale)
   })

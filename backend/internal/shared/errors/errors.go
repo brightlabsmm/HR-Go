@@ -1,6 +1,13 @@
 package errors
 
-import "net/http"
+import (
+	"errors"
+	"fmt"
+	"net/http"
+	"unicode"
+
+	"github.com/go-playground/validator/v10"
+)
 
 // FieldIssue describes a single field-level validation problem matching Section 3.7.
 type FieldIssue struct {
@@ -43,6 +50,55 @@ func ValidationFailed(details []FieldIssue) *Error {
 		Code:    "VALIDATION_ERROR",
 		Message: "The request contains invalid data.",
 		Details: details,
+	}
+}
+
+// BindError converts Gin binding / validator.ValidationErrors into a 400 VALIDATION_ERROR with field-level issues.
+func BindError(err error) *Error {
+	if err == nil {
+		return nil
+	}
+
+	var ve validator.ValidationErrors
+	if errors.As(err, &ve) {
+		details := make([]FieldIssue, 0, len(ve))
+		for _, fe := range ve {
+			field := toLowerCamel(fe.Field())
+			msg := validationMessage(fe)
+			details = append(details, FieldIssue{
+				Field:   field,
+				Message: msg,
+			})
+		}
+		return ValidationFailed(details)
+	}
+
+	return BadRequest("Invalid request payload.")
+}
+
+func toLowerCamel(s string) string {
+	if s == "" {
+		return ""
+	}
+	r := []rune(s)
+	r[0] = unicode.ToLower(r[0])
+	return string(r)
+}
+
+func validationMessage(fe validator.FieldError) string {
+	switch fe.Tag() {
+	case "required":
+		return "This field is required."
+	case "email":
+		return "Please enter a valid email address."
+	case "min":
+		return fmt.Sprintf("Must be at least %s characters.", fe.Param())
+	case "max":
+		return fmt.Sprintf("Must not exceed %s characters.", fe.Param())
+	case "e164":
+		return "Please enter a valid international phone number (e.g. +959123456789)."
+	default:
+		return "Invalid value."
 	}
 }
 

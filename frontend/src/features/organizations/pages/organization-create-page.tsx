@@ -5,9 +5,11 @@ import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router"
 import { z } from "zod"
 
-import { applyApiFieldErrors } from "@/app/api/feedback"
+import { applyApiFieldErrors, notifyApiError } from "@/app/api/feedback"
+import { COUNTRY_OPTIONS } from "@/constants/countries"
 import { ForbiddenState } from "@/components/common/forbidden-state"
 import { FormPhoneInput } from "@/components/common/form/form-phone-input"
+import { FormSelectInput } from "@/components/common/form/form-select-input"
 import { FormTextInput } from "@/components/common/form/form-text-input"
 import { FormTextareaInput } from "@/components/common/form/form-textarea-input"
 import { FormActions } from "@/components/common/form-actions"
@@ -38,13 +40,23 @@ export function OrganizationCreatePage() {
           .string()
           .trim()
           .min(1, t("form.errors.code"))
+          .max(50, t("form.errors.code_max", "Code must not exceed 50 characters."))
           .regex(CODE_PATTERN, t("form.errors.code")),
-        legalName: z.string().trim().min(1, t("form.errors.legal_name")),
-        displayName: z.string().trim().min(1, t("form.errors.display_name")),
+        legalName: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.legal_name"))
+          .max(255, t("form.errors.legal_name_max", "Legal name must not exceed 255 characters.")),
+        displayName: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.display_name"))
+          .max(255, t("form.errors.display_name_max", "Display name must not exceed 255 characters.")),
         contactEmail: z
           .string()
           .trim()
           .min(1, t("form.errors.email_required", "Email is required."))
+          .max(255, t("form.errors.email_max", "Email must not exceed 255 characters."))
           .email(t("form.errors.email")),
         contactPhone: requiredE164Phone(
           t("form.errors.phone_required"),
@@ -53,11 +65,13 @@ export function OrganizationCreatePage() {
         country: z
           .string()
           .trim()
-          .min(1, t("form.errors.country_required", "Country is required.")),
+          .min(1, t("form.errors.country_required", "Country is required."))
+          .max(10, t("form.errors.country_max", "Country must not exceed 10 characters.")),
         address: z
           .string()
           .trim()
-          .min(1, t("form.errors.address_required", "Address is required.")),
+          .min(1, t("form.errors.address_required", "Address is required."))
+          .max(2000, t("form.errors.address_max", "Address must not exceed 2000 characters.")),
       }),
     [t]
   )
@@ -72,7 +86,7 @@ export function OrganizationCreatePage() {
       displayName: "",
       contactEmail: "",
       contactPhone: "",
-      country: "",
+      country: "MM",
       address: "",
     },
   })
@@ -107,12 +121,15 @@ export function OrganizationCreatePage() {
                 displayName: "",
                 contactEmail: "",
                 contactPhone: "",
-                country: "",
+                country: "MM",
                 address: "",
               })
             )
           } catch (error) {
-            applyApiFieldErrors(error, setError)
+            const applied = applyApiFieldErrors(error, setError)
+            if (!applied) {
+              notifyApiError(error)
+            }
           }
         })}
       >
@@ -166,11 +183,12 @@ export function OrganizationCreatePage() {
               label={t("form.phone")}
               disabled={isPending}
             />
-            <FormTextInput
+            <FormSelectInput
               control={control}
               name="country"
               required
               label={t("form.country")}
+              options={COUNTRY_OPTIONS}
               disabled={isPending}
             />
             <FormTextareaInput

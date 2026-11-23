@@ -113,7 +113,15 @@ export function applyApiFieldErrors<TFieldValues extends FieldValues>(
       continue
     }
 
-    setError(issue.field as FieldPath<TFieldValues>, { message: issue.message })
+    const field =
+      issue.field === "general" ||
+      issue.field === "root" ||
+      issue.field === "organization" ||
+      issue.field === "adminAccount"
+        ? "root"
+        : issue.field
+
+    setError(field as FieldPath<TFieldValues>, { message: issue.message })
     applied = true
   }
 
