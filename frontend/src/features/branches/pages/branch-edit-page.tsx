@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from "react-router"
 import { useTranslation } from "react-i18next"
 
+import { NotFoundState } from "@/components/common/not-found-state"
 import {
   BranchForm,
   type BranchFormValues,
@@ -32,7 +33,13 @@ export function BranchEditPage() {
     }))
 
   if (!branch && branchQuery.isFetched) {
-    return <p className="text-small-1 text-muted-foreground">{t("not_found")}</p>
+    return (
+      <NotFoundState
+        backTo="/branches"
+        backLabel={t("title")}
+        description={t("not_found", "Branch not found.")}
+      />
+    )
   }
 
   if (!branch) {
@@ -48,7 +55,7 @@ export function BranchEditPage() {
         address: optionalText(values.address),
       },
     })
-    void navigate("/")
+    void navigate("/branches")
   }
 
   return (
@@ -66,7 +73,7 @@ export function BranchEditPage() {
           address: branch.address ?? "",
         }}
         onCancel={() => {
-          void navigate("/")
+          void navigate("/branches")
         }}
         onSubmit={handleSubmit}
       />
