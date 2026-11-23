@@ -16,6 +16,16 @@ const (
 
 var seqPlaceholderRegex = regexp.MustCompile(`\{([0N#]+)\}`)
 
+// IsValidFormat checks whether pattern contains a valid sequence placeholder like {0000}, {NNNN}, etc.
+// An empty or whitespace-only pattern is considered valid because it falls back to the default format.
+func IsValidFormat(pattern string) bool {
+	trimmed := strings.TrimSpace(pattern)
+	if trimmed == "" {
+		return true
+	}
+	return seqPlaceholderRegex.MatchString(trimmed)
+}
+
 // Format generates a formatted entity code from a format template and 1-based sequence number.
 // Supported sequence placeholders include {0000}, {NNNN}, {000}, {NNN}, {00}, {NN}, etc.
 // If no placeholder is present in pattern, pattern is used as a prefix with 4-digit zero padding.
