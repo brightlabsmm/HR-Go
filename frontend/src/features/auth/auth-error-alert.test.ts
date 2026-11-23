@@ -43,16 +43,16 @@ describe("getAuthErrorAlert", () => {
     })
   })
 
-  it("uses the API message for invalid credentials", () => {
+  it("maps 401 unauthorized to the translated invalid credentials copy", () => {
     expect(
       getAuthErrorAlert(
         new ApiError({
           status: 401,
           code: API_ERROR_CODES.UNAUTHORIZED,
-          message: "Invalid credentials.",
+          message: "Invalid employee identifier or password.",
         }),
         t
       )
-    ).toEqual({ title: "Invalid credentials." })
+    ).toEqual({ title: "login.error_invalid_credentials" })
   })
 })
