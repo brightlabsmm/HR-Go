@@ -43,6 +43,9 @@ export function useBranchQuery(id: string) {
     queryKey: branchKeys.detail(id),
     queryFn: () => getBranch(id),
     enabled: Boolean(accessToken && id),
+    meta: {
+      skipErrorToast: true,
+    },
   })
 }
 
