@@ -184,7 +184,10 @@ export function OrganizationListPage() {
                   },
                 },
                 {
-                  onSuccess: () => setStatusTarget(null),
+                  onSuccess: () => {
+                    setStatusTarget(null)
+                    void organizationsQuery.refetch()
+                  },
                 }
               )
             }}
