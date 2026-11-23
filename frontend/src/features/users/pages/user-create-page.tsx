@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router"
 import { z } from "zod"
 
+import { isPlatformPortal } from "@/app/portal"
 import { applyApiFieldErrors } from "@/app/api/feedback"
 import { ForbiddenState } from "@/components/common/forbidden-state"
 import { FormActions } from "@/components/common/form-actions"
@@ -65,8 +66,12 @@ export function UserCreatePage() {
     label: role.roleName,
     description: role.description ?? role.roleCode,
   }))
+  const isPlatform = isPlatformPortal()
+  const canCreateUser = isPlatform
+    ? can("platform.user.create")
+    : can("org.user.create") || can("org.role.assign")
 
-  if (!isPermissionsPending && !can("platform.user.create")) {
+  if (!isPermissionsPending && !canCreateUser) {
     return <ForbiddenState backTo="/users" backLabel={t("title")} />
   }
 
@@ -95,7 +100,14 @@ export function UserCreatePage() {
           }
         })}
       >
-        <FormPageHeader title={t("create.title")} subtitle={t("create.subtitle")} />
+        <FormPageHeader
+          title={t(isPlatform ? "create.title" : "org_create_title", { defaultValue: isPlatform ? "New platform user" : "New user" })}
+          subtitle={t(isPlatform ? "create.subtitle" : "org_create_subtitle", {
+            defaultValue: isPlatform
+              ? "Create a platform user and assign a role."
+              : "Create an organization user and assign a role.",
+          })}
+        />
         <FormSection legend={t("sections.profile")}>
           <FormFieldGrid>
             <FormTextInput

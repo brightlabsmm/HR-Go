@@ -3,6 +3,7 @@ import { CheckCircleIcon, PencilIcon, Trash2Icon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router"
 
+import { isPlatformPortal } from "@/app/portal"
 import { ConfirmDialog } from "@/components/common/confirm-dialog"
 import { DetailActionButton } from "@/components/common/detail-action-button"
 import { DetailList } from "@/components/common/detail-list"
@@ -33,8 +34,13 @@ export function UserDetailPage() {
   const userQuery = useUserQuery(id)
   const meQuery = useCurrentUserQuery()
   const { can } = usePermissions()
-  const canUpdate = can("platform.user.update")
-  const canDeactivate = can("platform.user.deactivate")
+  const isPlatform = isPlatformPortal()
+  const canUpdate = isPlatform
+    ? can("platform.user.update")
+    : can("org.user.update") || can("org.role.assign")
+  const canDeactivate = isPlatform
+    ? can("platform.user.deactivate")
+    : can("org.user.deactivate") || can("org.role.assign")
   const deactivateMutation = useDeactivateUserMutation()
   const reactivateMutation = useReactivateUserMutation()
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false)

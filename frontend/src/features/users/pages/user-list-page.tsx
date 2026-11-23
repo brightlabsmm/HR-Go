@@ -3,6 +3,7 @@ import { PlusIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useSearchParams } from "react-router"
 
+import { isPlatformPortal } from "@/app/portal"
 import { ConfirmDialog } from "@/components/common/confirm-dialog"
 import {
   createDataTableColumns,
@@ -66,9 +67,16 @@ export function UserListPage() {
   })
   const meQuery = useCurrentUserQuery()
   const { can } = usePermissions()
-  const canCreate = can("platform.user.create")
-  const canUpdate = can("platform.user.update")
-  const canDeactivate = can("platform.user.deactivate")
+  const isPlatform = isPlatformPortal()
+  const canCreate = isPlatform
+    ? can("platform.user.create")
+    : can("org.user.create") || can("org.role.assign")
+  const canUpdate = isPlatform
+    ? can("platform.user.update")
+    : can("org.user.update") || can("org.role.assign")
+  const canDeactivate = isPlatform
+    ? can("platform.user.deactivate")
+    : can("org.user.deactivate") || can("org.role.assign")
   const deactivateMutation = useDeactivateUserMutation()
   const [target, setTarget] = useState<PlatformUser | null>(null)
   const users = usersQuery.data?.items ?? []
@@ -205,7 +213,15 @@ export function UserListPage() {
 
   return (
     <MotionStack className="flex h-full min-h-0 flex-col gap-8">
-      <PageHeader title={t("title")} description={t("subtitle")} actions={addButton} />
+      <PageHeader
+        title={t(isPlatform ? "title" : "org_title", { defaultValue: isPlatform ? "Platform users" : "Users" })}
+        description={t(isPlatform ? "subtitle" : "org_subtitle", {
+          defaultValue: isPlatform
+            ? "Create platform users and assign platform roles."
+            : "Manage organization members and assign roles.",
+        })}
+        actions={addButton}
+      />
       <ListCard
         toolbar={
           <FilterBar hasFilters={hasFilters} onReset={resetFilters}>

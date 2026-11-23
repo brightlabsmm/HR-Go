@@ -5,6 +5,7 @@ import {
   NetworkIcon,
   ShieldIcon,
   UserRoundIcon,
+  UsersIcon,
 } from "lucide-react"
 
 import type { PortalNavItem } from "@/portals/types"
@@ -49,6 +50,14 @@ export const ORGANIZATION_NAV: PortalNavItem[] = [
       "org.position.update",
       "org.position.deactivate",
     ],
+  },
+  {
+    to: "/users",
+    labelKey: "nav.users",
+    groupKey: "nav_groups.people",
+    icon: UsersIcon,
+    matchPrefix: "/users",
+    permissions: ["org.user.read", "org.role.read", "org.role.assign"],
   },
   {
     to: "/roles",
