@@ -181,18 +181,32 @@ func (s *service) UpdateSettings(ctx context.Context, orgID string, req request.
 
 	if req.BranchCodeFormat != nil {
 		format := strings.TrimSpace(*req.BranchCodeFormat)
+		if format != "" && !codeformat.IsValidFormat(format) {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "branchCodeFormat", Message: "Format must contain a sequence placeholder like {0000}."},
+			})
+		}
 		if format == "" {
 			format = codeformat.DefaultBranchCodeFormat
 		}
-		_ = s.repo.SaveSetting(ctx, orgID, codeformat.SettingKeyBranchCodeFormat, format)
+		if err := s.repo.SaveSetting(ctx, orgID, codeformat.SettingKeyBranchCodeFormat, format); err != nil {
+			return nil, apperrors.Internal()
+		}
 	}
 
 	if req.DepartmentCodeFormat != nil {
 		format := strings.TrimSpace(*req.DepartmentCodeFormat)
+		if format != "" && !codeformat.IsValidFormat(format) {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "departmentCodeFormat", Message: "Format must contain a sequence placeholder like {0000}."},
+			})
+		}
 		if format == "" {
 			format = codeformat.DefaultDepartmentCodeFormat
 		}
-		_ = s.repo.SaveSetting(ctx, orgID, codeformat.SettingKeyDepartmentCodeFormat, format)
+		if err := s.repo.SaveSetting(ctx, orgID, codeformat.SettingKeyDepartmentCodeFormat, format); err != nil {
+			return nil, apperrors.Internal()
+		}
 	}
 
 	settings, err := s.repo.GetSettings(ctx, orgID)

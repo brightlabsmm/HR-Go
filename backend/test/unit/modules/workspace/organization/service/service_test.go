@@ -145,6 +145,23 @@ func TestWorkspaceOrgSettings(t *testing.T) {
 		}
 	})
 
+	t.Run("UpdateSettings rejects invalid branch and department code formats", func(t *testing.T) {
+		invalidFormat := "XYZ"
+		_, appErr := svc.UpdateSettings(context.Background(), "org-1", request.UpdateOrganizationSettingsRequest{
+			BranchCodeFormat: &invalidFormat,
+		})
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" || len(appErr.Details) == 0 || appErr.Details[0].Field != "branchCodeFormat" {
+			t.Fatalf("expected VALIDATION_ERROR on branchCodeFormat, got %+v", appErr)
+		}
+
+		_, appErr = svc.UpdateSettings(context.Background(), "org-1", request.UpdateOrganizationSettingsRequest{
+			DepartmentCodeFormat: &invalidFormat,
+		})
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" || len(appErr.Details) == 0 || appErr.Details[0].Field != "departmentCodeFormat" {
+			t.Fatalf("expected VALIDATION_ERROR on departmentCodeFormat, got %+v", appErr)
+		}
+	})
+
 	t.Run("UpdateSettings allows keeping own contact email", func(t *testing.T) {
 		sameEmail := "INFO@ACME.COM"
 		res, appErr := svc.UpdateSettings(context.Background(), "org-1", request.UpdateOrganizationSettingsRequest{

@@ -27,6 +27,7 @@ import {
   useUpdateWorkspaceOrganizationMutation,
   useWorkspaceOrganizationQuery,
 } from "@/shared/queries/workspace-organization.query"
+import { useToastStore } from "@/shared/stores/toast.store"
 import { getInitials } from "@/util/initials"
 import { requiredE164Phone } from "@/util/phone"
 
@@ -35,6 +36,7 @@ export function OrganizationSettingsPage() {
   const { t: tCommon } = useTranslation("common")
   const orgQuery = useWorkspaceOrganizationQuery()
   const updateMutation = useUpdateWorkspaceOrganizationMutation()
+  const showToast = useToastStore((state) => state.show)
   const organization = orgQuery.data
   const isLoading = orgQuery.isPending
 
@@ -70,8 +72,22 @@ export function OrganizationSettingsPage() {
           .trim()
           .min(1, t("errors.address_required"))
           .max(2000),
-        branchCodeFormat: z.string().trim().optional(),
-        departmentCodeFormat: z.string().trim().optional(),
+        branchCodeFormat: z
+          .string()
+          .trim()
+          .optional()
+          .refine(
+            (val) => !val || /\{([0N#]+)\}/.test(val),
+            t("errors.code_format_invalid", "Format must contain a sequence placeholder like {0000}.")
+          ),
+        departmentCodeFormat: z
+          .string()
+          .trim()
+          .optional()
+          .refine(
+            (val) => !val || /\{([0N#]+)\}/.test(val),
+            t("errors.code_format_invalid", "Format must contain a sequence placeholder like {0000}.")
+          ),
       }),
     [t]
   )
@@ -135,6 +151,10 @@ export function OrganizationSettingsPage() {
                   address: values.address.trim(),
                   branchCodeFormat: values.branchCodeFormat?.trim(),
                   departmentCodeFormat: values.departmentCodeFormat?.trim(),
+                })
+                showToast({
+                  title: t("save_success", "Organization settings updated successfully."),
+                  variant: "success",
                 })
               } catch (error) {
                 applyApiFieldErrors(error, setError)

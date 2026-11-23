@@ -29,7 +29,8 @@
     "phone_required": "Contact phone is required.",
     "phone_invalid": "Enter a valid phone number.",
     "country_required": "Country is required.",
-    "address_required": "Address is required."
+    "address_required": "Address is required.",
+    "code_format_invalid": "Format must contain a sequence placeholder like {0000}."
   },
   "save": "Save changes",
   "save_success": "Organization settings updated successfully."
