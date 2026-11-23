@@ -28,8 +28,6 @@ import {
 } from "@/shared/queries/organization.query"
 import { requiredE164Phone } from "@/util/phone"
 
-const CODE_PATTERN = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/
-
 export function OrganizationEditPage() {
   const { t } = useTranslation("organizations")
   const navigate = useNavigate()
@@ -42,12 +40,7 @@ export function OrganizationEditPage() {
   const schema = useMemo(
     () =>
       z.object({
-        organizationCode: z
-          .string()
-          .trim()
-          .min(1, t("form.errors.code"))
-          .max(50, t("form.errors.code_max", "Code must not exceed 50 characters."))
-          .regex(CODE_PATTERN, t("form.errors.code")),
+        organizationCode: z.string().trim().optional(),
         legalName: z
           .string()
           .trim()
@@ -136,7 +129,6 @@ export function OrganizationEditPage() {
             await updateMutation.mutateAsync({
               id,
               input: {
-                organizationCode: values.organizationCode.trim(),
                 legalName: values.legalName.trim(),
                 displayName: values.displayName.trim(),
                 contactEmail: values.contactEmail.trim(),
@@ -165,9 +157,10 @@ export function OrganizationEditPage() {
               <FormTextInput
                 control={control}
                 name="organizationCode"
-                required
+                disabled
                 label={t("form.code")}
                 placeholder={t("form.code_placeholder")}
+                description={t("form.code_readonly_hint")}
               />
               <FormTextInput
                 control={control}
