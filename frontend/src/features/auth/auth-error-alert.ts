@@ -25,6 +25,15 @@ export function getAuthErrorAlert(
     }
   }
 
+  if (error.status === 401) {
+    return {
+      title: t(
+        "login.error_invalid_credentials",
+        "Invalid employee identifier or password."
+      ),
+    }
+  }
+
   if (
     (error.code === API_ERROR_CODES.VALIDATION_ERROR || error.status === 422) &&
     error.details.length > 0
