@@ -77,10 +77,11 @@ func (s *service) Login(ctx context.Context, req request.LoginRequest) (*respons
 
 	profile := mapper.ToWorkspaceUserProfile(acc, perms)
 	return &response.LoginResponse{
-		AccessToken: token,
-		TokenType:   "Bearer",
-		ExpiresIn:   exp,
-		User:        profile,
+		AccessToken:        token,
+		TokenType:          "Bearer",
+		ExpiresIn:          exp,
+		MustChangePassword: acc.MustChangePassword,
+		User:               profile,
 	}, nil
 }
 

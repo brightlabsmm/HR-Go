@@ -29,14 +29,15 @@ func ToWorkspaceUserProfile(acc *models.OrganizationAccount, perms []string) res
 	}
 
 	return response.WorkspaceUserProfile{
-		OrganizationID:   acc.OrganizationID,
-		OrganizationName: orgName,
-		AccountID:        acc.ID,
-		EmployeeID:       acc.EmployeeID,
-		EmployeeCode:     acc.Employee.EmployeeCode,
-		FullName:         fullName,
-		AccountStatus:    acc.Status,
-		Roles:            roles,
-		Permissions:      perms,
+		OrganizationID:     acc.OrganizationID,
+		OrganizationName:   orgName,
+		AccountID:          acc.ID,
+		EmployeeID:         acc.EmployeeID,
+		EmployeeCode:       acc.Employee.EmployeeCode,
+		FullName:           fullName,
+		AccountStatus:      acc.Status,
+		MustChangePassword: acc.MustChangePassword,
+		Roles:              roles,
+		Permissions:        perms,
 	}
 }
