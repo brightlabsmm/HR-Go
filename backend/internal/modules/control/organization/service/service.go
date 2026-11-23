@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"hrgo/backend/internal/modules/control/organization/mapper"
@@ -13,6 +14,25 @@ import (
 	apperrors "hrgo/backend/internal/shared/errors"
 	"hrgo/backend/internal/shared/security"
 )
+
+var (
+	codeRegex      = regexp.MustCompile(`^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$`)
+	emailRegex     = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+	phoneCharRegex = regexp.MustCompile(`^[\d\s\-\+\(\)]+$`)
+)
+
+func isValidPhoneNumber(phone string) bool {
+	if !phoneCharRegex.MatchString(phone) {
+		return false
+	}
+	digits := 0
+	for _, r := range phone {
+		if r >= '0' && r <= '9' {
+			digits++
+		}
+	}
+	return digits >= 7 && digits <= 20
+}
 
 type Service interface {
 	Create(ctx context.Context, req request.CreateOrganizationRequest) (*response.OrganizationResponse, *apperrors.Error)
@@ -35,30 +55,62 @@ func New(repo repository.Repository) Service {
 
 func (s *service) Create(ctx context.Context, req request.CreateOrganizationRequest) (*response.OrganizationResponse, *apperrors.Error) {
 	code := strings.TrimSpace(req.OrganizationCode)
-	if code == "" {
-		return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
-			{Field: "organizationCode", Message: "Organization code is required."},
-		})
-	}
-
+	legalName := strings.TrimSpace(req.LegalName)
+	displayName := strings.TrimSpace(req.DisplayName)
 	contactEmail := strings.TrimSpace(req.ContactEmail)
 	contactPhone := strings.TrimSpace(req.ContactPhone)
 	country := strings.TrimSpace(req.Country)
 	address := strings.TrimSpace(req.Address)
 
 	var validationIssues []apperrors.FieldIssue
+	if code == "" {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "organizationCode", Message: "Organization code is required."})
+	} else if len(code) > 50 {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "organizationCode", Message: "Organization code must not exceed 50 characters."})
+	} else if !codeRegex.MatchString(code) {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "organizationCode", Message: "Organization code can only contain letters, numbers, and hyphens."})
+	}
+
+	if legalName == "" {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "legalName", Message: "Legal name is required."})
+	} else if len(legalName) > 255 {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "legalName", Message: "Legal name must not exceed 255 characters."})
+	}
+
+	if displayName == "" {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "displayName", Message: "Display name is required."})
+	} else if len(displayName) > 255 {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "displayName", Message: "Display name must not exceed 255 characters."})
+	}
+
 	if contactEmail == "" {
 		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactEmail", Message: "Contact email is required."})
+	} else if len(contactEmail) > 255 {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactEmail", Message: "Contact email must not exceed 255 characters."})
+	} else if !emailRegex.MatchString(contactEmail) {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactEmail", Message: "Please enter a valid email address."})
 	}
+
 	if contactPhone == "" {
 		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactPhone", Message: "Contact phone is required."})
+	} else if len(contactPhone) > 50 {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactPhone", Message: "Contact phone must not exceed 50 characters."})
+	} else if !isValidPhoneNumber(contactPhone) {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactPhone", Message: "Please enter a valid phone number."})
 	}
+
 	if country == "" {
 		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "country", Message: "Country is required."})
+	} else if len(country) > 10 {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "country", Message: "Country code must not exceed 10 characters."})
 	}
+
 	if address == "" {
 		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "address", Message: "Address is required."})
+	} else if len(address) > 2000 {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "address", Message: "Address must not exceed 2000 characters."})
 	}
+
 	if len(validationIssues) > 0 {
 		return nil, apperrors.ValidationFailed(validationIssues)
 	}
@@ -89,8 +141,8 @@ func (s *service) Create(ctx context.Context, req request.CreateOrganizationRequ
 
 	org := &models.Organization{
 		Code:         code,
-		LegalName:    strings.TrimSpace(req.LegalName),
-		DisplayName:  strings.TrimSpace(req.DisplayName),
+		LegalName:    legalName,
+		DisplayName:  displayName,
 		ContactEmail: contactEmail,
 		ContactPhone: contactPhone,
 		Country:      country,
@@ -99,7 +151,7 @@ func (s *service) Create(ctx context.Context, req request.CreateOrganizationRequ
 	}
 
 	if err := s.repo.Create(ctx, org); err != nil {
-		if appErr := mapUniqueConstraintError(err); appErr != nil {
+		if appErr := mapDbError(err); appErr != nil {
 			return nil, appErr
 		}
 		return nil, apperrors.Internal()
@@ -149,63 +201,121 @@ func (s *service) Update(ctx context.Context, id string, req request.UpdateOrgan
 		return nil, apperrors.NotFound("Organization not found")
 	}
 
+	var validationIssues []apperrors.FieldIssue
+
 	if req.OrganizationCode != nil {
 		newCode := strings.TrimSpace(*req.OrganizationCode)
 		if newCode == "" {
-			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
-				{Field: "organizationCode", Message: "Organization code is required."},
-			})
-		}
-		if !strings.EqualFold(newCode, org.Code) {
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "organizationCode", Message: "Organization code is required."})
+		} else if len(newCode) > 50 {
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "organizationCode", Message: "Organization code must not exceed 50 characters."})
+		} else if !codeRegex.MatchString(newCode) {
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "organizationCode", Message: "Organization code can only contain letters, numbers, and hyphens."})
+		} else if !strings.EqualFold(newCode, org.Code) {
 			existing, err := s.repo.FindByCode(ctx, newCode)
 			if err != nil {
 				return nil, apperrors.Internal()
 			}
 			if existing != nil && existing.ID != org.ID {
 				return nil, apperrors.Conflict("Organization code already in use")
+			} else {
+				org.Code = newCode
 			}
-			org.Code = newCode
 		}
 	}
 
 	if req.LegalName != nil {
-		org.LegalName = strings.TrimSpace(*req.LegalName)
+		legalName := strings.TrimSpace(*req.LegalName)
+		if legalName == "" {
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "legalName", Message: "Legal name is required."})
+		} else if len(legalName) > 255 {
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "legalName", Message: "Legal name must not exceed 255 characters."})
+		} else {
+			org.LegalName = legalName
+		}
 	}
+
 	if req.DisplayName != nil {
-		org.DisplayName = strings.TrimSpace(*req.DisplayName)
+		displayName := strings.TrimSpace(*req.DisplayName)
+		if displayName == "" {
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "displayName", Message: "Display name is required."})
+		} else if len(displayName) > 255 {
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "displayName", Message: "Display name must not exceed 255 characters."})
+		} else {
+			org.DisplayName = displayName
+		}
 	}
+
 	if req.ContactEmail != nil {
 		newEmail := strings.TrimSpace(*req.ContactEmail)
 		if newEmail == "" {
-			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
-				{Field: "contactEmail", Message: "Contact email is required."},
-			})
-		}
-		if !strings.EqualFold(newEmail, org.ContactEmail) {
-			existingByEmail, err := s.repo.FindByContactEmail(ctx, newEmail)
-			if err != nil {
-				return nil, apperrors.Internal()
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactEmail", Message: "Contact email is required."})
+		} else if len(newEmail) > 255 {
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactEmail", Message: "Contact email must not exceed 255 characters."})
+		} else if !emailRegex.MatchString(newEmail) {
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactEmail", Message: "Please enter a valid email address."})
+		} else {
+			if !strings.EqualFold(newEmail, org.ContactEmail) {
+				existingByEmail, err := s.repo.FindByContactEmail(ctx, newEmail)
+				if err != nil {
+					return nil, apperrors.Internal()
+				}
+				if existingByEmail != nil && existingByEmail.ID != org.ID {
+					validationIssues = append(validationIssues, apperrors.FieldIssue{
+						Field: "contactEmail", Message: "This contact email is already in use.",
+					})
+				} else {
+					org.ContactEmail = newEmail
+				}
+			} else {
+				org.ContactEmail = newEmail
 			}
-			if existingByEmail != nil && existingByEmail.ID != org.ID {
-				return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
-					{Field: "contactEmail", Message: "This contact email is already in use."},
-				})
-			}
 		}
-		org.ContactEmail = newEmail
 	}
+
 	if req.ContactPhone != nil {
-		org.ContactPhone = strings.TrimSpace(*req.ContactPhone)
+		phone := strings.TrimSpace(*req.ContactPhone)
+		if phone != "" {
+			if len(phone) > 50 {
+				validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactPhone", Message: "Contact phone must not exceed 50 characters."})
+			} else if !isValidPhoneNumber(phone) {
+				validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactPhone", Message: "Please enter a valid phone number."})
+			} else {
+				org.ContactPhone = phone
+			}
+		} else {
+			org.ContactPhone = ""
+		}
 	}
+
 	if req.Country != nil {
-		org.Country = strings.TrimSpace(*req.Country)
+		country := strings.TrimSpace(*req.Country)
+		if country != "" {
+			if len(country) > 10 {
+				validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "country", Message: "Country code must not exceed 10 characters."})
+			} else {
+				org.Country = country
+			}
+		} else {
+			org.Country = ""
+		}
 	}
+
 	if req.Address != nil {
-		org.Address = strings.TrimSpace(*req.Address)
+		address := strings.TrimSpace(*req.Address)
+		if len(address) > 2000 {
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "address", Message: "Address must not exceed 2000 characters."})
+		} else {
+			org.Address = address
+		}
+	}
+
+	if len(validationIssues) > 0 {
+		return nil, apperrors.ValidationFailed(validationIssues)
 	}
 
 	if err := s.repo.Update(ctx, org); err != nil {
-		if appErr := mapUniqueConstraintError(err); appErr != nil {
+		if appErr := mapDbError(err); appErr != nil {
 			return nil, appErr
 		}
 		return nil, apperrors.Internal()
@@ -215,7 +325,10 @@ func (s *service) Update(ctx context.Context, id string, req request.UpdateOrgan
 	return &res, nil
 }
 
-func mapUniqueConstraintError(err error) *apperrors.Error {
+func mapDbError(err error) *apperrors.Error {
+	if err == nil {
+		return nil
+	}
 	msg := err.Error()
 	if strings.Contains(msg, "idx_organizations_contact_email_lower") {
 		return apperrors.ValidationFailed([]apperrors.FieldIssue{
@@ -225,6 +338,31 @@ func mapUniqueConstraintError(err error) *apperrors.Error {
 	if strings.Contains(msg, "idx_organizations_code_lower") {
 		return apperrors.ValidationFailed([]apperrors.FieldIssue{
 			{Field: "organizationCode", Message: "This organization code is already in use."},
+		})
+	}
+	if strings.Contains(msg, "value too long for type character varying(10)") {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "country", Message: "Country code must not exceed 10 characters."},
+		})
+	}
+	if strings.Contains(msg, "value too long for type character varying(50)") {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "organizationCode", Message: "Value must not exceed 50 characters."},
+		})
+	}
+	if strings.Contains(msg, "value too long for type character varying(255)") {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "displayName", Message: "Value must not exceed 255 characters."},
+		})
+	}
+	if strings.Contains(msg, "value too long for type character varying") {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "displayName", Message: "One or more fields exceed maximum allowed length."},
+		})
+	}
+	if strings.Contains(msg, "chk_org_status") {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "status", Message: "Invalid organization status."},
 		})
 	}
 	return nil

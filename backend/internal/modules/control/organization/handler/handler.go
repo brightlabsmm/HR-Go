@@ -20,9 +20,7 @@ func New(svc service.Service) *Handler {
 func (h *Handler) Create(c *gin.Context) {
 	var req request.CreateOrganizationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		responses.Fail(c, apperrors.ValidationFailed([]apperrors.FieldIssue{
-			{Field: "organization", Message: "Missing required organization fields."},
-		}))
+		responses.Fail(c, apperrors.BindError(err))
 		return
 	}
 
@@ -60,7 +58,7 @@ func (h *Handler) Update(c *gin.Context) {
 	id := c.Param("organizationId")
 	var req request.UpdateOrganizationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		responses.Fail(c, apperrors.BadRequest("Invalid update payload."))
+		responses.Fail(c, apperrors.BindError(err))
 		return
 	}
 
@@ -76,7 +74,7 @@ func (h *Handler) UpdateStatus(c *gin.Context) {
 	id := c.Param("organizationId")
 	var req request.UpdateStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		responses.Fail(c, apperrors.BadRequest("Invalid status payload."))
+		responses.Fail(c, apperrors.BindError(err))
 		return
 	}
 
@@ -101,9 +99,7 @@ func (h *Handler) CreateAdminAccount(c *gin.Context) {
 	orgID := c.Param("organizationId")
 	var req request.CreateAdminAccountRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		responses.Fail(c, apperrors.ValidationFailed([]apperrors.FieldIssue{
-			{Field: "adminAccount", Message: "Missing or invalid required fields."},
-		}))
+		responses.Fail(c, apperrors.BindError(err))
 		return
 	}
 

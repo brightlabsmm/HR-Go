@@ -13,6 +13,7 @@ import {
   getAvailableStatusTransitions,
   OrganizationStatusMenuItems,
 } from "@/features/organizations/components/organization-status-menu"
+import { getCountryLabel } from "@/constants/countries"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import { formatDate } from "@/util/format-date"
 
@@ -72,7 +73,7 @@ export function OrganizationTable({
     column.accessor("country", {
       header: t("columns.country"),
       enableSorting: false,
-      cell: ({ getValue }) => getValue() || "—",
+      cell: ({ getValue }) => getCountryLabel(getValue()),
     }),
     column.accessor("status", {
       header: t("columns.status"),

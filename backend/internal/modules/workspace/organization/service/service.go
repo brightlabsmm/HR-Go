@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"regexp"
 	"strings"
 
 	"hrgo/backend/internal/modules/workspace/organization/models"
@@ -11,6 +12,24 @@ import (
 	"hrgo/backend/internal/shared/codeformat"
 	apperrors "hrgo/backend/internal/shared/errors"
 )
+
+var (
+	emailRegex     = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+	phoneCharRegex = regexp.MustCompile(`^[\d\s\-\+\(\)]+$`)
+)
+
+func isValidPhoneNumber(phone string) bool {
+	if !phoneCharRegex.MatchString(phone) {
+		return false
+	}
+	digits := 0
+	for _, r := range phone {
+		if r >= '0' && r <= '9' {
+			digits++
+		}
+	}
+	return digits >= 7 && digits <= 20
+}
 
 type Service interface {
 	GetSettings(ctx context.Context, orgID string) (*response.OrganizationSettingsResponse, *apperrors.Error)
@@ -51,57 +70,103 @@ func (s *service) UpdateSettings(ctx context.Context, orgID string, req request.
 		return nil, apperrors.NotFound("Organization not found")
 	}
 
+	var validationIssues []apperrors.FieldIssue
+
 	if req.DisplayName != nil {
 		name := strings.TrimSpace(*req.DisplayName)
 		if name == "" {
-			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
-				{Field: "displayName", Message: "Display name cannot be empty."},
-			})
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "displayName", Message: "Display name cannot be empty."})
+		} else if len(name) > 255 {
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "displayName", Message: "Display name must not exceed 255 characters."})
+		} else {
+			org.DisplayName = name
 		}
-		org.DisplayName = name
 	}
 
 	if req.ContactEmail != nil {
 		email := strings.TrimSpace(*req.ContactEmail)
 		if email == "" {
-			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
-				{Field: "contactEmail", Message: "Contact email is required."},
-			})
-		}
-		currentEmail := ""
-		if org.ContactEmail != nil {
-			currentEmail = *org.ContactEmail
-		}
-		if !strings.EqualFold(email, currentEmail) {
-			existingByEmail, err := s.repo.FindByContactEmail(ctx, email)
-			if err != nil {
-				return nil, apperrors.Internal()
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactEmail", Message: "Contact email is required."})
+		} else if len(email) > 255 {
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactEmail", Message: "Contact email must not exceed 255 characters."})
+		} else if !emailRegex.MatchString(email) {
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactEmail", Message: "Please enter a valid email address."})
+		} else {
+			currentEmail := ""
+			if org.ContactEmail != nil {
+				currentEmail = *org.ContactEmail
 			}
-			if existingByEmail != nil && existingByEmail.ID != org.ID {
-				return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
-					{Field: "contactEmail", Message: "This contact email is already in use."},
-				})
+			if !strings.EqualFold(email, currentEmail) {
+				existingByEmail, err := s.repo.FindByContactEmail(ctx, email)
+				if err != nil {
+					return nil, apperrors.Internal()
+				}
+				if existingByEmail != nil && existingByEmail.ID != org.ID {
+					validationIssues = append(validationIssues, apperrors.FieldIssue{
+						Field: "contactEmail", Message: "This contact email is already in use.",
+					})
+				}
 			}
+			org.ContactEmail = &email
 		}
-		org.ContactEmail = &email
 	}
+
 	if req.ContactPhone != nil {
 		phone := strings.TrimSpace(*req.ContactPhone)
-		org.ContactPhone = &phone
+		if phone != "" {
+			if len(phone) > 50 {
+				validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactPhone", Message: "Contact phone must not exceed 50 characters."})
+			} else if !isValidPhoneNumber(phone) {
+				validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "contactPhone", Message: "Please enter a valid phone number."})
+			} else {
+				org.ContactPhone = &phone
+			}
+		} else {
+			org.ContactPhone = nil
+		}
 	}
+
 	if req.Country != nil {
 		country := strings.TrimSpace(*req.Country)
-		org.Country = &country
+		if country != "" {
+			if len(country) > 10 {
+				validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "country", Message: "Country code must not exceed 10 characters."})
+			} else {
+				org.Country = &country
+			}
+		} else {
+			org.Country = nil
+		}
 	}
+
 	if req.Address != nil {
 		address := strings.TrimSpace(*req.Address)
-		org.Address = &address
+		if len(address) > 2000 {
+			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "address", Message: "Address must not exceed 2000 characters."})
+		} else {
+			org.Address = &address
+		}
+	}
+
+	if len(validationIssues) > 0 {
+		return nil, apperrors.ValidationFailed(validationIssues)
 	}
 
 	if err := s.repo.Update(ctx, org); err != nil {
-		if strings.Contains(err.Error(), "idx_organizations_contact_email_lower") {
+		msg := err.Error()
+		if strings.Contains(msg, "idx_organizations_contact_email_lower") {
 			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
 				{Field: "contactEmail", Message: "This contact email is already in use."},
+			})
+		}
+		if strings.Contains(msg, "value too long for type character varying(10)") {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "country", Message: "Country code must not exceed 10 characters."},
+			})
+		}
+		if strings.Contains(msg, "value too long for type character varying(255)") {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "displayName", Message: "Value must not exceed 255 characters."},
 			})
 		}
 		return nil, apperrors.Internal()
