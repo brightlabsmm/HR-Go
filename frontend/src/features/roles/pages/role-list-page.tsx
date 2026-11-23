@@ -17,7 +17,9 @@ export function RoleListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const rolesQuery = useRolesQuery()
-  const permissionsQuery = usePermissionsQuery()
+  const permissionsQuery = usePermissionsQuery(
+    isPlatformPortal() ? undefined : "ORG"
+  )
 
   const roles = useMemo(() => rolesQuery.data ?? [], [rolesQuery.data])
   const allPermissions = useMemo(
