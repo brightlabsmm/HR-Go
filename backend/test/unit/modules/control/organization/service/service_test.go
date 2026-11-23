@@ -559,6 +559,79 @@ func TestOrganizationValidation(t *testing.T) {
 		}
 	})
 
+	t.Run("rejects free-text country not in allowed list (BUG-02)", func(t *testing.T) {
+		repo := &mockOrgRepo{}
+		svc := service.New(repo)
+
+		_, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ACME-CORP",
+			LegalName:        "Acme Corporation",
+			DisplayName:      "Acme",
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "+95912345678",
+			Country:          "Myanmar12",
+			Address:          "Yangon",
+		})
+
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected VALIDATION_ERROR on country, got %+v", appErr)
+		}
+
+		hasCountryError := false
+		for _, issue := range appErr.Details {
+			if issue.Field == "country" {
+				hasCountryError = true
+				break
+			}
+		}
+		if !hasCountryError {
+			t.Errorf("expected field error on country, got details: %+v", appErr.Details)
+		}
+	})
+
+	t.Run("normalizes valid lowercase country to uppercase ISO code", func(t *testing.T) {
+		repo := &mockOrgRepo{}
+		svc := service.New(repo)
+
+		res, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ACME-CORP",
+			LegalName:        "Acme Corporation",
+			DisplayName:      "Acme",
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "+95912345678",
+			Country:          "th",
+			Address:          "Bangkok",
+		})
+
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if res.Country != "TH" {
+			t.Errorf("expected country TH, got %s", res.Country)
+		}
+	})
+
+	t.Run("maps DB country check constraint to validation error", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			err: fmt.Errorf("pq: new row for relation \"organizations\" violates check constraint \"chk_organizations_country\""),
+		}
+		svc := service.New(repo)
+
+		_, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ACME-CORP",
+			LegalName:        "Acme Corporation",
+			DisplayName:      "Acme",
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "+95912345678",
+			Country:          "MM",
+			Address:          "Yangon",
+		})
+
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected 400 VALIDATION_ERROR, got %+v", appErr)
+		}
+	})
+
 	t.Run("maps DB string length truncation to validation error not 500", func(t *testing.T) {
 		repo := &mockOrgRepo{
 			err: fmt.Errorf("pq: value too long for type character varying(10)"),

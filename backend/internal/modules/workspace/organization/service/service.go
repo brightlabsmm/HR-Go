@@ -10,6 +10,7 @@ import (
 	"hrgo/backend/internal/modules/workspace/organization/request"
 	"hrgo/backend/internal/modules/workspace/organization/response"
 	"hrgo/backend/internal/shared/codeformat"
+	countryutil "hrgo/backend/internal/shared/country"
 	apperrors "hrgo/backend/internal/shared/errors"
 )
 
@@ -129,10 +130,11 @@ func (s *service) UpdateSettings(ctx context.Context, orgID string, req request.
 	if req.Country != nil {
 		country := strings.TrimSpace(*req.Country)
 		if country != "" {
-			if len(country) > 10 {
-				validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "country", Message: "Country code must not exceed 10 characters."})
+			countryCode := strings.ToUpper(country)
+			if len(country) > 10 || !countryutil.IsValid(countryCode) {
+				validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "country", Message: "Please select a valid country from the allowed list."})
 			} else {
-				org.Country = &country
+				org.Country = &countryCode
 			}
 		} else {
 			org.Country = nil
@@ -157,6 +159,11 @@ func (s *service) UpdateSettings(ctx context.Context, orgID string, req request.
 		if strings.Contains(msg, "idx_organizations_contact_email_lower") {
 			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
 				{Field: "contactEmail", Message: "This contact email is already in use."},
+			})
+		}
+		if strings.Contains(msg, "chk_organizations_country") {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "country", Message: "Please select a valid country from the allowed list."},
 			})
 		}
 		if strings.Contains(msg, "value too long for type character varying(10)") {

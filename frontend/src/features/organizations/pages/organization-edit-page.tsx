@@ -6,7 +6,11 @@ import { useNavigate, useParams } from "react-router"
 import { z } from "zod"
 
 import { applyApiFieldErrors, notifyApiError } from "@/app/api/feedback"
-import { COUNTRY_OPTIONS } from "@/constants/countries"
+import {
+  COUNTRY_OPTIONS,
+  isValidCountryCode,
+  normalizeCountryCode,
+} from "@/constants/countries"
 import { FormActions } from "@/components/common/form-actions"
 import { FormFieldGrid } from "@/components/common/form-field-grid"
 import { FormSkeleton } from "@/components/common/form-skeleton"
@@ -68,7 +72,11 @@ export function OrganizationEditPage() {
           .string()
           .trim()
           .min(1, t("form.errors.country_required", "Country is required."))
-          .max(10, t("form.errors.country_max", "Country must not exceed 10 characters.")),
+          .max(10, t("form.errors.country_max", "Country must not exceed 10 characters."))
+          .refine(
+            isValidCountryCode,
+            t("form.errors.country_invalid", "Please select a valid country.")
+          ),
         address: z
           .string()
           .trim()
@@ -99,7 +107,7 @@ export function OrganizationEditPage() {
         displayName: organization.displayName,
         contactEmail: organization.contactEmail ?? "",
         contactPhone: organization.contactPhone ?? "",
-        country: organization.country ?? "",
+        country: normalizeCountryCode(organization.country),
         address: organization.address ?? "",
       })
     }

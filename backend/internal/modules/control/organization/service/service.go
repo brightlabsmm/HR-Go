@@ -11,6 +11,7 @@ import (
 	"hrgo/backend/internal/modules/control/organization/repository"
 	"hrgo/backend/internal/modules/control/organization/request"
 	"hrgo/backend/internal/modules/control/organization/response"
+	countryutil "hrgo/backend/internal/shared/country"
 	apperrors "hrgo/backend/internal/shared/errors"
 	"hrgo/backend/internal/shared/security"
 )
@@ -101,8 +102,10 @@ func (s *service) Create(ctx context.Context, req request.CreateOrganizationRequ
 
 	if country == "" {
 		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "country", Message: "Country is required."})
-	} else if len(country) > 10 {
-		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "country", Message: "Country code must not exceed 10 characters."})
+	} else if countryCode := strings.ToUpper(country); len(country) > 10 || !countryutil.IsValid(countryCode) {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "country", Message: "Please select a valid country from the allowed list."})
+	} else {
+		country = countryCode
 	}
 
 	if address == "" {
@@ -291,10 +294,10 @@ func (s *service) Update(ctx context.Context, id string, req request.UpdateOrgan
 	if req.Country != nil {
 		country := strings.TrimSpace(*req.Country)
 		if country != "" {
-			if len(country) > 10 {
-				validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "country", Message: "Country code must not exceed 10 characters."})
+			if countryCode := strings.ToUpper(country); len(country) > 10 || !countryutil.IsValid(countryCode) {
+				validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "country", Message: "Please select a valid country from the allowed list."})
 			} else {
-				org.Country = country
+				org.Country = countryCode
 			}
 		} else {
 			org.Country = ""
@@ -358,6 +361,11 @@ func mapDbError(err error) *apperrors.Error {
 	if strings.Contains(msg, "value too long for type character varying") {
 		return apperrors.ValidationFailed([]apperrors.FieldIssue{
 			{Field: "displayName", Message: "One or more fields exceed maximum allowed length."},
+		})
+	}
+	if strings.Contains(msg, "chk_organizations_country") {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "country", Message: "Please select a valid country from the allowed list."},
 		})
 	}
 	if strings.Contains(msg, "chk_org_status") {
