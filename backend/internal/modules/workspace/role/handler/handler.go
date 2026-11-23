@@ -48,3 +48,40 @@ func (h *Handler) ReplaceAccountRoles(c *gin.Context) {
 	}
 	responses.NoContent(c)
 }
+
+func (h *Handler) ListPermissions(c *gin.Context) {
+	var q request.ListPermissionsQuery
+	if err := c.ShouldBindQuery(&q); err != nil {
+		responses.Fail(c, apperrors.BindError(err))
+		return
+	}
+
+	items, page, pageSize, total, appErr := h.svc.ListPermissions(c.Request.Context(), q)
+	if appErr != nil {
+		responses.Fail(c, appErr)
+		return
+	}
+	responses.Page(c, items, page, pageSize, total)
+}
+
+func (h *Handler) UpdateRolePermissions(c *gin.Context) {
+	claims := security.GetClaims(c)
+	if claims == nil {
+		responses.Fail(c, apperrors.Unauthorized("Unauthorized"))
+		return
+	}
+	roleID := c.Param("roleId")
+
+	var req request.ReplaceRolePermissionsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		responses.Fail(c, apperrors.BindError(err))
+		return
+	}
+
+	res, appErr := h.svc.UpdateRolePermissions(c.Request.Context(), claims.OrganizationID, roleID, req)
+	if appErr != nil {
+		responses.Fail(c, appErr)
+		return
+	}
+	responses.OK(c, res)
+}

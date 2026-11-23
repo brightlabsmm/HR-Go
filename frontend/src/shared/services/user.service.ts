@@ -1,6 +1,7 @@
 import { apiClient } from "@/app/api/client"
 import { unwrap, unwrapPage } from "@/app/api/http"
-import { controlPath } from "@/app/api/paths"
+import { controlPath, workspacePath } from "@/app/api/paths"
+import { isPlatformPortal } from "@/app/portal"
 import { toListQuery, type ListQueryParams } from "@/util/list-query"
 
 import type { AuthRole } from "@/shared/services/auth.service"
@@ -31,40 +32,44 @@ export interface UpdatePlatformUserInput {
   email?: string
 }
 
+function usersPath(path = "") {
+  return isPlatformPortal() ? controlPath(`/users${path}`) : workspacePath(`/users${path}`)
+}
+
 export function listUsers(params?: UserListParams) {
   return unwrapPage<PlatformUser>(
-    apiClient.get(controlPath("/users"), { params: toListQuery(params) })
+    apiClient.get(usersPath(), { params: toListQuery(params) })
   )
 }
 
 export function getUser(id: string) {
-  return unwrap<PlatformUser>(apiClient.get(controlPath(`/users/${id}`)))
+  return unwrap<PlatformUser>(apiClient.get(usersPath(`/${id}`)))
 }
 
 export function createUser(input: CreatePlatformUserInput) {
-  return unwrap<PlatformUser>(apiClient.post(controlPath("/users"), input))
+  return unwrap<PlatformUser>(apiClient.post(usersPath(), input))
 }
 
 export function updateUser(id: string, input: UpdatePlatformUserInput) {
   return unwrap<PlatformUser>(
-    apiClient.patch(controlPath(`/users/${id}`), input)
+    apiClient.patch(usersPath(`/${id}`), input)
   )
 }
 
 export function replaceUserRoles(id: string, roleIds: string[]) {
   return unwrap<PlatformUser>(
-    apiClient.put(controlPath(`/users/${id}/roles`), { roleIds })
+    apiClient.put(usersPath(`/${id}/roles`), { roleIds })
   )
 }
 
 export function deactivateUser(id: string) {
   return unwrap<PlatformUser>(
-    apiClient.post(controlPath(`/users/${id}/deactivate`))
+    apiClient.post(usersPath(`/${id}/deactivate`))
   )
 }
 
 export function reactivateUser(id: string) {
   return unwrap<PlatformUser>(
-    apiClient.post(controlPath(`/users/${id}/reactivate`))
+    apiClient.post(usersPath(`/${id}/reactivate`))
   )
 }

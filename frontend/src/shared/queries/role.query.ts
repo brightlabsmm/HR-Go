@@ -1,6 +1,5 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { isPlatformPortal } from "@/app/portal"
 import {
   listPermissions,
   listRoles,
@@ -46,7 +45,7 @@ export function usePermissionsQuery(
   return useQuery({
     queryKey: roleKeys.permissions(params),
     queryFn: () => listPermissions(params),
-    enabled: Boolean(accessToken && isPlatformPortal()),
+    enabled: Boolean(accessToken),
     placeholderData: keepPreviousData,
   })
 }

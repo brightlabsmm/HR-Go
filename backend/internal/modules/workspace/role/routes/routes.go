@@ -12,6 +12,8 @@ func Register(rg *gin.RouterGroup, h *handler.Handler, sec *security.Middleware)
 	group.Use(sec.RequireWorkspace())
 	{
 		group.GET("/roles", sec.RequirePermission("org.role.read"), h.ListRoles)
+		group.PUT("/roles/:roleId/permissions", sec.RequirePermission("org.role.assign"), h.UpdateRolePermissions)
+		group.GET("/permissions", sec.RequirePermission("org.role.read"), h.ListPermissions)
 		group.PUT("/accounts/:accountId/roles", sec.RequirePermission("org.role.assign"), h.ReplaceAccountRoles)
 	}
 }

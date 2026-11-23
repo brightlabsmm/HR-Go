@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
+import { isPlatformPortal } from "@/app/portal"
 import { SearchBox } from "@/components/common/search-box"
 import { FilterSelect, type FilterSelectItem } from "@/components/common/filter-select"
 import { ToneBadge } from "@/components/common/tone-badge"
@@ -68,6 +69,7 @@ export function RolePermissionGrantEditor({
   const { t } = useTranslation("roles")
   const { groupingLabel, permissionLabel } = usePermissionLabels()
   const updateMutation = useUpdateRolePermissionsMutation()
+  const isPlatform = isPlatformPortal()
 
   // Track selected permission IDs in local draft state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => {
@@ -75,7 +77,9 @@ export function RolePermissionGrantEditor({
   })
   const [search, setSearch] = useState<string>("")
   const [activeGroupFilter, setActiveGroupFilter] = useState<string>("all")
-  const [scopeTab, setScopeTab] = useState<"ALL" | "PLATFORM" | "ORG">("ALL")
+  const [scopeTab, setScopeTab] = useState<"ALL" | "PLATFORM" | "ORG">(
+    isPlatform ? "ALL" : "ORG"
+  )
 
   // Hide first: All groups collapsed by default in (Grant permissions)
   // Keys formatted as `${scope}:${grouping}`
@@ -705,50 +709,52 @@ export function RolePermissionGrantEditor({
           <div className="flex flex-wrap items-center justify-between gap-2">
             {/* Left Tools: Scope Tabs + Grouping Dropdown */}
             <div className="flex items-center gap-2">
-              {/* Scope Tabs */}
-              <div className="flex items-center gap-0.5 rounded-md border border-border bg-muted/20 p-0.5">
-                <button
-                  type="button"
-                  onClick={() => setScopeTab("ALL")}
-                  className={`cursor-pointer rounded px-2 py-0.5 text-xs font-medium transition-all ${
-                    scopeTab === "ALL"
-                      ? "bg-surface text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t("scopes.all", { defaultValue: "All" })} ({allPermissions.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setScopeTab("PLATFORM")}
-                  className={`flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-all ${
-                    scopeTab === "PLATFORM"
-                      ? "bg-surface text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <LayersIcon className="size-3 text-primary" />
-                  <span>{t("scopes.platform", { defaultValue: "Platform" })}</span>
-                  <span className="text-[10px] text-muted-foreground font-normal">
-                    ({platformSelectedCount}/{totalPlatformCount})
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setScopeTab("ORG")}
-                  className={`flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-all ${
-                    scopeTab === "ORG"
-                      ? "bg-surface text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Building2Icon className="size-3 text-muted-foreground" />
-                  <span>{t("scopes.org", { defaultValue: "Organization" })}</span>
-                  <span className="text-[10px] text-muted-foreground font-normal">
-                    ({orgSelectedCount}/{totalOrgCount})
-                  </span>
-                </button>
-              </div>
+              {/* Scope Tabs - Only in Platform Console where multiple scopes exist */}
+              {isPlatform ? (
+                <div className="flex items-center gap-0.5 rounded-md border border-border bg-muted/20 p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setScopeTab("ALL")}
+                    className={`cursor-pointer rounded px-2 py-0.5 text-xs font-medium transition-all ${
+                      scopeTab === "ALL"
+                        ? "bg-surface text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {t("scopes.all", { defaultValue: "All" })} ({allPermissions.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScopeTab("PLATFORM")}
+                    className={`flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-all ${
+                      scopeTab === "PLATFORM"
+                        ? "bg-surface text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <LayersIcon className="size-3 text-primary" />
+                    <span>{t("scopes.platform", { defaultValue: "Platform" })}</span>
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      ({platformSelectedCount}/{totalPlatformCount})
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScopeTab("ORG")}
+                    className={`flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-all ${
+                      scopeTab === "ORG"
+                        ? "bg-surface text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Building2Icon className="size-3 text-muted-foreground" />
+                    <span>{t("scopes.org", { defaultValue: "Organization" })}</span>
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      ({orgSelectedCount}/{totalOrgCount})
+                    </span>
+                  </button>
+                </div>
+              ) : null}
 
               {/* Grouping Filter Dropdown */}
               <FilterSelect
@@ -813,7 +819,7 @@ export function RolePermissionGrantEditor({
         </div>
 
         {/* Section 1: Platform Permissions */}
-        {(scopeTab === "ALL" || scopeTab === "PLATFORM") && (
+        {isPlatform && (scopeTab === "ALL" || scopeTab === "PLATFORM") && (
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between border-b border-border pb-1.5">
               <div className="flex items-center gap-2">

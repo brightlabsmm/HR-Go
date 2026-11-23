@@ -2218,6 +2218,80 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
 
+  /api/v1/workspace/roles/{roleId}/permissions:
+    put:
+      tags: [Workspace - Roles]
+      summary: Update organization role permissions
+      description: Replace permissions assigned to an organization role. Requires `org.role.assign`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [permissionIds]
+              properties:
+                permissionIds:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Role updated successfully
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/workspace/permissions:
+    get:
+      tags: [Workspace - Roles]
+      summary: List workspace permissions
+      description: List permission catalogue for the organization. Requires `org.role.read`.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of organization permissions
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/workspace/users:
+    get:
+      tags: [Workspace - Users]
+      summary: List organization users
+      description: List users/accounts in the organization. Requires `org.user.read` or `org.role.read`.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Paginated organization users
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Workspace - Users]
+      summary: Create organization user
+      description: Create a new organization user and assign an organization role. Requires `org.user.create` or `org.role.assign`.
+      security:
+        - BearerAuth: []
+      responses:
+        "201":
+          description: Organization user created
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
   /api/v1/workspace/accounts/{accountId}/roles:
     put:
       tags: [Workspace - Roles]
