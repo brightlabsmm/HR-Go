@@ -34,6 +34,7 @@ export function FormPasswordInput<TFieldValues extends FieldValues>({
   description,
   disabled = false,
   className,
+  reserveErrorSpace = false,
   placeholder = label,
   autoComplete = "current-password",
   revealable = true,
@@ -59,6 +60,7 @@ export function FormPasswordInput<TFieldValues extends FieldValues>({
           description={description}
           error={fieldState.error?.message}
           invalid={fieldState.invalid}
+          reserveErrorSpace={reserveErrorSpace}
           className={className}
         >
           <InputGroup>

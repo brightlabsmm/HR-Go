@@ -102,12 +102,13 @@ export function LoginPage() {
             description={authError.description}
           />
         ) : null}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col">
           {isPlatform ? (
             <FormTextInput
               control={loginForm.control}
               name={"email" as never}
               type="email"
+              reserveErrorSpace
               autoComplete="username"
               label={t("login.email_label")}
               placeholder={t("login.email_placeholder")}
@@ -116,6 +117,7 @@ export function LoginPage() {
             <FormTextInput
               control={loginForm.control}
               name={"identifier" as never}
+              reserveErrorSpace
               autoComplete="username"
               label={t("login.identifier_label")}
               placeholder={t("login.identifier_placeholder")}
@@ -124,6 +126,7 @@ export function LoginPage() {
           <FormPasswordInput
             control={loginForm.control}
             name={"password" as never}
+            reserveErrorSpace
             autoComplete="current-password"
             label={t("login.password_label")}
             placeholder={t("login.password_placeholder")}

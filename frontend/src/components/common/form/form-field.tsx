@@ -23,6 +23,7 @@ export interface FormFieldControlProps<TFieldValues extends FieldValues> {
   description?: string
   disabled?: boolean
   required?: boolean
+  reserveErrorSpace?: boolean
   className?: string
 }
 
@@ -33,6 +34,7 @@ interface FormFieldShellProps {
   error?: string
   invalid?: boolean
   required?: boolean
+  reserveErrorSpace?: boolean
   orientation?: "vertical" | "horizontal"
   className?: string
   children: ReactNode
@@ -45,6 +47,7 @@ export function FormFieldShell({
   error,
   invalid = false,
   required = false,
+  reserveErrorSpace = false,
   orientation = "vertical",
   className,
   children,
@@ -62,10 +65,16 @@ export function FormFieldShell({
   const descriptionNode = description ? (
     <FieldDescription>{description}</FieldDescription>
   ) : null
-  const errorNode = (
+  const collapsedError = (
     <MotionCollapse show={Boolean(error)}>
       <FieldError>{error}</FieldError>
     </MotionCollapse>
+  )
+  // A fixed-height slot stops the layout below from jumping when an error appears.
+  const errorNode = reserveErrorSpace ? (
+    <div className="min-h-6">{collapsedError}</div>
+  ) : (
+    collapsedError
   )
 
   if (orientation === "horizontal") {
