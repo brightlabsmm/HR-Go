@@ -79,9 +79,19 @@ function BrandPanel() {
 export function AuthLayout() {
   const location = useLocation()
   const accessToken = useAuthStore((state) => state.accessToken)
+  const mustChangePassword = useAuthStore((state) => state.mustChangePassword)
 
   if (accessToken && location.pathname === "/login") {
-    return <Navigate to="/" replace />
+    return <Navigate to={mustChangePassword ? "/change-password" : "/"} replace />
+  }
+
+  if (location.pathname === "/change-password") {
+    if (!accessToken) {
+      return <Navigate to="/login" replace />
+    }
+    if (!mustChangePassword) {
+      return <Navigate to="/" replace />
+    }
   }
 
   return (

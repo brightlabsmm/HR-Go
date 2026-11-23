@@ -21,10 +21,15 @@ export function AppLayout() {
   const { fadeIn, pageTransition } = useMotionVariants()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const accessToken = useAuthStore((state) => state.accessToken)
+  const mustChangePassword = useAuthStore((state) => state.mustChangePassword)
   const { can, user, isPending } = usePermissions()
 
   if (!accessToken) {
     return <Navigate to="/login" replace />
+  }
+
+  if (mustChangePassword || user?.mustChangePassword) {
+    return <Navigate to="/change-password" replace />
   }
 
   const activeItem = findActiveNavItem(location.pathname)

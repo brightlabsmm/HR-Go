@@ -7,6 +7,12 @@ export const LoginPage = pageLoader(
   <RouteFallback />
 )
 
+export const ChangePasswordPage = pageLoader(
+  () => import("@/features/auth/pages/change-password-page"),
+  "ChangePasswordPage",
+  <RouteFallback />
+)
+
 export const AccountPage = pageLoader(
   () => import("@/features/account/pages/account-page"),
   "AccountPage"

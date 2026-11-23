@@ -14,6 +14,7 @@ type Repository interface {
 	FindByIdentifier(ctx context.Context, identifier string) (*models.OrganizationAccount, error)
 	FindByID(ctx context.Context, id string) (*models.OrganizationAccount, error)
 	UpdateLastLogin(ctx context.Context, id string) error
+	UpdatePassword(ctx context.Context, id string, passwordHash string, mustChangePassword bool) error
 }
 
 type repository struct {
@@ -66,4 +67,15 @@ func (r *repository) UpdateLastLogin(ctx context.Context, id string) error {
 		Model(&models.OrganizationAccount{}).
 		Where("id = ?", id).
 		Update("last_login_at", &now).Error
+}
+
+func (r *repository) UpdatePassword(ctx context.Context, id string, passwordHash string, mustChangePassword bool) error {
+	return r.db.WithContext(ctx).
+		Model(&models.OrganizationAccount{}).
+		Where("id = ?", id).
+		Updates(map[string]interface{}{
+			"password_hash":        passwordHash,
+			"must_change_password": mustChangePassword,
+			"updated_at":           time.Now().UTC(),
+		}).Error
 }

@@ -3,7 +3,7 @@ import { createBrowserRouter } from "react-router"
 import { APP_CONFIG } from "@/app/config/app.config"
 import { AppLayout } from "@/components/layouts/app-layout"
 import { AuthLayout } from "@/components/layouts/auth-layout"
-import { LoginPage } from "@/constants/lazyload"
+import { ChangePasswordPage, LoginPage } from "@/constants/lazyload"
 import { organizationRoutes } from "@/portals/organization/routes"
 import { platformRoutes } from "@/portals/platform/routes"
 
@@ -24,6 +24,7 @@ export const router = createBrowserRouter([
         element: <AuthLayout />,
         children: [
           { path: "login", element: <LoginPage /> },
+          { path: "change-password", element: <ChangePasswordPage /> },
         ],
       },
       {

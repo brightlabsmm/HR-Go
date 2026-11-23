@@ -16,6 +16,7 @@ import (
 type Service interface {
 	Login(ctx context.Context, req request.LoginRequest) (*response.LoginResponse, *apperrors.Error)
 	GetMe(ctx context.Context, accountID string) (*response.WorkspaceUserProfile, *apperrors.Error)
+	ChangePassword(ctx context.Context, accountID string, req request.ChangePasswordRequest) *apperrors.Error
 }
 
 type service struct {
@@ -77,10 +78,11 @@ func (s *service) Login(ctx context.Context, req request.LoginRequest) (*respons
 
 	profile := mapper.ToWorkspaceUserProfile(acc, perms)
 	return &response.LoginResponse{
-		AccessToken: token,
-		TokenType:   "Bearer",
-		ExpiresIn:   exp,
-		User:        profile,
+		AccessToken:        token,
+		TokenType:          "Bearer",
+		ExpiresIn:          exp,
+		MustChangePassword: acc.MustChangePassword,
+		User:               profile,
 	}, nil
 }
 
@@ -96,6 +98,45 @@ func (s *service) GetMe(ctx context.Context, accountID string) (*response.Worksp
 	perms := extractWorkspacePermissions(acc.UserRoles)
 	profile := mapper.ToWorkspaceUserProfile(acc, perms)
 	return &profile, nil
+}
+
+func (s *service) ChangePassword(ctx context.Context, accountID string, req request.ChangePasswordRequest) *apperrors.Error {
+	acc, err := s.repo.FindByID(ctx, accountID)
+	if err != nil {
+		return apperrors.Internal()
+	}
+	if acc == nil {
+		return apperrors.NotFound("Organization account not found")
+	}
+
+	if !security.CheckPassword(acc.PasswordHash, req.CurrentPassword) {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "currentPassword", Message: "Current password is incorrect."},
+		})
+	}
+
+	if req.CurrentPassword == req.NewPassword {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "newPassword", Message: "New password must be different from current password."},
+		})
+	}
+
+	if req.ConfirmPassword != "" && req.NewPassword != req.ConfirmPassword {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "confirmPassword", Message: "Passwords do not match."},
+		})
+	}
+
+	hash, err := security.HashPassword(req.NewPassword)
+	if err != nil {
+		return apperrors.Internal()
+	}
+
+	if err := s.repo.UpdatePassword(ctx, acc.ID, hash, false); err != nil {
+		return apperrors.Internal()
+	}
+
+	return nil
 }
 
 func extractWorkspacePermissions(roles []models.OrgUserRole) []string {

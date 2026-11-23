@@ -504,10 +504,11 @@ func (s *service) CreateAdminAccount(ctx context.Context, orgID string, req requ
 	}
 
 	acc := &models.OrganizationAccount{
-		OrganizationID: orgID,
-		Identifier:     code,
-		PasswordHash:   hash,
-		Status:         "ACTIVE",
+		OrganizationID:     orgID,
+		Identifier:         code,
+		PasswordHash:       hash,
+		Status:             "ACTIVE",
+		MustChangePassword: true,
 	}
 
 	detail, err := s.repo.CreateAdminAccount(ctx, emp, acc)
