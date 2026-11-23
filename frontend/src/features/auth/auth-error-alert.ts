@@ -34,6 +34,19 @@ export function getAuthErrorAlert(
     }
   }
 
+  if (error.status === 429) {
+    return {
+      title: t(
+        "login.error_locked_title",
+        "Account temporarily locked due to too many failed login attempts."
+      ),
+      description: t(
+        "login.error_locked_description",
+        "Please try again in 15 minutes or contact your administrator."
+      ),
+    }
+  }
+
   if (
     (error.code === API_ERROR_CODES.VALIDATION_ERROR || error.status === 422) &&
     error.details.length > 0

@@ -23,6 +23,22 @@ describe("getAuthErrorAlert", () => {
     })
   })
 
+  it("maps 429 rate limit / lockout to the locked alert copy", () => {
+    expect(
+      getAuthErrorAlert(
+        new ApiError({
+          status: 429,
+          code: API_ERROR_CODES.RATE_LIMIT_EXCEEDED,
+          message: "Account temporarily locked due to too many failed login attempts.",
+        }),
+        t
+      )
+    ).toEqual({
+      title: "login.error_locked_title",
+      description: "login.error_locked_description",
+    })
+  })
+
   it("maps field validation errors to the inline alert", () => {
     expect(
       getAuthErrorAlert(

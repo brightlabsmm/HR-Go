@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"hrgo/backend/internal/modules/control/auth/mapper"
 	"hrgo/backend/internal/modules/control/auth/models"
@@ -19,21 +21,42 @@ type Service interface {
 }
 
 type service struct {
-	repo   repository.Repository
-	tokens *security.TokenManager
+	repo    repository.Repository
+	tokens  *security.TokenManager
+	lockout *security.LockoutManager
 }
 
-func New(repo repository.Repository, tokens *security.TokenManager) Service {
-	return &service{repo: repo, tokens: tokens}
+func New(repo repository.Repository, tokens *security.TokenManager, lockout ...*security.LockoutManager) Service {
+	var lm *security.LockoutManager
+	if len(lockout) > 0 && lockout[0] != nil {
+		lm = lockout[0]
+	} else {
+		lm = security.NewLockoutManager(5, 15*time.Minute)
+	}
+	return &service{repo: repo, tokens: tokens, lockout: lm}
 }
 
 func (s *service) Login(ctx context.Context, req request.LoginRequest) (*response.LoginResponse, *apperrors.Error) {
+	email := strings.TrimSpace(req.Email)
+	if s.lockout != nil && s.lockout.IsLocked(email) {
+		return nil, apperrors.TooManyRequests("Account temporarily locked due to too many failed login attempts. Please try again in 15 minutes.")
+	}
+
 	user, err := s.repo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, apperrors.Internal()
 	}
 	if user == nil || !security.CheckPassword(user.PasswordHash, req.Password) {
+		if s.lockout != nil {
+			if locked := s.lockout.RecordFailure(email); locked {
+				return nil, apperrors.TooManyRequests("Account temporarily locked due to too many failed login attempts. Please try again in 15 minutes.")
+			}
+		}
 		return nil, apperrors.Unauthorized("Invalid email or password.")
+	}
+
+	if s.lockout != nil {
+		s.lockout.Reset(email)
 	}
 
 	if user.Status != "ACTIVE" {
