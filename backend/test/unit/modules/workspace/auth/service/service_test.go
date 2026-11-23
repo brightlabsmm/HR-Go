@@ -217,4 +217,54 @@ func TestWorkspaceAuthService_ChangePassword(t *testing.T) {
 			t.Fatalf("expected updated hash to match new password")
 		}
 	})
+
+	t.Run("temporarily locks out account after repeated failed login attempts (BUG-17)", func(t *testing.T) {
+		acc := &models.OrganizationAccount{
+			ID:           "acc-lock",
+			Identifier:   "EMP-LOCKOUT",
+			PasswordHash: hashedPass,
+			Status:       "ACTIVE",
+			Organization: models.Organization{Status: "ACTIVE"},
+		}
+		repo := &mockWorkspaceAuthRepo{account: acc}
+		svc := service.New(repo, tokens)
+
+		// 1st to 4th failed attempts return 401 UNAUTHORIZED
+		for i := 1; i <= 4; i++ {
+			res, appErr := svc.Login(context.Background(), request.LoginRequest{
+				Identifier: "EMP-LOCKOUT",
+				Password:   "WrongPassword",
+			})
+			if res != nil {
+				t.Fatalf("attempt %d: expected nil response on bad password", i)
+			}
+			if appErr == nil || appErr.Status != 401 {
+				t.Fatalf("attempt %d: expected 401 UNAUTHORIZED, got %v", i, appErr)
+			}
+		}
+
+		// 5th failed attempt triggers lockout (429 RATE_LIMIT_EXCEEDED)
+		res, appErr := svc.Login(context.Background(), request.LoginRequest{
+			Identifier: "EMP-LOCKOUT",
+			Password:   "WrongPassword",
+		})
+		if res != nil {
+			t.Fatal("attempt 5: expected nil response")
+		}
+		if appErr == nil || appErr.Status != 429 || appErr.Code != "RATE_LIMIT_EXCEEDED" {
+			t.Fatalf("attempt 5: expected 429 RATE_LIMIT_EXCEEDED on lockout trigger, got %v", appErr)
+		}
+
+		// 6th attempt with the RIGHT password is STILL blocked due to temporary lockout!
+		res, appErr = svc.Login(context.Background(), request.LoginRequest{
+			Identifier: "EMP-LOCKOUT",
+			Password:   "InitialPass@123", // Correct password!
+		})
+		if res != nil {
+			t.Fatal("attempt 6: expected nil response while locked out")
+		}
+		if appErr == nil || appErr.Status != 429 || appErr.Code != "RATE_LIMIT_EXCEEDED" {
+			t.Fatalf("attempt 6: expected 429 RATE_LIMIT_EXCEEDED for correct password during lockout, got %v", appErr)
+		}
+	})
 }

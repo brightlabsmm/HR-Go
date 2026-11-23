@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"strings"
+	"time"
 
 	"hrgo/backend/internal/modules/workspace/auth/mapper"
 	"hrgo/backend/internal/modules/workspace/auth/models"
@@ -20,21 +21,42 @@ type Service interface {
 }
 
 type service struct {
-	repo   repository.Repository
-	tokens *security.TokenManager
+	repo    repository.Repository
+	tokens  *security.TokenManager
+	lockout *security.LockoutManager
 }
 
-func New(repo repository.Repository, tokens *security.TokenManager) Service {
-	return &service{repo: repo, tokens: tokens}
+func New(repo repository.Repository, tokens *security.TokenManager, lockout ...*security.LockoutManager) Service {
+	var lm *security.LockoutManager
+	if len(lockout) > 0 && lockout[0] != nil {
+		lm = lockout[0]
+	} else {
+		lm = security.NewLockoutManager(5, 15*time.Minute)
+	}
+	return &service{repo: repo, tokens: tokens, lockout: lm}
 }
 
 func (s *service) Login(ctx context.Context, req request.LoginRequest) (*response.LoginResponse, *apperrors.Error) {
+	ident := strings.TrimSpace(req.Identifier)
+	if s.lockout != nil && s.lockout.IsLocked(ident) {
+		return nil, apperrors.TooManyRequests("Account temporarily locked due to too many failed login attempts. Please try again in 15 minutes.")
+	}
+
 	acc, err := s.repo.FindByIdentifier(ctx, req.Identifier)
 	if err != nil {
 		return nil, apperrors.Internal()
 	}
 	if acc == nil || !security.CheckPassword(acc.PasswordHash, req.Password) {
+		if s.lockout != nil {
+			if locked := s.lockout.RecordFailure(ident); locked {
+				return nil, apperrors.TooManyRequests("Account temporarily locked due to too many failed login attempts. Please try again in 15 minutes.")
+			}
+		}
 		return nil, apperrors.Unauthorized("Invalid employee identifier or password.")
+	}
+
+	if s.lockout != nil {
+		s.lockout.Reset(ident)
 	}
 
 	if acc.Organization.DeletedAt != nil {
