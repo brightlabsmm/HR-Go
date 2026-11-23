@@ -13,5 +13,6 @@ func Register(rg *gin.RouterGroup, h *handler.Handler, sec *security.Middleware)
 		group.POST("/login", h.Login)
 		group.POST("/logout", sec.RequireWorkspace(), h.Logout)
 		group.GET("/me", sec.RequireWorkspace(), h.GetMe)
+		group.POST("/change-password", sec.RequireWorkspace(), h.ChangePassword)
 	}
 }

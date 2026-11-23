@@ -53,3 +53,24 @@ func (h *Handler) GetMe(c *gin.Context) {
 	}
 	responses.OK(c, res)
 }
+
+func (h *Handler) ChangePassword(c *gin.Context) {
+	claims := security.GetClaims(c)
+	if claims == nil {
+		responses.Fail(c, apperrors.Unauthorized("Unauthorized"))
+		return
+	}
+
+	var req request.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		responses.Fail(c, apperrors.BindError(err))
+		return
+	}
+
+	if appErr := h.svc.ChangePassword(c.Request.Context(), claims.UserID, req); appErr != nil {
+		responses.Fail(c, appErr)
+		return
+	}
+
+	responses.OK(c, gin.H{"message": "Password changed successfully."})
+}
