@@ -6,7 +6,7 @@ import { useNavigate } from "react-router"
 import { z } from "zod"
 
 import { applyApiFieldErrors, notifyApiError } from "@/app/api/feedback"
-import { COUNTRY_OPTIONS } from "@/constants/countries"
+import { COUNTRY_OPTIONS, isValidCountryCode } from "@/constants/countries"
 import { ForbiddenState } from "@/components/common/forbidden-state"
 import { FormPhoneInput } from "@/components/common/form/form-phone-input"
 import { FormSelectInput } from "@/components/common/form/form-select-input"
@@ -66,7 +66,11 @@ export function OrganizationCreatePage() {
           .string()
           .trim()
           .min(1, t("form.errors.country_required", "Country is required."))
-          .max(10, t("form.errors.country_max", "Country must not exceed 10 characters.")),
+          .max(10, t("form.errors.country_max", "Country must not exceed 10 characters."))
+          .refine(
+            isValidCountryCode,
+            t("form.errors.country_invalid", "Please select a valid country.")
+          ),
         address: z
           .string()
           .trim()

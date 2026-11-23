@@ -5,7 +5,11 @@ import { useTranslation } from "react-i18next"
 import { z } from "zod"
 
 import { applyApiFieldErrors } from "@/app/api/feedback"
-import { COUNTRY_OPTIONS } from "@/constants/countries"
+import {
+  COUNTRY_OPTIONS,
+  isValidCountryCode,
+  normalizeCountryCode,
+} from "@/constants/countries"
 import { FormActions } from "@/components/common/form-actions"
 import { FormFieldGrid } from "@/components/common/form-field-grid"
 import { FormSkeleton } from "@/components/common/form-skeleton"
@@ -56,7 +60,11 @@ export function OrganizationSettingsPage() {
           .string()
           .trim()
           .min(1, t("errors.country_required"))
-          .max(10),
+          .max(10)
+          .refine(
+            isValidCountryCode,
+            t("errors.country_invalid", "Please select a valid country.")
+          ),
         address: z
           .string()
           .trim()
@@ -89,7 +97,7 @@ export function OrganizationSettingsPage() {
         displayName: organization.displayName ?? "",
         contactEmail: organization.contactEmail ?? "",
         contactPhone: organization.contactPhone ?? "",
-        country: organization.country ?? "",
+        country: normalizeCountryCode(organization.country),
         address: organization.address ?? "",
         branchCodeFormat: organization.branchCodeFormat ?? "BR-{0000}",
         departmentCodeFormat: organization.departmentCodeFormat ?? "DEPT-{0000}",
