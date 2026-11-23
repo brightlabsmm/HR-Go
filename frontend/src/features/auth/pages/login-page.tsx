@@ -61,12 +61,16 @@ export function LoginPage() {
     setAuthError(null)
 
     try {
-      await loginMutation.mutateAsync({
+      const session = await loginMutation.mutateAsync({
         password: values.password,
         ...("email" in values ? { email: values.email } : {}),
         ...("identifier" in values ? { identifier: values.identifier } : {}),
       })
-      void navigate("/")
+      if (session.user.mustChangePassword) {
+        void navigate("/change-password", { replace: true })
+      } else {
+        void navigate("/", { replace: true })
+      }
     } catch (error) {
       setAuthError(getAuthErrorAlert(error, t))
     }
