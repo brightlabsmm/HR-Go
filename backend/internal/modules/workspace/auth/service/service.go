@@ -148,7 +148,9 @@ func (s *service) Login(ctx context.Context, req request.LoginRequest, meta ...S
 
 func (s *service) Logout(ctx context.Context, sessionID string) *apperrors.Error {
 	if sessionID != "" {
-		_ = s.repo.RevokeSession(ctx, sessionID, "USER_LOGOUT")
+		if err := s.repo.RevokeSession(ctx, sessionID, "USER_LOGOUT"); err != nil {
+			return apperrors.Internal()
+		}
 	}
 	return nil
 }
