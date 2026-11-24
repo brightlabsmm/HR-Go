@@ -61,6 +61,33 @@ import (
 	wsuserrepo "hrgo/backend/internal/modules/workspace/user/repository"
 	wsuserroutes "hrgo/backend/internal/modules/workspace/user/routes"
 	wsusersvc "hrgo/backend/internal/modules/workspace/user/service"
+
+	// Phase 2: Workforce & Attendance
+	employeehandler "hrgo/backend/internal/modules/workspace/employee/handler"
+	employeerepo "hrgo/backend/internal/modules/workspace/employee/repository"
+	employeeroutes "hrgo/backend/internal/modules/workspace/employee/routes"
+	employeesvc "hrgo/backend/internal/modules/workspace/employee/service"
+
+	shifthandler "hrgo/backend/internal/modules/workspace/shift/handler"
+	shiftrepo "hrgo/backend/internal/modules/workspace/shift/repository"
+	shiftroutes "hrgo/backend/internal/modules/workspace/shift/routes"
+	shiftsvc "hrgo/backend/internal/modules/workspace/shift/service"
+
+	holidayhandler "hrgo/backend/internal/modules/workspace/holiday/handler"
+	holidayrepo "hrgo/backend/internal/modules/workspace/holiday/repository"
+	holidayroutes "hrgo/backend/internal/modules/workspace/holiday/routes"
+	holidaysvc "hrgo/backend/internal/modules/workspace/holiday/service"
+
+	attendancehandler "hrgo/backend/internal/modules/workspace/attendance/handler"
+	attendancerepo "hrgo/backend/internal/modules/workspace/attendance/repository"
+	attendanceroutes "hrgo/backend/internal/modules/workspace/attendance/routes"
+	attendancesvc "hrgo/backend/internal/modules/workspace/attendance/service"
+
+	mobilehandler "hrgo/backend/internal/modules/workspace/mobile/handler"
+	mobilerepo "hrgo/backend/internal/modules/workspace/mobile/repository"
+	mobileroutes "hrgo/backend/internal/modules/workspace/mobile/routes"
+	mobilesvc "hrgo/backend/internal/modules/workspace/mobile/service"
+
 	apperrors "hrgo/backend/internal/shared/errors"
 	"hrgo/backend/internal/shared/responses"
 	"hrgo/backend/internal/shared/security"
@@ -210,6 +237,31 @@ func NewEngine(deps Dependencies) *gin.Engine {
 		wsUserRepo := wsuserrepo.New(deps.DB)
 		wsUserService := wsusersvc.New(wsUserRepo)
 		wsuserroutes.Register(v1, wsuserhandler.New(wsUserService), secMiddleware)
+
+		// Phase 2: Employee management
+		empRepo := employeerepo.New(deps.DB)
+		empService := employeesvc.New(empRepo)
+		employeeroutes.Register(v1, employeehandler.New(empService), secMiddleware)
+
+		// Phase 2: Shift management
+		shiftRepo := shiftrepo.New(deps.DB)
+		shiftService := shiftsvc.New(shiftRepo)
+		shiftroutes.Register(v1, shifthandler.New(shiftService), secMiddleware)
+
+		// Phase 2: Holiday management
+		holidayRepo := holidayrepo.New(deps.DB)
+		holidayService := holidaysvc.New(holidayRepo)
+		holidayroutes.Register(v1, holidayhandler.New(holidayService), secMiddleware)
+
+		// Phase 2: Attendance management
+		attendanceRepo := attendancerepo.New(deps.DB)
+		attendanceService := attendancesvc.New(attendanceRepo)
+		attendanceroutes.Register(v1, attendancehandler.New(attendanceService), secMiddleware)
+
+		// Phase 2: Employee Mobile
+		mobileRepo := mobilerepo.New(deps.DB)
+		mobileService := mobilesvc.New(mobileRepo, tokenManager)
+		mobileroutes.Register(v1, mobilehandler.New(mobileService), secMiddleware)
 	}
 
 	engine.GET("/ping", func(c *gin.Context) {
