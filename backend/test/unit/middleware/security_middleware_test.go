@@ -151,4 +151,44 @@ func TestRequireWorkspaceOrgStatusChecker(t *testing.T) {
 			t.Fatalf("after logout status = %d, want 401 Unauthorized (BUG-30)", rec2.Code)
 		}
 	})
+
+	t.Run("enforces org.settings.update permission on settings update (BUG-32)", func(t *testing.T) {
+		tokenAdmin, _, _ := tokens.GenerateWorkspaceToken("acc-1", "org-1", "emp-1", "EMP-001", "", "", []string{"org.settings.update"})
+		tokenReader, _, _ := tokens.GenerateWorkspaceToken("acc-2", "org-1", "emp-2", "EMP-002", "", "", []string{"org.settings.read"})
+		tokenRegular, _, _ := tokens.GenerateWorkspaceToken("acc-3", "org-1", "emp-3", "EMP-003", "", "", []string{"org.branch.read"})
+
+		sec := security.NewMiddleware(tokens)
+		r := gin.New()
+		r.Use(sec.RequireWorkspace())
+		r.PATCH("/workspace/organization", sec.RequirePermission("org.settings.update"), func(c *gin.Context) {
+			c.String(http.StatusOK, "settings updated")
+		})
+
+		// 1. User with org.settings.update succeeds
+		reqAdmin := httptest.NewRequest(http.MethodPatch, "/workspace/organization", nil)
+		reqAdmin.Header.Set("Authorization", "Bearer "+tokenAdmin)
+		recAdmin := httptest.NewRecorder()
+		r.ServeHTTP(recAdmin, reqAdmin)
+		if recAdmin.Code != http.StatusOK {
+			t.Fatalf("admin status = %d, want 200", recAdmin.Code)
+		}
+
+		// 2. User with only org.settings.read is rejected with 403 Forbidden
+		reqReader := httptest.NewRequest(http.MethodPatch, "/workspace/organization", nil)
+		reqReader.Header.Set("Authorization", "Bearer "+tokenReader)
+		recReader := httptest.NewRecorder()
+		r.ServeHTTP(recReader, reqReader)
+		if recReader.Code != http.StatusForbidden {
+			t.Fatalf("reader status = %d, want 403 Forbidden (BUG-32)", recReader.Code)
+		}
+
+		// 3. Regular workspace user without settings permissions is rejected with 403 Forbidden
+		reqRegular := httptest.NewRequest(http.MethodPatch, "/workspace/organization", nil)
+		reqRegular.Header.Set("Authorization", "Bearer "+tokenRegular)
+		recRegular := httptest.NewRecorder()
+		r.ServeHTTP(recRegular, reqRegular)
+		if recRegular.Code != http.StatusForbidden {
+			t.Fatalf("regular user status = %d, want 403 Forbidden (BUG-32)", recRegular.Code)
+		}
+	})
 }

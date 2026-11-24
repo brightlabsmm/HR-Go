@@ -27,6 +27,7 @@ import {
   useUpdateWorkspaceOrganizationMutation,
   useWorkspaceOrganizationQuery,
 } from "@/shared/queries/workspace-organization.query"
+import { usePermissions } from "@/shared/hooks/use-permissions"
 import { useToastStore } from "@/shared/stores/toast.store"
 import { getInitials } from "@/util/initials"
 import { requiredE164Phone } from "@/util/phone"
@@ -34,6 +35,8 @@ import { requiredE164Phone } from "@/util/phone"
 export function OrganizationSettingsPage() {
   const { t } = useTranslation("organization_settings")
   const { t: tCommon } = useTranslation("common")
+  const { can } = usePermissions()
+  const canUpdate = can("org.settings.update")
   const orgQuery = useWorkspaceOrganizationQuery()
   const updateMutation = useUpdateWorkspaceOrganizationMutation()
   const showToast = useToastStore((state) => state.show)
@@ -271,16 +274,18 @@ export function OrganizationSettingsPage() {
               )}
             </FormSection>
 
-            <FormActions>
-              <Button
-                type="submit"
-                disabled={isLoading || updateMutation.isPending || !formState.isDirty}
-              >
-                {updateMutation.isPending
-                  ? tCommon("actions.submit")
-                  : t("save")}
-              </Button>
-            </FormActions>
+            {canUpdate ? (
+              <FormActions>
+                <Button
+                  type="submit"
+                  disabled={isLoading || updateMutation.isPending || !formState.isDirty}
+                >
+                  {updateMutation.isPending
+                    ? tCommon("actions.submit")
+                    : t("save")}
+                </Button>
+              </FormActions>
+            ) : null}
           </form>
         </div>
       </div>
