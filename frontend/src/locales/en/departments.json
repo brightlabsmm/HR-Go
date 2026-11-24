@@ -16,6 +16,12 @@
     "description": "This will deactivate {{name}}.",
     "confirm": "Deactivate"
   },
+  "delete": {
+    "title": "Delete {{name}}?",
+    "description": "This will deactivate {{name}}.",
+    "confirm": "Delete",
+    "success": "Department deleted successfully."
+  },
   "form": {
     "create_title": "Add department",
     "edit_title": "Edit department",
@@ -29,7 +35,8 @@
     "cancel": "Cancel",
     "errors": {
       "code": "Department code is required.",
-      "name": "Department name is required."
+      "name": "Department name is required.",
+      "name_max": "Department name cannot exceed 150 characters."
     }
   },
   "empty": {

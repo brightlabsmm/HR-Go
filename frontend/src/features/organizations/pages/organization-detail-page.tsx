@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { PencilIcon, Trash2Icon, UserPlusIcon } from "lucide-react"
+import { ClockIcon, PencilIcon, Trash2Icon, UserPlusIcon, XCircleIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router"
 
@@ -12,22 +12,26 @@ import { NotFoundState } from "@/components/common/not-found-state"
 import { ProfileSummaryCard } from "@/components/common/profile-summary-card"
 import { StatusBadge } from "@/components/common/status-badge"
 import { Button } from "@/components/ui/button"
+import { getCountryLabel } from "@/constants/countries"
 import { OrganizationDetailHeader } from "@/features/organizations/components/organization-detail-header"
 import { OrganizationStatusButtons } from "@/features/organizations/components/organization-status-buttons"
+import { OrganizationSuspendDialog } from "@/features/organizations/components/organization-suspend-dialog"
 import {
   getStatusDialogContent,
   isHighImpactOrganizationStatus,
 } from "@/features/organizations/components/organization-status-menu"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import {
+  useCancelOrganizationSuspendScheduleMutation,
   useDeleteOrganizationMutation,
   useOrganizationAdminAccountsQuery,
   useOrganizationQuery,
   useUpdateOrganizationStatusMutation,
 } from "@/shared/queries/organization.query"
 import { toast } from "@/shared/stores/toast.store"
-import { formatDate } from "@/util/format-date"
+import { formatDate, formatDateTime } from "@/util/format-date"
 import { getInitials } from "@/util/initials"
+import { isDeletableOrganization } from "@/features/organizations/util/organization-rules"
 
 import type { OrganizationStatus } from "@/shared/services/organization.service"
 
@@ -45,6 +49,7 @@ export function OrganizationDetailPage() {
   const canChangeStatus = can("platform.organization.status.update")
   const canDelete = can("platform.organization.delete")
   const statusMutation = useUpdateOrganizationStatusMutation()
+  const cancelScheduleMutation = useCancelOrganizationSuspendScheduleMutation()
   const deleteMutation = useDeleteOrganizationMutation()
   const [statusTarget, setStatusTarget] = useState<OrganizationStatus | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -64,7 +69,7 @@ export function OrganizationDetailPage() {
   const contactItems = [
     { label: t("form.email"), value: organization?.contactEmail },
     { label: t("form.phone"), value: organization?.contactPhone },
-    { label: t("form.country"), value: organization?.country },
+    { label: t("form.country"), value: getCountryLabel(organization?.country) },
     { label: t("form.address"), value: organization?.address },
   ]
 
@@ -102,7 +107,23 @@ export function OrganizationDetailPage() {
                 onSelect={(status) => setStatusTarget(status)}
               />
             ) : null}
-            {canDelete && organization ? (
+            {canChangeStatus && organization?.scheduledSuspendAt ? (
+              <DetailActionButton
+                tone="warning"
+                disabled={cancelScheduleMutation.isPending}
+                onClick={() => {
+                  cancelScheduleMutation.mutate(id, {
+                    onSuccess: () => {
+                      toast.success(t("suspend_dialog.cancel_success", "Scheduled suspension cancelled successfully."))
+                    },
+                  })
+                }}
+              >
+                <XCircleIcon />
+                {t("suspend_dialog.cancel_schedule_button", "Cancel Schedule")}
+              </DetailActionButton>
+            ) : null}
+            {isDeletableOrganization(organization, canDelete) ? (
               <DetailActionButton
                 tone="destructive"
                 onClick={() => setShowDeleteDialog(true)}
@@ -114,7 +135,42 @@ export function OrganizationDetailPage() {
           </>
         }
       />
-      <div className="grid items-start gap-12 lg:grid-cols-[18.75rem_minmax(0,1fr)]">
+      {organization?.scheduledSuspendAt ? (
+        <div className="flex flex-col gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-900 sm:flex-row sm:items-center sm:justify-between dark:text-amber-200">
+          <div className="flex items-center gap-3">
+            <ClockIcon className="size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div>
+              <p className="font-semibold text-foreground">
+                {t("suspend_dialog.scheduled_alert_title", "Suspension Scheduled")}
+              </p>
+              <p className="mt-0.5 text-muted-foreground">
+                {t("suspend_dialog.scheduled_alert_desc", "This organization is scheduled to be suspended on {{date}}.", {
+                  date: formatDateTime(organization.scheduledSuspendAt, i18n.language),
+                })}
+                {organization.suspendReason ? ` (${organization.suspendReason})` : ""}
+              </p>
+            </div>
+          </div>
+          {canChangeStatus ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              loading={cancelScheduleMutation.isPending}
+              onClick={() => {
+                cancelScheduleMutation.mutate(id, {
+                  onSuccess: () => {
+                    toast.success(t("suspend_dialog.cancel_success", "Scheduled suspension cancelled successfully."))
+                  },
+                })
+              }}
+            >
+              {t("suspend_dialog.cancel_schedule_button", "Cancel Schedule")}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="grid items-start gap-8 lg:grid-cols-[18.75rem_minmax(0,1fr)] lg:gap-12">
         <ProfileSummaryCard
           isLoading={organizationQuery.isPending}
           avatarSize="xl"
@@ -141,7 +197,7 @@ export function OrganizationDetailPage() {
                 <DetailList columns={2} items={contactItems} />
               </section>
               <section className="border-t border-hair pt-6">
-                <div className="mb-4 flex items-center justify-between">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-body-2 font-semibold text-foreground">
                     {t("create_admin.title", "Organization Administrators")}
                   </h2>
@@ -149,6 +205,7 @@ export function OrganizationDetailPage() {
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="w-full sm:w-auto"
                     onClick={() => void navigate(`/organizations/${id}/create-admin`)}
                   >
                     <UserPlusIcon className="size-4" />
@@ -174,10 +231,15 @@ export function OrganizationDetailPage() {
                 ) : (
                   <div className="divide-y divide-hair rounded-lg border border-hair">
                     {adminAccounts.map((admin) => (
-                      <div key={admin.id} className="flex items-center justify-between p-4">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-foreground">{admin.fullName}</span>
+                      <div
+                        key={admin.id}
+                        className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-medium break-words text-foreground">
+                              {admin.fullName}
+                            </span>
                             <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
                               {admin.employeeCode}
                             </span>
@@ -186,10 +248,12 @@ export function OrganizationDetailPage() {
                             </span>
                           </div>
                           {admin.email ? (
-                            <p className="mt-0.5 text-xs text-muted-foreground">{admin.email}</p>
+                            <p className="mt-0.5 text-xs break-all text-muted-foreground">
+                              {admin.email}
+                            </p>
                           ) : null}
                         </div>
-                        <div className="text-right">
+                        <div className="sm:text-right">
                           <StatusBadge status={admin.status} />
                           {admin.lastLoginAt ? (
                             <p className="mt-1 text-xs text-muted-foreground">
@@ -206,8 +270,42 @@ export function OrganizationDetailPage() {
           )}
         </div>
       </div>
+      <OrganizationSuspendDialog
+        open={statusTarget === "SUSPENDED"}
+        organization={organization ?? null}
+        isPending={statusMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open) setStatusTarget(null)
+        }}
+        onConfirm={(payload) => {
+          if (!organization) return
+          statusMutation.mutate(
+            {
+              id: organization.id,
+              input: {
+                status: "SUSPENDED",
+                confirmation: true,
+                immediate: payload.immediate,
+                notifyFrom: payload.notifyFrom,
+                notifyTo: payload.notifyTo,
+                suspendAt: payload.suspendAt,
+                reason: payload.reason,
+              },
+            },
+            {
+              onSuccess: () => {
+                setStatusTarget(null)
+                void organizationQuery.refetch()
+              },
+              onError: () => {
+                setStatusTarget(null)
+              },
+            }
+          )
+        }}
+      />
       <ConfirmDialog
-        open={statusTarget !== null}
+        open={statusTarget !== null && statusTarget !== "SUSPENDED"}
         title={statusDialogContent?.title ?? ""}
         description={statusDialogContent?.description ?? ""}
         confirmLabel={statusDialogContent?.confirmLabel ?? t("status_change.confirm")}
@@ -236,7 +334,13 @@ export function OrganizationDetailPage() {
               },
             },
             {
-              onSuccess: () => setStatusTarget(null),
+              onSuccess: () => {
+                setStatusTarget(null)
+                void organizationQuery.refetch()
+              },
+              onError: () => {
+                setStatusTarget(null)
+              },
             }
           )
         }}
@@ -263,6 +367,9 @@ export function OrganizationDetailPage() {
               setShowDeleteDialog(false)
               toast.success(t("delete.success"))
               void navigate("/")
+            },
+            onError: () => {
+              setShowDeleteDialog(false)
             },
           })
         }}

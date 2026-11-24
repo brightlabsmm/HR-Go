@@ -32,7 +32,11 @@ export function DetailActionButton({
     <Button
       type={type}
       variant={variant}
-      className={cn(DETAIL_ACTION_TONE_CLASS[tone], className)}
+      className={cn(
+        "max-sm:h-9 max-sm:px-3 max-sm:text-small-2",
+        DETAIL_ACTION_TONE_CLASS[tone],
+        className
+      )}
       {...props}
     />
   )

@@ -34,3 +34,22 @@ func ToOrgRoleList(roles []models.OrgRole) []response.OrgRoleResponse {
 	}
 	return res
 }
+
+func ToPermissionResponse(p *models.Permission) response.PermissionResponse {
+	return response.PermissionResponse{
+		ID:          p.ID,
+		Code:        p.Code,
+		Grouping:    p.Grouping,
+		Resource:    p.Resource,
+		Action:      p.Action,
+		Description: p.Description,
+	}
+}
+
+func ToPermissionList(perms []models.Permission) []response.PermissionResponse {
+	res := make([]response.PermissionResponse, 0, len(perms))
+	for i := range perms {
+		res = append(res, ToPermissionResponse(&perms[i]))
+	}
+	return res
+}

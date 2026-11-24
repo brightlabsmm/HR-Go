@@ -15,7 +15,7 @@ interface DataTableRowProps {
 export function DataTableRow({ className, children, onClick }: DataTableRowProps) {
   return (
     <TableRow
-      className={cn("h-16", onClick && "cursor-pointer", className)}
+      className={cn("h-20 md:h-16", onClick && "cursor-pointer", className)}
       onClick={
         onClick
           ? (event) => {

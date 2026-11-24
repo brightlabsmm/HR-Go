@@ -2,9 +2,11 @@ package service_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"hrgo/backend/internal/modules/control/organization/models"
 	"hrgo/backend/internal/modules/control/organization/repository"
@@ -52,6 +54,9 @@ func (m *mockOrgRepo) FindByContactEmail(ctx context.Context, email string) (*mo
 }
 
 func (m *mockOrgRepo) Create(ctx context.Context, org *models.Organization) error {
+	if m.err != nil {
+		return m.err
+	}
 	org.ID = "org-created"
 	m.org = org
 	return nil
@@ -94,6 +99,47 @@ func (m *mockOrgRepo) CreateAdminAccount(ctx context.Context, emp *models.Employ
 
 func (m *mockOrgRepo) ListAdminAccounts(ctx context.Context, orgID string, q request.ListAdminAccountsQuery) ([]models.AdminAccountDetail, error) {
 	return m.adminDetails, nil
+}
+
+func (m *mockOrgRepo) SuspendAndRevokeSessions(ctx context.Context, orgID string, reason string, now time.Time) error {
+	if m.err != nil {
+		return m.err
+	}
+	if m.org != nil {
+		m.org.Status = "SUSPENDED"
+		m.org.SuspendedAt = &now
+		m.org.SessionsRevokedAt = &now
+		if reason != "" {
+			m.org.SuspendReason = &reason
+		}
+	}
+	return nil
+}
+
+func (m *mockOrgRepo) SuspendDueOrganizations(ctx context.Context, now time.Time) ([]string, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	if m.org != nil && m.org.Status == "ACTIVE" && m.org.ScheduledSuspendAt != nil && !m.org.ScheduledSuspendAt.After(now) {
+		m.org.Status = "SUSPENDED"
+		m.org.SuspendedAt = &now
+		m.org.SessionsRevokedAt = &now
+		return []string{m.org.ID}, nil
+	}
+	return nil, nil
+}
+
+func (m *mockOrgRepo) ClearSuspendSchedule(ctx context.Context, orgID string) error {
+	if m.err != nil {
+		return m.err
+	}
+	if m.org != nil {
+		m.org.ScheduledSuspendAt = nil
+		m.org.SuspendNotifyFrom = nil
+		m.org.SuspendNotifyTo = nil
+		m.org.SuspendReason = nil
+	}
+	return nil
 }
 
 func TestOrganizationStatusTransitions(t *testing.T) {
@@ -320,6 +366,24 @@ func TestCreateAdminAccount(t *testing.T) {
 			t.Fatalf("expected 404, got %v", appErr)
 		}
 	})
+
+	t.Run("rejects weak password with only digits or common words", func(t *testing.T) {
+		repo := &mockOrgRepo{org: org}
+		svc := service.New(repo)
+
+		for _, weakPw := range []string{"12345678", "password", "Admin123", "Short1"} {
+			_, appErr := svc.CreateAdminAccount(context.Background(), "org-1", request.CreateAdminAccountRequest{
+				FirstName:    "John",
+				LastName:     "Doe",
+				EmployeeCode: "EMP-NEW",
+				Password:     weakPw,
+			})
+
+			if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+				t.Errorf("expected VALIDATION_ERROR for weak password %q, got %v", weakPw, appErr)
+			}
+		}
+	})
 }
 
 func TestCreateOrganization(t *testing.T) {
@@ -422,21 +486,19 @@ func TestUpdateOrganization(t *testing.T) {
 		}
 	}
 
-	t.Run("updates organization code and contact fields successfully", func(t *testing.T) {
+	t.Run("updates contact fields successfully while keeping organization code", func(t *testing.T) {
 		repo := &mockOrgRepo{org: newTestOrg()}
 		svc := service.New(repo)
 
-		newCode := "ORG-NEW"
 		newEmail := "new@acme.com"
 		res, appErr := svc.Update(context.Background(), "org-1", request.UpdateOrganizationRequest{
-			OrganizationCode: &newCode,
-			ContactEmail:     &newEmail,
+			ContactEmail: &newEmail,
 		})
 
 		if appErr != nil {
 			t.Fatalf("unexpected error: %v", appErr)
 		}
-		if res.OrganizationCode != "ORG-NEW" || res.ContactEmail != "new@acme.com" {
+		if res.OrganizationCode != "ORG-001" || res.ContactEmail != "new@acme.com" {
 			t.Errorf("unexpected response: %+v", res)
 		}
 	})
@@ -475,28 +537,46 @@ func TestUpdateOrganization(t *testing.T) {
 		}
 	})
 
-	t.Run("rejects duplicate organization code on update", func(t *testing.T) {
+	t.Run("rejects changing organization code on update (OBS-02)", func(t *testing.T) {
 		repo := &mockOrgRepo{
-			org:          newTestOrg(),
-			existingCode: &models.Organization{ID: "other-org", Code: "ORG-TAKEN"},
+			org: newTestOrg(),
 		}
 		svc := service.New(repo)
 
-		takenCode := "ORG-TAKEN"
+		newCode := "ORG-CHANGED"
 		_, appErr := svc.Update(context.Background(), "org-1", request.UpdateOrganizationRequest{
-			OrganizationCode: &takenCode,
+			OrganizationCode: &newCode,
 		})
 
-		if appErr == nil || appErr.Code != "CONFLICT" {
-			t.Fatalf("expected CONFLICT, got %v", appErr)
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" || len(appErr.Details) == 0 || appErr.Details[0].Field != "organizationCode" {
+			t.Fatalf("expected VALIDATION_ERROR on organizationCode, got %+v", appErr)
+		}
+	})
+
+	t.Run("allows submitting same organization code on update", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: newTestOrg(),
+		}
+		svc := service.New(repo)
+
+		sameCode := repo.org.Code
+		res, appErr := svc.Update(context.Background(), "org-1", request.UpdateOrganizationRequest{
+			OrganizationCode: &sameCode,
+		})
+
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if res.OrganizationCode != repo.org.Code {
+			t.Errorf("expected code %s, got %s", repo.org.Code, res.OrganizationCode)
 		}
 	})
 }
 
 func TestDeleteOrganization(t *testing.T) {
-	t.Run("soft deletes existing organization", func(t *testing.T) {
+	t.Run("soft deletes existing pending organization without admins", func(t *testing.T) {
 		repo := &mockOrgRepo{
-			org: &models.Organization{ID: "org-1", Code: "ORG-001", Status: "ACTIVE"},
+			org: &models.Organization{ID: "org-1", Code: "ORG-001", Status: "PENDING"},
 		}
 		svc := service.New(repo)
 
@@ -509,6 +589,43 @@ func TestDeleteOrganization(t *testing.T) {
 		}
 	})
 
+	t.Run("rejects deleting active organization (BUG-31)", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: &models.Organization{ID: "org-1", Code: "ORG-001", Status: "ACTIVE"},
+		}
+		svc := service.New(repo)
+
+		appErr := svc.Delete(context.Background(), "org-1")
+		if appErr == nil || appErr.Status != http.StatusBadRequest {
+			t.Fatalf("expected 400 BadRequest when deleting active org, got %+v", appErr)
+		}
+	})
+
+	t.Run("rejects deleting suspended organization (BUG-31)", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: &models.Organization{ID: "org-1", Code: "ORG-001", Status: "SUSPENDED"},
+		}
+		svc := service.New(repo)
+
+		appErr := svc.Delete(context.Background(), "org-1")
+		if appErr == nil || appErr.Status != http.StatusBadRequest {
+			t.Fatalf("expected 400 BadRequest when deleting suspended org, got %+v", appErr)
+		}
+	})
+
+	t.Run("rejects deleting pending organization if admin accounts exist (BUG-31)", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org:          &models.Organization{ID: "org-1", Code: "ORG-001", Status: "PENDING"},
+			adminDetails: []models.AdminAccountDetail{{AccountID: "acc-1"}},
+		}
+		svc := service.New(repo)
+
+		appErr := svc.Delete(context.Background(), "org-1")
+		if appErr == nil || appErr.Status != http.StatusBadRequest {
+			t.Fatalf("expected 400 BadRequest when deleting org with admins, got %+v", appErr)
+		}
+	})
+
 	t.Run("returns 404 when organization does not exist", func(t *testing.T) {
 		repo := &mockOrgRepo{org: nil}
 		svc := service.New(repo)
@@ -516,6 +633,418 @@ func TestDeleteOrganization(t *testing.T) {
 		appErr := svc.Delete(context.Background(), "missing-id")
 		if appErr == nil || appErr.Status != http.StatusNotFound {
 			t.Fatalf("expected 404 NotFound, got %+v", appErr)
+		}
+	})
+}
+
+func TestOrganizationValidation(t *testing.T) {
+	t.Run("rejects invalid phone and country (BUG-01, BUG-02, BUG-03)", func(t *testing.T) {
+		repo := &mockOrgRepo{}
+		svc := service.New(repo)
+
+		_, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ACME-CORP",
+			LegalName:        "Acme Corporation",
+			DisplayName:      "Acme",
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "abcdefg!!!",
+			Country:          "Myanmar123!@#",
+			Address:          "Yangon, Myanmar",
+		})
+
+		if appErr == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+		if appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected VALIDATION_ERROR, got %s", appErr.Code)
+		}
+
+		fieldErrors := make(map[string]string)
+		for _, issue := range appErr.Details {
+			fieldErrors[issue.Field] = issue.Message
+		}
+
+		if _, ok := fieldErrors["contactPhone"]; !ok {
+			t.Errorf("expected field error on contactPhone, got details: %+v", appErr.Details)
+		}
+		if _, ok := fieldErrors["country"]; !ok {
+			t.Errorf("expected field error on country, got details: %+v", appErr.Details)
+		}
+	})
+
+	t.Run("rejects free-text country not in allowed list (BUG-02)", func(t *testing.T) {
+		repo := &mockOrgRepo{}
+		svc := service.New(repo)
+
+		_, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ACME-CORP",
+			LegalName:        "Acme Corporation",
+			DisplayName:      "Acme",
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "+95912345678",
+			Country:          "Myanmar12",
+			Address:          "Yangon",
+		})
+
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected VALIDATION_ERROR on country, got %+v", appErr)
+		}
+
+		hasCountryError := false
+		for _, issue := range appErr.Details {
+			if issue.Field == "country" {
+				hasCountryError = true
+				break
+			}
+		}
+		if !hasCountryError {
+			t.Errorf("expected field error on country, got details: %+v", appErr.Details)
+		}
+	})
+
+	t.Run("normalizes valid lowercase country to uppercase ISO code", func(t *testing.T) {
+		repo := &mockOrgRepo{}
+		svc := service.New(repo)
+
+		res, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ACME-CORP",
+			LegalName:        "Acme Corporation",
+			DisplayName:      "Acme",
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "+95912345678",
+			Country:          "th",
+			Address:          "Bangkok",
+		})
+
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if res.Country != "TH" {
+			t.Errorf("expected country TH, got %s", res.Country)
+		}
+	})
+
+	t.Run("maps DB country check constraint to validation error", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			err: fmt.Errorf("pq: new row for relation \"organizations\" violates check constraint \"chk_organizations_country\""),
+		}
+		svc := service.New(repo)
+
+		_, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ACME-CORP",
+			LegalName:        "Acme Corporation",
+			DisplayName:      "Acme",
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "+95912345678",
+			Country:          "MM",
+			Address:          "Yangon",
+		})
+
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected 400 VALIDATION_ERROR, got %+v", appErr)
+		}
+	})
+
+	t.Run("maps DB string length truncation to validation error not 500", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			err: fmt.Errorf("pq: value too long for type character varying(10)"),
+		}
+		svc := service.New(repo)
+
+		_, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ACME-CORP",
+			LegalName:        "Acme Corporation",
+			DisplayName:      "Acme",
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "+95912345678",
+			Country:          "MM",
+			Address:          "Yangon",
+		})
+
+		if appErr == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if appErr.Status != http.StatusBadRequest || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected 400 VALIDATION_ERROR, got %+v", appErr)
+		}
+	})
+
+	t.Run("rejects 300-character display name with validation error (BUG-33)", func(t *testing.T) {
+		repo := &mockOrgRepo{}
+		svc := service.New(repo)
+
+		longDisplayName := strings.Repeat("A", 300)
+		_, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ACME-CORP",
+			LegalName:        "Acme Corporation",
+			DisplayName:      longDisplayName,
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "+95912345678",
+			Country:          "MM",
+			Address:          "Yangon",
+		})
+
+		if appErr == nil {
+			t.Fatal("expected validation error for 300-char display name, got nil")
+		}
+		if appErr.Status != http.StatusBadRequest || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected 400 VALIDATION_ERROR, got %+v", appErr)
+		}
+
+		found := false
+		for _, issue := range appErr.Details {
+			if issue.Field == "displayName" {
+				found = true
+				if issue.Message != "Display name must not exceed 255 characters." {
+					t.Errorf("unexpected message: %s", issue.Message)
+				}
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected field issue for displayName, got %+v", appErr.Details)
+		}
+	})
+
+	t.Run("rejects 300-character display name on update (BUG-33)", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: &models.Organization{ID: "org-1", Code: "ORG-001", Status: "ACTIVE"},
+		}
+		svc := service.New(repo)
+
+		longDisplayName := strings.Repeat("A", 300)
+		_, appErr := svc.Update(context.Background(), "org-1", request.UpdateOrganizationRequest{
+			DisplayName: &longDisplayName,
+		})
+
+		if appErr == nil {
+			t.Fatal("expected validation error for 300-char display name, got nil")
+		}
+		if appErr.Status != http.StatusBadRequest || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected 400 VALIDATION_ERROR, got %+v", appErr)
+		}
+
+		found := false
+		for _, issue := range appErr.Details {
+			if issue.Field == "displayName" {
+				found = true
+				if issue.Message != "Display name must not exceed 255 characters." {
+					t.Errorf("unexpected message: %s", issue.Message)
+				}
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected field issue for displayName, got %+v", appErr.Details)
+		}
+	})
+
+	t.Run("maps DB 255-character truncation to displayName field error (BUG-33)", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			err: fmt.Errorf("pq: value too long for type character varying(255)"),
+		}
+		svc := service.New(repo)
+
+		_, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ACME-CORP",
+			LegalName:        "Acme Corporation",
+			DisplayName:      "Acme",
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "+95912345678",
+			Country:          "MM",
+			Address:          "Yangon",
+		})
+
+		if appErr == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if appErr.Status != http.StatusBadRequest || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected 400 VALIDATION_ERROR, got %+v", appErr)
+		}
+		found := false
+		for _, issue := range appErr.Details {
+			if issue.Field == "displayName" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected field issue for displayName, got %+v", appErr.Details)
+		}
+	})
+}
+
+type mockFailingCreateRepo struct {
+	repository.Repository
+	err error
+}
+
+func (m mockFailingCreateRepo) FindByCode(ctx context.Context, code string) (*models.Organization, error) {
+	return nil, nil
+}
+func (m mockFailingCreateRepo) FindByContactEmail(ctx context.Context, email string) (*models.Organization, error) {
+	return nil, nil
+}
+func (m mockFailingCreateRepo) Create(ctx context.Context, org *models.Organization) error {
+	return m.err
+}
+
+func TestOrganizationSuspensionScheduleAndSessions(t *testing.T) {
+	now := time.Now().UTC()
+	future := now.Add(24 * time.Hour)
+	past := now.Add(-1 * time.Hour)
+
+	t.Run("immediate suspension revokes sessions and updates status", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: &models.Organization{
+				ID:     "org-1",
+				Code:   "ORG-1",
+				Status: "ACTIVE",
+			},
+		}
+		svc := service.New(repo)
+		imm := true
+		res, appErr := svc.UpdateStatus(context.Background(), "org-1", request.UpdateStatusRequest{
+			Status:       "SUSPENDED",
+			Confirmation: true,
+			Immediate:    &imm,
+			Reason:       "Non-payment",
+		})
+		if appErr != nil {
+			t.Fatalf("unexpected error: %+v", appErr)
+		}
+		if res.Status != "SUSPENDED" {
+			t.Errorf("status = %s, want SUSPENDED", res.Status)
+		}
+		if repo.org.SessionsRevokedAt == nil {
+			t.Error("sessionsRevokedAt should not be nil")
+		}
+	})
+
+	t.Run("scheduled suspension validates future suspend date", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: &models.Organization{
+				ID:     "org-1",
+				Code:   "ORG-1",
+				Status: "ACTIVE",
+			},
+		}
+		svc := service.New(repo)
+		imm := false
+		_, appErr := svc.UpdateStatus(context.Background(), "org-1", request.UpdateStatusRequest{
+			Status:       "SUSPENDED",
+			Confirmation: true,
+			Immediate:    &imm,
+			SuspendAt:    &past,
+		})
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected VALIDATION_ERROR for past suspend date, got %+v", appErr)
+		}
+	})
+
+	t.Run("scheduled suspension validates notify window order", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: &models.Organization{
+				ID:     "org-1",
+				Code:   "ORG-1",
+				Status: "ACTIVE",
+			},
+		}
+		svc := service.New(repo)
+		imm := false
+		notifyFrom := future.Add(2 * time.Hour)
+		notifyTo := future.Add(1 * time.Hour)
+		_, appErr := svc.UpdateStatus(context.Background(), "org-1", request.UpdateStatusRequest{
+			Status:       "SUSPENDED",
+			Confirmation: true,
+			Immediate:    &imm,
+			NotifyFrom:   &notifyFrom,
+			NotifyTo:     &notifyTo,
+			SuspendAt:    &future,
+		})
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected VALIDATION_ERROR for notifyFrom > notifyTo, got %+v", appErr)
+		}
+	})
+
+	t.Run("scheduled suspension succeeds and leaves org ACTIVE until scheduled date", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: &models.Organization{
+				ID:     "org-1",
+				Code:   "ORG-1",
+				Status: "ACTIVE",
+			},
+		}
+		svc := service.New(repo)
+		imm := false
+		notifyFrom := now.Add(1 * time.Hour)
+		notifyTo := now.Add(12 * time.Hour)
+		reason := "Maintenance renewal"
+		res, appErr := svc.UpdateStatus(context.Background(), "org-1", request.UpdateStatusRequest{
+			Status:       "SUSPENDED",
+			Confirmation: true,
+			Immediate:    &imm,
+			NotifyFrom:   &notifyFrom,
+			NotifyTo:     &notifyTo,
+			SuspendAt:    &future,
+			Reason:       reason,
+		})
+		if appErr != nil {
+			t.Fatalf("unexpected error: %+v", appErr)
+		}
+		if res.Status != "ACTIVE" {
+			t.Errorf("status = %s, want ACTIVE during schedule", res.Status)
+		}
+		if repo.org.ScheduledSuspendAt == nil {
+			t.Fatal("scheduledSuspendAt should not be nil")
+		}
+		if repo.org.SuspendReason == nil || *repo.org.SuspendReason != reason {
+			t.Errorf("suspendReason = %v, want %s", repo.org.SuspendReason, reason)
+		}
+	})
+
+	t.Run("cancel suspend schedule clears schedule fields", func(t *testing.T) {
+		schedAt := future
+		reason := "Maintenance"
+		repo := &mockOrgRepo{
+			org: &models.Organization{
+				ID:                 "org-1",
+				Code:               "ORG-1",
+				Status:             "ACTIVE",
+				ScheduledSuspendAt: &schedAt,
+				SuspendReason:      &reason,
+			},
+		}
+		svc := service.New(repo)
+		res, appErr := svc.CancelSuspendSchedule(context.Background(), "org-1")
+		if appErr != nil {
+			t.Fatalf("unexpected error: %+v", appErr)
+		}
+		if res.ScheduledSuspendAt != nil {
+			t.Error("scheduledSuspendAt should be nil after cancel")
+		}
+	})
+
+	t.Run("process due suspensions marks due organizations as suspended", func(t *testing.T) {
+		schedAt := now.Add(-5 * time.Minute)
+		repo := &mockOrgRepo{
+			org: &models.Organization{
+				ID:                 "org-due",
+				Code:               "ORG-DUE",
+				Status:             "ACTIVE",
+				ScheduledSuspendAt: &schedAt,
+			},
+		}
+		svc := service.New(repo)
+		ids, err := svc.ProcessDueSuspensions(context.Background())
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(ids) != 1 || ids[0] != "org-due" {
+			t.Fatalf("expected [org-due], got %v", ids)
+		}
+		if repo.org.Status != "SUSPENDED" {
+			t.Errorf("status = %s, want SUSPENDED", repo.org.Status)
 		}
 	})
 }

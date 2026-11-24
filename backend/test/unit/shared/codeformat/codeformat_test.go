@@ -59,3 +59,27 @@ func TestFormat(t *testing.T) {
 		})
 	}
 }
+
+func TestIsValidFormat(t *testing.T) {
+	tests := []struct {
+		pattern string
+		valid   bool
+	}{
+		{"BR-{0000}", true},
+		{"DEPT-{NNN}", true},
+		{"{00}", true},
+		{"", true},
+		{"   ", true},
+		{"XYZ", false},
+		{"BRANCH", false},
+		{"BR-0000", false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.pattern, func(t *testing.T) {
+			if got := codeformat.IsValidFormat(tc.pattern); got != tc.valid {
+				t.Errorf("IsValidFormat(%q) = %v, want %v", tc.pattern, got, tc.valid)
+			}
+		})
+	}
+}

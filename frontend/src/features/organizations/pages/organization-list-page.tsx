@@ -14,6 +14,7 @@ import { Pagination } from "@/components/common/pagination"
 import { SearchBox } from "@/components/common/search-box"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { Button } from "@/components/ui/button"
+import { OrganizationSuspendDialog } from "@/features/organizations/components/organization-suspend-dialog"
 import {
   getStatusDialogContent,
   isHighImpactOrganizationStatus,
@@ -62,7 +63,11 @@ export function OrganizationListPage() {
   ]
 
   const addButton = canCreate ? (
-    <Button type="button" onClick={() => void navigate("/organizations/new")}>
+    <Button
+      type="button"
+      className="w-full sm:w-auto"
+      onClick={() => void navigate("/organizations/new")}
+    >
       <PlusIcon className="size-4" />
       {t("add")}
     </Button>
@@ -112,7 +117,7 @@ export function OrganizationListPage() {
   }
 
   return (
-    <MotionStack className="flex h-full min-h-0 flex-col gap-8">
+    <MotionStack className="flex flex-col gap-8 md:h-full md:min-h-0">
       <PageHeader title={t("title")} description={t("subtitle")} actions={addButton} />
       <ListCard
         toolbar={
@@ -121,13 +126,14 @@ export function OrganizationListPage() {
               value={params.search}
               onValueChange={params.setSearch}
               placeholder={t("search_placeholder")}
-              className="w-80 max-w-full shrink-0"
+              className="w-full sm:w-80 sm:max-w-full sm:shrink-0"
             />
             <FilterSelect
               items={statusItems}
               value={params.status ?? "all"}
               label={t("all_status")}
               onValueChange={params.setStatus}
+              className="w-full sm:w-44"
             />
           </FilterBar>
         }
@@ -152,6 +158,45 @@ export function OrganizationListPage() {
                 t
               )
             : null
+
+        if (statusTarget?.status === "SUSPENDED") {
+          return (
+            <OrganizationSuspendDialog
+              open={statusTarget !== null}
+              organization={statusTarget.organization}
+              isPending={statusMutation.isPending}
+              onOpenChange={(open) => {
+                if (!open) setStatusTarget(null)
+              }}
+              onConfirm={(payload) => {
+                if (!statusTarget) return
+                statusMutation.mutate(
+                  {
+                    id: statusTarget.organization.id,
+                    input: {
+                      status: "SUSPENDED",
+                      confirmation: true,
+                      immediate: payload.immediate,
+                      notifyFrom: payload.notifyFrom,
+                      notifyTo: payload.notifyTo,
+                      suspendAt: payload.suspendAt,
+                      reason: payload.reason,
+                    },
+                  },
+                  {
+                    onSuccess: () => {
+                      setStatusTarget(null)
+                      void organizationsQuery.refetch()
+                    },
+                    onError: () => {
+                      setStatusTarget(null)
+                    },
+                  }
+                )
+              }}
+            />
+          )
+        }
 
         return (
           <ConfirmDialog
@@ -184,7 +229,13 @@ export function OrganizationListPage() {
                   },
                 },
                 {
-                  onSuccess: () => setStatusTarget(null),
+                  onSuccess: () => {
+                    setStatusTarget(null)
+                    void organizationsQuery.refetch()
+                  },
+                  onError: () => {
+                    setStatusTarget(null)
+                  },
                 }
               )
             }}
@@ -214,6 +265,9 @@ export function OrganizationListPage() {
             onSuccess: () => {
               setDeleteTarget(null)
               toast.success(t("delete.success"))
+            },
+            onError: () => {
+              setDeleteTarget(null)
             },
           })
         }}

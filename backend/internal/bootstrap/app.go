@@ -57,6 +57,10 @@ import (
 	wsrolerepo "hrgo/backend/internal/modules/workspace/role/repository"
 	wsroleroutes "hrgo/backend/internal/modules/workspace/role/routes"
 	wsrolesvc "hrgo/backend/internal/modules/workspace/role/service"
+	wsuserhandler "hrgo/backend/internal/modules/workspace/user/handler"
+	wsuserrepo "hrgo/backend/internal/modules/workspace/user/repository"
+	wsuserroutes "hrgo/backend/internal/modules/workspace/user/routes"
+	wsusersvc "hrgo/backend/internal/modules/workspace/user/service"
 	apperrors "hrgo/backend/internal/shared/errors"
 	"hrgo/backend/internal/shared/responses"
 	"hrgo/backend/internal/shared/security"
@@ -87,6 +91,40 @@ func NewEngine(deps Dependencies) *gin.Engine {
 			var status string
 			err := deps.DB.WithContext(ctx).Table("organizations").Select("status").Where("id = ? AND deleted_at IS NULL", orgID).Scan(&status).Error
 			return status, err
+		})
+		secMiddleware.SetWorkspaceSessionChecker(func(ctx context.Context, claims *security.Claims) (bool, error) {
+			if claims == nil || claims.OrganizationID == "" {
+				return false, nil
+			}
+
+			var org struct {
+				SessionsRevokedAt *time.Time
+			}
+			if err := deps.DB.WithContext(ctx).Table("organizations").
+				Select("sessions_revoked_at").
+				Where("id = ? AND deleted_at IS NULL", claims.OrganizationID).
+				Scan(&org).Error; err != nil {
+				return false, err
+			}
+
+			if org.SessionsRevokedAt != nil && claims.IssuedAt != nil {
+				if claims.IssuedAt.Time.Before(*org.SessionsRevokedAt) {
+					return false, nil
+				}
+			}
+
+			if claims.SessionID == "" {
+				return false, nil
+			}
+
+			var count int64
+			err := deps.DB.WithContext(ctx).Table("workspace_sessions").
+				Where("id = ? AND revoked_at IS NULL AND expires_at > ?", claims.SessionID, time.Now().UTC()).
+				Count(&count).Error
+			if err != nil {
+				return false, err
+			}
+			return count > 0, nil
 		})
 	}
 
@@ -122,6 +160,11 @@ func NewEngine(deps Dependencies) *gin.Engine {
 	// API v1 Routing
 	v1 := engine.Group("/api/v1")
 	if deps.DB != nil {
+		// Public. Registered on the engine so it is outside every auth middleware group.
+		patchVersionRepo := patchversionrepo.New(deps.DB)
+		patchVersionService := patchversionsvc.New(patchVersionRepo)
+		patchversionroutes.Register(engine, patchversionhandler.New(patchVersionService))
+
 		// Control modules
 		ctrlAuthRepo := ctrlauthrepo.New(deps.DB)
 		ctrlAuthService := ctrlauthsvc.New(ctrlAuthRepo, tokenManager)
@@ -138,10 +181,6 @@ func NewEngine(deps Dependencies) *gin.Engine {
 		userRepo := userrepo.New(deps.DB)
 		userService := usersvc.New(userRepo)
 		userroutes.Register(v1, userhandler.New(userService), secMiddleware)
-
-		patchVersionRepo := patchversionrepo.New(deps.DB)
-		patchVersionService := patchversionsvc.New(patchVersionRepo)
-		patchversionroutes.Register(v1, patchversionhandler.New(patchVersionService))
 
 		// Workspace modules
 		wsAuthRepo := wsauthrepo.New(deps.DB)
@@ -167,6 +206,10 @@ func NewEngine(deps Dependencies) *gin.Engine {
 		wsOrgRepo := wsorgrepo.New(deps.DB)
 		wsOrgService := wsorgsvc.New(wsOrgRepo)
 		wsorgroutes.Register(v1, wsorghandler.New(wsOrgService), secMiddleware)
+
+		wsUserRepo := wsuserrepo.New(deps.DB)
+		wsUserService := wsusersvc.New(wsUserRepo)
+		wsuserroutes.Register(v1, wsuserhandler.New(wsUserService), secMiddleware)
 	}
 
 	engine.GET("/ping", func(c *gin.Context) {

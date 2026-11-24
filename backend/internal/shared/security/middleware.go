@@ -17,10 +17,14 @@ const (
 // OrgStatusChecker checks the live status of an organization.
 type OrgStatusChecker func(ctx context.Context, orgID string) (string, error)
 
+// WorkspaceSessionChecker checks if a workspace session is valid and not revoked.
+type WorkspaceSessionChecker func(ctx context.Context, claims *Claims) (bool, error)
+
 // Middleware provides authentication and authorization guards.
 type Middleware struct {
-	tokens           *TokenManager
-	orgStatusChecker OrgStatusChecker
+	tokens                  *TokenManager
+	orgStatusChecker        OrgStatusChecker
+	workspaceSessionChecker WorkspaceSessionChecker
 }
 
 // NewMiddleware creates security middleware.
@@ -31,6 +35,11 @@ func NewMiddleware(tokens *TokenManager) *Middleware {
 // SetOrgStatusChecker sets the callback for validating organization status.
 func (m *Middleware) SetOrgStatusChecker(checker OrgStatusChecker) {
 	m.orgStatusChecker = checker
+}
+
+// SetWorkspaceSessionChecker sets the callback for validating workspace session revocation.
+func (m *Middleware) SetWorkspaceSessionChecker(checker WorkspaceSessionChecker) {
+	m.workspaceSessionChecker = checker
 }
 
 // RequirePlatform enforces that the request has a valid PLATFORM JWT.
@@ -66,6 +75,15 @@ func (m *Middleware) RequireWorkspace() gin.HandlerFunc {
 			}
 		}
 
+		if m.workspaceSessionChecker != nil {
+			valid, err := m.workspaceSessionChecker(c.Request.Context(), claims)
+			if err != nil || !valid {
+				responses.Fail(c, apperrors.Unauthorized("Your session has been revoked or expired. Please sign in again."))
+				c.Abort()
+				return
+			}
+		}
+
 		c.Set(KeyClaims, claims)
 		c.Next()
 	}
@@ -73,6 +91,11 @@ func (m *Middleware) RequireWorkspace() gin.HandlerFunc {
 
 // RequirePermission checks if the authenticated principal possesses the required permission.
 func (m *Middleware) RequirePermission(requiredPerm string) gin.HandlerFunc {
+	return m.RequireAnyPermission(requiredPerm)
+}
+
+// RequireAnyPermission checks if the authenticated principal possesses at least one of the required permissions.
+func (m *Middleware) RequireAnyPermission(perms ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		val, exists := c.Get(KeyClaims)
 		if !exists {
@@ -83,14 +106,23 @@ func (m *Middleware) RequirePermission(requiredPerm string) gin.HandlerFunc {
 		claims := val.(*Claims)
 
 		has := false
-		for _, p := range claims.Permissions {
-			if p == requiredPerm || p == "platform.all" || p == "org.all" {
+		for _, claimPerm := range claims.Permissions {
+			if claimPerm == "platform.all" || claimPerm == "org.all" {
 				has = true
+				break
+			}
+			for _, required := range perms {
+				if claimPerm == required {
+					has = true
+					break
+				}
+			}
+			if has {
 				break
 			}
 		}
 		if !has {
-			responses.Fail(c, apperrors.Forbidden("Permission denied: "+requiredPerm))
+			responses.Fail(c, apperrors.Forbidden("Permission denied"))
 			c.Abort()
 			return
 		}

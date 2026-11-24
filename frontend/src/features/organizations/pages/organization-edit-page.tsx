@@ -5,11 +5,17 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router"
 import { z } from "zod"
 
-import { applyApiFieldErrors } from "@/app/api/feedback"
+import { applyApiFieldErrors, notifyApiError } from "@/app/api/feedback"
+import {
+  COUNTRY_OPTIONS,
+  isValidCountryCode,
+  normalizeCountryCode,
+} from "@/constants/countries"
 import { FormActions } from "@/components/common/form-actions"
 import { FormFieldGrid } from "@/components/common/form-field-grid"
 import { FormSkeleton } from "@/components/common/form-skeleton"
 import { FormPhoneInput } from "@/components/common/form/form-phone-input"
+import { FormSelectInput } from "@/components/common/form/form-select-input"
 import { FormTextInput } from "@/components/common/form/form-text-input"
 import { FormTextareaInput } from "@/components/common/form/form-textarea-input"
 import { FormSection, formStackClassName } from "@/components/common/form-section"
@@ -21,8 +27,6 @@ import {
   useUpdateOrganizationMutation,
 } from "@/shared/queries/organization.query"
 import { requiredE164Phone } from "@/util/phone"
-
-const CODE_PATTERN = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/
 
 export function OrganizationEditPage() {
   const { t } = useTranslation("organizations")
@@ -36,17 +40,22 @@ export function OrganizationEditPage() {
   const schema = useMemo(
     () =>
       z.object({
-        organizationCode: z
+        organizationCode: z.string().trim().optional(),
+        legalName: z
           .string()
           .trim()
-          .min(1, t("form.errors.code"))
-          .regex(CODE_PATTERN, t("form.errors.code")),
-        legalName: z.string().trim().min(1, t("form.errors.legal_name")),
-        displayName: z.string().trim().min(1, t("form.errors.display_name")),
+          .min(1, t("form.errors.legal_name"))
+          .max(255, t("form.errors.legal_name_max", "Legal name must not exceed 255 characters.")),
+        displayName: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.display_name"))
+          .max(255, t("form.errors.display_name_max", "Display name must not exceed 255 characters.")),
         contactEmail: z
           .string()
           .trim()
           .min(1, t("form.errors.email_required", "Email is required."))
+          .max(255, t("form.errors.email_max", "Email must not exceed 255 characters."))
           .email(t("form.errors.email")),
         contactPhone: requiredE164Phone(
           t("form.errors.phone_required"),
@@ -55,11 +64,17 @@ export function OrganizationEditPage() {
         country: z
           .string()
           .trim()
-          .min(1, t("form.errors.country_required", "Country is required.")),
+          .min(1, t("form.errors.country_required", "Country is required."))
+          .max(10, t("form.errors.country_max", "Country must not exceed 10 characters."))
+          .refine(
+            isValidCountryCode,
+            t("form.errors.country_invalid", "Please select a valid country.")
+          ),
         address: z
           .string()
           .trim()
-          .min(1, t("form.errors.address_required", "Address is required.")),
+          .min(1, t("form.errors.address_required", "Address is required."))
+          .max(2000, t("form.errors.address_max", "Address must not exceed 2000 characters.")),
       }),
     [t]
   )
@@ -85,7 +100,7 @@ export function OrganizationEditPage() {
         displayName: organization.displayName,
         contactEmail: organization.contactEmail ?? "",
         contactPhone: organization.contactPhone ?? "",
-        country: organization.country ?? "",
+        country: normalizeCountryCode(organization.country),
         address: organization.address ?? "",
       })
     }
@@ -114,7 +129,6 @@ export function OrganizationEditPage() {
             await updateMutation.mutateAsync({
               id,
               input: {
-                organizationCode: values.organizationCode.trim(),
                 legalName: values.legalName.trim(),
                 displayName: values.displayName.trim(),
                 contactEmail: values.contactEmail.trim(),
@@ -125,10 +139,21 @@ export function OrganizationEditPage() {
             })
             void navigate(detailPath)
           } catch (error) {
-            applyApiFieldErrors(error, setError)
+            const applied = applyApiFieldErrors(error, setError)
+            if (!applied) {
+              notifyApiError(error)
+            }
           }
         })}
       >
+        {formState.errors.root?.message ? (
+          <div
+            role="alert"
+            className="rounded-input border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive"
+          >
+            {formState.errors.root.message}
+          </div>
+        ) : null}
         <FormSection
           legend={t("sections.identity")}
           description={t("sections.identity_description")}
@@ -140,9 +165,10 @@ export function OrganizationEditPage() {
               <FormTextInput
                 control={control}
                 name="organizationCode"
-                required
+                disabled
                 label={t("form.code")}
                 placeholder={t("form.code_placeholder")}
+                description={t("form.code_readonly_hint")}
               />
               <FormTextInput
                 control={control}
@@ -181,11 +207,12 @@ export function OrganizationEditPage() {
                 required
                 label={t("form.phone")}
               />
-              <FormTextInput
+              <FormSelectInput
                 control={control}
                 name="country"
                 required
                 label={t("form.country")}
+                options={COUNTRY_OPTIONS}
               />
               <FormTextareaInput
                 control={control}
@@ -202,12 +229,14 @@ export function OrganizationEditPage() {
             type="button"
             variant="outline"
             disabled={updateMutation.isPending}
+            className="w-full sm:w-auto"
             onClick={() => void navigate(detailPath)}
           >
             {t("form.cancel")}
           </Button>
           <Button
             type="submit"
+            className="w-full sm:w-auto"
             disabled={isLoading || !formState.isDirty}
             loading={updateMutation.isPending}
           >

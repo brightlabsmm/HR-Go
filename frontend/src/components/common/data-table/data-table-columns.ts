@@ -10,6 +10,7 @@ export interface DataTableColumnMeta {
   align?: "start" | "end"
   headerClassName?: string
   cellClassName?: string
+  hideBelow?: "sm" | "md" | "lg"
 }
 
 const features = tableFeatures({

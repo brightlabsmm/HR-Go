@@ -40,12 +40,22 @@ export function listRoles(params?: RoleListParams) {
   ).then((body) => (Array.isArray(body) ? body : []))
 }
 
+function permissionsPath() {
+  return isPlatformPortal() ? controlPath("/permissions") : workspacePath("/permissions")
+}
+
+function rolePermissionsPath(roleId: string) {
+  return isPlatformPortal()
+    ? controlPath(`/roles/${roleId}/permissions`)
+    : workspacePath(`/roles/${roleId}/permissions`)
+}
+
 export function listPermissions(params?: PermissionListParams | "PLATFORM" | "ORG") {
   const query =
     typeof params === "string" ? { scope: params } : params
 
   return unwrapPage<Permission>(
-    apiClient.get(controlPath("/permissions"), {
+    apiClient.get(permissionsPath(), {
       params: toListQuery(query),
     })
   )
@@ -53,7 +63,7 @@ export function listPermissions(params?: PermissionListParams | "PLATFORM" | "OR
 
 export function updateRolePermissions(roleId: string, permissionIds: string[]) {
   return unwrap<Role>(
-    apiClient.put(controlPath(`/roles/${roleId}/permissions`), {
+    apiClient.put(rolePermissionsPath(roleId), {
       permissionIds,
     })
   )

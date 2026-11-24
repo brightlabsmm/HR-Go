@@ -24,6 +24,12 @@
     "description": "将停用 {{name}}。其他分支仍可继续使用。",
     "confirm": "停用"
   },
+  "delete": {
+    "title": "删除 {{name}}？",
+    "description": "将停用 {{name}}。其他分支仍可继续使用。",
+    "confirm": "删除",
+    "success": "已删除该分支。"
+  },
   "form": {
     "title": "添加分支",
     "subtitle": "填写以下信息以创建新分支。",

@@ -40,7 +40,10 @@ export function FilterSelect({
     >
       <SelectTrigger
         aria-label={label}
-        className={cn("h-11 w-44 shrink-0 bg-surface data-[size=default]:h-11", className)}
+        className={cn(
+          "h-11 w-full shrink-0 bg-surface data-[size=default]:h-11 sm:w-44",
+          className
+        )}
       >
         <SelectValue />
       </SelectTrigger>

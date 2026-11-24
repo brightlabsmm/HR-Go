@@ -29,3 +29,24 @@ export function generateTemporaryPassword(length = DEFAULT_LENGTH) {
 
   return chars.join("")
 }
+
+export const COMMON_WEAK_PASSWORDS = new Set([
+  "12345678",
+  "123456789",
+  "1234567890",
+  "password",
+  "password1",
+  "password123",
+  "admin123",
+  "admin1234",
+  "administrator",
+  "qwerty123",
+  "welcome1",
+  "welcome123",
+  "letmein1",
+])
+
+export function isCommonPassword(password: string): boolean {
+  return COMMON_WEAK_PASSWORDS.has(password.trim().toLowerCase())
+}
+

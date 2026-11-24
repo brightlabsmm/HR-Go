@@ -9,6 +9,12 @@ import { portalAuthPath } from "@/app/api/paths"
 import { ApiError, isApiFailure } from "@/app/api/types"
 import { useAuthStore } from "@/shared/stores/auth.store"
 
+declare module "axios" {
+  interface AxiosRequestConfig {
+    skipAuth?: boolean
+  }
+}
+
 const LOGIN_PATH = portalAuthPath("/login")
 
 export const apiClient = axios.create({
@@ -61,7 +67,7 @@ function toApiError(error: AxiosError) {
 
 apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const accessToken = useAuthStore.getState().accessToken
-  if (accessToken) {
+  if (accessToken && !config.skipAuth) {
     config.headers.Authorization = `Bearer ${accessToken}`
   }
 
@@ -73,7 +79,11 @@ apiClient.interceptors.response.use(
   (error: AxiosError) => {
     const apiError = toApiError(error)
 
-    if (apiError.status === 401 && !isLoginRequest(error.config?.url)) {
+    if (
+      apiError.status === 401 &&
+      !isLoginRequest(error.config?.url) &&
+      !error.config?.skipAuth
+    ) {
       useAuthStore.getState().clearAuth()
     }
 

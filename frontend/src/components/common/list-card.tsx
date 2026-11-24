@@ -17,10 +17,10 @@ export function ListCard({ toolbar, footer, className, children }: ListCardProps
   return (
     <motion.div
       variants={staggerItem}
-      className={cn("flex min-h-0 flex-1 flex-col gap-2", className)}
+      className={cn("flex flex-col gap-2 md:min-h-0 md:flex-1", className)}
     >
       {toolbar ? <div className="shrink-0">{toolbar}</div> : null}
-      <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+      <div className="flex min-h-[50dvh] flex-col md:min-h-0 md:flex-1 md:overflow-auto">
         {children}
       </div>
       {footer ? <div className="shrink-0">{footer}</div> : null}

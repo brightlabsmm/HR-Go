@@ -71,7 +71,11 @@ export function BranchTable({
       cell: ({ row }) => (
         <DataTableActions
           onEdit={() => onEdit(row.original)}
-          onDelete={() => onDelete(row.original)}
+          onDelete={
+            row.original.status === "ACTIVE"
+              ? () => onDelete(row.original)
+              : undefined
+          }
         />
       ),
     }),

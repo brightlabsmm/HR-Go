@@ -15,6 +15,7 @@ interface FormTextareaInputProps<TFieldValues extends FieldValues>
   extends FormFieldControlProps<TFieldValues> {
   placeholder?: string
   rows?: number
+  maxLength?: number
 }
 
 export function FormTextareaInput<TFieldValues extends FieldValues>({
@@ -27,6 +28,7 @@ export function FormTextareaInput<TFieldValues extends FieldValues>({
   className,
   placeholder = label,
   rows = 4,
+  maxLength,
 }: FormTextareaInputProps<TFieldValues>) {
   const inputId = useId()
 
@@ -48,6 +50,7 @@ export function FormTextareaInput<TFieldValues extends FieldValues>({
             id={inputId}
             rows={rows}
             placeholder={placeholder}
+            maxLength={maxLength}
             disabled={disabled}
             aria-invalid={fieldState.invalid}
             {...field}

@@ -15,6 +15,8 @@ type Repository interface {
 	ListRoles(ctx context.Context, orgID string, q request.ListRolesQuery) ([]models.OrgRole, error)
 	AccountBelongsToOrg(ctx context.Context, orgID, accountID string) (bool, error)
 	ReplaceAccountRoles(ctx context.Context, orgID, accountID string, assignments []request.RoleAssignmentInput) error
+	ListPermissions(ctx context.Context, q request.ListPermissionsQuery) ([]models.Permission, int64, error)
+	ReplaceRolePermissions(ctx context.Context, orgID string, roleID string, permissionIDs []string) (*models.OrgRole, error)
 }
 
 type repository struct {
@@ -76,4 +78,65 @@ func (r *repository) ReplaceAccountRoles(ctx context.Context, orgID, accountID s
 		}
 		return nil
 	})
+}
+
+func (r *repository) ListPermissions(ctx context.Context, q request.ListPermissionsQuery) ([]models.Permission, int64, error) {
+	db := r.db.WithContext(ctx).Model(&models.Permission{}).Where("scope = ?", "ORG")
+	if q.Grouping != "" {
+		db = db.Where("grouping = ?", q.Grouping)
+	}
+	if q.Search != "" {
+		like := "%" + q.Search + "%"
+		db = db.Where("code ILIKE ? OR description ILIKE ?", like, like)
+	}
+	var total int64
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	page := q.Page
+	if page < 1 {
+		page = 1
+	}
+	pageSize := q.PageSize
+	if pageSize <= 0 || pageSize > 100 {
+		pageSize = 50
+	}
+	offset := (page - 1) * pageSize
+	var perms []models.Permission
+	err := db.Order("grouping ASC, resource ASC, action ASC").
+		Limit(pageSize).
+		Offset(offset).
+		Find(&perms).Error
+	return perms, total, err
+}
+
+func (r *repository) ReplaceRolePermissions(ctx context.Context, orgID string, roleID string, permissionIDs []string) (*models.OrgRole, error) {
+	var role models.OrgRole
+	if err := r.db.WithContext(ctx).Where("id = ? AND (organization_id IS NULL OR organization_id = ?)", roleID, orgID).First(&role).Error; err != nil {
+		return nil, err
+	}
+
+	var permissions []models.Permission
+	if len(permissionIDs) > 0 {
+		if err := r.db.WithContext(ctx).Where("id IN ? AND scope = ?", permissionIDs, "ORG").Find(&permissions).Error; err != nil {
+			return nil, err
+		}
+	}
+
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return tx.Model(&role).Association("Permissions").Replace(permissions)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := r.db.WithContext(ctx).
+		Preload("Permissions", func(db *gorm.DB) *gorm.DB {
+			return db.Order("grouping ASC, resource ASC, action ASC")
+		}).
+		First(&role, "id = ?", roleID).Error; err != nil {
+		return nil, err
+	}
+
+	return &role, nil
 }

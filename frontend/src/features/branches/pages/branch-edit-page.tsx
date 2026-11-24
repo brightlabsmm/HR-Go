@@ -1,10 +1,13 @@
+import { useMemo } from "react"
 import { useNavigate, useParams } from "react-router"
 import { useTranslation } from "react-i18next"
 
+import { NotFoundState } from "@/components/common/not-found-state"
 import {
   BranchForm,
   type BranchFormValues,
 } from "@/features/branches/components/branch-form"
+import { getDescendantBranchIds } from "@/features/branches/util/branch-hierarchy"
 import {
   useBranchQuery,
   useBranchesQuery,
@@ -24,15 +27,28 @@ export function BranchEditPage() {
   const branchesQuery = useBranchesQuery({ limit: 100 })
   const updateMutation = useUpdateBranchMutation()
   const branch = branchQuery.data
-  const parentOptions = (branchesQuery.data?.items ?? [])
-    .filter((item) => item.id !== id)
+  const allBranches = branchesQuery.data?.items ?? []
+
+  const descendantIds = useMemo(
+    () => getDescendantBranchIds(id, allBranches),
+    [id, allBranches]
+  )
+
+  const parentOptions = allBranches
+    .filter((item) => item.id !== id && !descendantIds.has(item.id))
     .map((item) => ({
       value: item.id,
       label: `${item.branchCode} — ${item.branchName}`,
     }))
 
   if (!branch && branchQuery.isFetched) {
-    return <p className="text-small-1 text-muted-foreground">{t("not_found")}</p>
+    return (
+      <NotFoundState
+        backTo="/branches"
+        backLabel={t("title")}
+        description={t("not_found", "Branch not found.")}
+      />
+    )
   }
 
   if (!branch) {
@@ -44,11 +60,11 @@ export function BranchEditPage() {
       id,
       input: {
         branchName: values.branchName.trim(),
-        parentId: values.parentId === "none" ? null : values.parentId,
+        parentId: values.parentId === "none" ? "" : values.parentId,
         address: optionalText(values.address),
       },
     })
-    void navigate("/")
+    void navigate("/branches")
   }
 
   return (
@@ -66,7 +82,7 @@ export function BranchEditPage() {
           address: branch.address ?? "",
         }}
         onCancel={() => {
-          void navigate("/")
+          void navigate("/branches")
         }}
         onSubmit={handleSubmit}
       />

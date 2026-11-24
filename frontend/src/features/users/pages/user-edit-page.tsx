@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router"
 import { z } from "zod"
 
+import { isPlatformPortal } from "@/app/portal"
 import { applyApiFieldErrors } from "@/app/api/feedback"
 import { ConfirmDialog } from "@/components/common/confirm-dialog"
 import { ForbiddenState } from "@/components/common/forbidden-state"
@@ -85,7 +86,12 @@ export function UserEditPage() {
     )
   }
 
-  if (!isPermissionsPending && !can("platform.user.update")) {
+  const isPlatform = isPlatformPortal()
+  const canUpdateUser = isPlatform
+    ? can("platform.user.update")
+    : can("org.user.update") || can("org.role.assign")
+
+  if (!isPermissionsPending && !canUpdateUser) {
     return <ForbiddenState backTo="/users" backLabel={t("title")} />
   }
 

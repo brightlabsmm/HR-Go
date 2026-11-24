@@ -5,11 +5,17 @@ import { useTranslation } from "react-i18next"
 import { z } from "zod"
 
 import { applyApiFieldErrors } from "@/app/api/feedback"
+import {
+  COUNTRY_OPTIONS,
+  isValidCountryCode,
+  normalizeCountryCode,
+} from "@/constants/countries"
 import { FormActions } from "@/components/common/form-actions"
 import { FormFieldGrid } from "@/components/common/form-field-grid"
 import { FormSkeleton } from "@/components/common/form-skeleton"
 import { FormSection, formStackClassName } from "@/components/common/form-section"
 import { FormPhoneInput } from "@/components/common/form/form-phone-input"
+import { FormSelectInput } from "@/components/common/form/form-select-input"
 import { FormTextInput } from "@/components/common/form/form-text-input"
 import { FormTextareaInput } from "@/components/common/form/form-textarea-input"
 import { MotionStack } from "@/components/common/motion-stack"
@@ -21,14 +27,19 @@ import {
   useUpdateWorkspaceOrganizationMutation,
   useWorkspaceOrganizationQuery,
 } from "@/shared/queries/workspace-organization.query"
+import { usePermissions } from "@/shared/hooks/use-permissions"
+import { useToastStore } from "@/shared/stores/toast.store"
 import { getInitials } from "@/util/initials"
 import { requiredE164Phone } from "@/util/phone"
 
 export function OrganizationSettingsPage() {
   const { t } = useTranslation("organization_settings")
   const { t: tCommon } = useTranslation("common")
+  const { can } = usePermissions()
+  const canUpdate = can("org.settings.update")
   const orgQuery = useWorkspaceOrganizationQuery()
   const updateMutation = useUpdateWorkspaceOrganizationMutation()
+  const showToast = useToastStore((state) => state.show)
   const organization = orgQuery.data
   const isLoading = orgQuery.isPending
 
@@ -38,11 +49,13 @@ export function OrganizationSettingsPage() {
         displayName: z
           .string()
           .trim()
-          .min(1, t("errors.display_name_required")),
+          .min(1, t("errors.display_name_required"))
+          .max(255, t("errors.display_name_max", "Display name must not exceed 255 characters.")),
         contactEmail: z
           .string()
           .trim()
           .min(1, t("errors.email_required"))
+          .max(255, t("errors.email_max", "Email must not exceed 255 characters."))
           .email(t("errors.email_invalid")),
         contactPhone: requiredE164Phone(
           t("errors.phone_required"),
@@ -51,13 +64,33 @@ export function OrganizationSettingsPage() {
         country: z
           .string()
           .trim()
-          .min(1, t("errors.country_required")),
+          .min(1, t("errors.country_required"))
+          .max(10, t("errors.country_max", "Country must not exceed 10 characters."))
+          .refine(
+            isValidCountryCode,
+            t("errors.country_invalid", "Please select a valid country.")
+          ),
         address: z
           .string()
           .trim()
-          .min(1, t("errors.address_required")),
-        branchCodeFormat: z.string().trim().optional(),
-        departmentCodeFormat: z.string().trim().optional(),
+          .min(1, t("errors.address_required"))
+          .max(2000, t("errors.address_max", "Address must not exceed 2000 characters.")),
+        branchCodeFormat: z
+          .string()
+          .trim()
+          .optional()
+          .refine(
+            (val) => !val || /\{([0N#]+)\}/.test(val),
+            t("errors.code_format_invalid", "Format must contain a sequence placeholder like {0000}.")
+          ),
+        departmentCodeFormat: z
+          .string()
+          .trim()
+          .optional()
+          .refine(
+            (val) => !val || /\{([0N#]+)\}/.test(val),
+            t("errors.code_format_invalid", "Format must contain a sequence placeholder like {0000}.")
+          ),
       }),
     [t]
   )
@@ -83,7 +116,7 @@ export function OrganizationSettingsPage() {
         displayName: organization.displayName ?? "",
         contactEmail: organization.contactEmail ?? "",
         contactPhone: organization.contactPhone ?? "",
-        country: organization.country ?? "",
+        country: normalizeCountryCode(organization.country),
         address: organization.address ?? "",
         branchCodeFormat: organization.branchCodeFormat ?? "BR-{0000}",
         departmentCodeFormat: organization.departmentCodeFormat ?? "DEPT-{0000}",
@@ -110,6 +143,7 @@ export function OrganizationSettingsPage() {
         />
         <div className="flex min-w-0 flex-col gap-8">
           <form
+            noValidate
             className={formStackClassName}
             onSubmit={handleSubmit(async (values) => {
               try {
@@ -121,6 +155,10 @@ export function OrganizationSettingsPage() {
                   address: values.address.trim(),
                   branchCodeFormat: values.branchCodeFormat?.trim(),
                   departmentCodeFormat: values.departmentCodeFormat?.trim(),
+                })
+                showToast({
+                  title: t("save_success", "Organization settings updated successfully."),
+                  variant: "success",
                 })
               } catch (error) {
                 applyApiFieldErrors(error, setError)
@@ -161,6 +199,7 @@ export function OrganizationSettingsPage() {
                     control={control}
                     name="displayName"
                     required
+                    maxLength={255}
                     label={t("fields.display_name")}
                     className="md:col-span-2"
                   />
@@ -181,6 +220,7 @@ export function OrganizationSettingsPage() {
                     name="contactEmail"
                     type="email"
                     required
+                    maxLength={255}
                     label={t("fields.email")}
                   />
                   <FormPhoneInput
@@ -189,16 +229,18 @@ export function OrganizationSettingsPage() {
                     required
                     label={t("fields.phone")}
                   />
-                  <FormTextInput
+                  <FormSelectInput
                     control={control}
                     name="country"
                     required
                     label={t("fields.country")}
+                    options={COUNTRY_OPTIONS}
                   />
                   <FormTextareaInput
                     control={control}
                     name="address"
                     required
+                    maxLength={2000}
                     label={t("fields.address")}
                     className="md:col-span-2"
                   />
@@ -217,12 +259,14 @@ export function OrganizationSettingsPage() {
                   <FormTextInput
                     control={control}
                     name="branchCodeFormat"
+                    maxLength={50}
                     label={t("fields.branch_code_format")}
                     placeholder={t("fields.branch_code_format_placeholder")}
                   />
                   <FormTextInput
                     control={control}
                     name="departmentCodeFormat"
+                    maxLength={50}
                     label={t("fields.department_code_format")}
                     placeholder={t("fields.department_code_format_placeholder")}
                   />
@@ -230,16 +274,18 @@ export function OrganizationSettingsPage() {
               )}
             </FormSection>
 
-            <FormActions>
-              <Button
-                type="submit"
-                disabled={isLoading || updateMutation.isPending || !formState.isDirty}
-              >
-                {updateMutation.isPending
-                  ? tCommon("actions.submit")
-                  : t("save")}
-              </Button>
-            </FormActions>
+            {canUpdate ? (
+              <FormActions>
+                <Button
+                  type="submit"
+                  disabled={isLoading || updateMutation.isPending || !formState.isDirty}
+                >
+                  {updateMutation.isPending
+                    ? tCommon("actions.submit")
+                    : t("save")}
+                </Button>
+              </FormActions>
+            ) : null}
           </form>
         </div>
       </div>

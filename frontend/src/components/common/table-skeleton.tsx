@@ -24,7 +24,7 @@ export function TableSkeleton({
       role="status"
       aria-busy="true"
     >
-      <div className="flex h-11 items-center gap-6 border-b border-border px-1">
+      <div className="flex h-12 items-center gap-6 border-b border-border px-1 md:h-11">
         {columnKeys.map((column) => (
           <Skeleton
             key={column}
@@ -38,7 +38,7 @@ export function TableSkeleton({
       {rowKeys.map((row) => (
         <div
           key={row}
-          className="flex h-16 items-center gap-6 border-b px-4 last:border-b-0"
+          className="flex h-20 items-center gap-6 border-b px-4 last:border-b-0 md:h-16"
           style={{ opacity: 1 - row * 0.1 }}
         >
           {columnKeys.map((column) => (

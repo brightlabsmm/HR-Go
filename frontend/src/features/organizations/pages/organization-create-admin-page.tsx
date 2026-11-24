@@ -15,12 +15,14 @@ import { FormTextInput } from "@/components/common/form/form-text-input"
 import { NotFoundState } from "@/components/common/not-found-state"
 import { StayAfterCreateCheckbox } from "@/components/common/stay-after-create-checkbox"
 import { Button } from "@/components/ui/button"
+import { PASSWORD_PATTERN } from "@/constants/timezones"
 import { useStayAfterCreate } from "@/shared/hooks/use-stay-after-create"
 import {
   useCreateOrganizationAdminAccountMutation,
   useOrganizationQuery,
 } from "@/shared/queries/organization.query"
 import { useToastStore } from "@/shared/stores/toast.store"
+import { isCommonPassword } from "@/util/password"
 
 export function OrganizationCreateAdminPage() {
   const { t } = useTranslation("organizations")
@@ -55,7 +57,11 @@ export function OrganizationCreateAdminPage() {
           .min(1, t("create_admin.errors.employee_code_required")),
         password: z
           .string()
-          .min(8, t("create_admin.errors.password_required")),
+          .min(8, t("create_admin.errors.password_required"))
+          .regex(PASSWORD_PATTERN, t("create_admin.errors.password_complexity"))
+          .refine((val) => !isCommonPassword(val), {
+            message: t("create_admin.errors.password_common"),
+          }),
       }),
     [t]
   )
@@ -116,7 +122,7 @@ export function OrganizationCreateAdminPage() {
   }
 
   return (
-    <form className={formStackClassName} onSubmit={handleSubmit(onSubmit)}>
+    <form className={formStackClassName} onSubmit={handleSubmit(onSubmit)} autoComplete="off">
       <FormPageHeader
         title={t("create_admin.title")}
         subtitle={t("create_admin.subtitle")}
@@ -130,6 +136,7 @@ export function OrganizationCreateAdminPage() {
             label={t("create_admin.first_name")}
             required
             disabled={createMutation.isPending}
+            autoComplete="off"
           />
           <FormTextInput
             control={control}
@@ -137,6 +144,7 @@ export function OrganizationCreateAdminPage() {
             label={t("create_admin.last_name")}
             required
             disabled={createMutation.isPending}
+            autoComplete="off"
           />
           <FormTextInput
             control={control}
@@ -146,18 +154,21 @@ export function OrganizationCreateAdminPage() {
             description={t("create_admin.employee_code_hint")}
             required
             disabled={createMutation.isPending}
+            autoComplete="off"
           />
           <FormTextInput
             control={control}
             name="email"
             label={t("create_admin.email")}
             disabled={createMutation.isPending}
+            autoComplete="off"
           />
           <FormPasswordInput
             control={control}
             name="password"
             label={t("create_admin.password")}
             required
+            autoComplete="new-password"
             className="md:col-span-2"
             disabled={createMutation.isPending}
           />
@@ -176,12 +187,17 @@ export function OrganizationCreateAdminPage() {
         <Button
           type="button"
           variant="outline"
+          className="w-full sm:w-auto"
           disabled={createMutation.isPending}
           onClick={() => void navigate(`/organizations/${id}`)}
         >
           {tCommon("actions.cancel")}
         </Button>
-        <Button type="submit" loading={createMutation.isPending}>
+        <Button
+          type="submit"
+          className="w-full sm:w-auto"
+          loading={createMutation.isPending}
+        >
           {t("create_admin.submit")}
         </Button>
       </FormActions>

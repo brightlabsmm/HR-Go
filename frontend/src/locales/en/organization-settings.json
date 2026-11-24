@@ -24,12 +24,17 @@
   },
   "errors": {
     "display_name_required": "Display name is required.",
+    "display_name_max": "Display name must not exceed 255 characters.",
     "email_required": "Contact email is required.",
+    "email_max": "Email must not exceed 255 characters.",
     "email_invalid": "Please enter a valid email address.",
     "phone_required": "Contact phone is required.",
     "phone_invalid": "Enter a valid phone number.",
     "country_required": "Country is required.",
-    "address_required": "Address is required."
+    "country_max": "Country must not exceed 10 characters.",
+    "address_required": "Address is required.",
+    "address_max": "Address must not exceed 2000 characters.",
+    "code_format_invalid": "Format must contain a sequence placeholder like {0000}."
   },
   "save": "Save changes",
   "save_success": "Organization settings updated successfully."

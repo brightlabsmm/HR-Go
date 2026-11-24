@@ -21,13 +21,18 @@ export function FilterBar({
   const { t } = useTranslation("common")
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-3 p-0.5", className)}>
+    <div
+      className={cn(
+        "flex flex-col gap-2 p-0.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3",
+        className
+      )}
+    >
       {children}
       {onReset ? (
         <Button
           type="button"
           variant="ghost"
-          className="shrink-0 text-primary"
+          className="w-full shrink-0 justify-start text-primary sm:w-auto"
           disabled={!hasFilters}
           onClick={onReset}
         >

@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import {
+  changePassword,
   getCurrentUser,
   login,
   logout,
   type AuthSession,
+  type ChangePasswordInput,
   type LoginInput,
 } from "@/shared/services/auth.service"
 import { useAuthStore } from "@/shared/stores/auth.store"
@@ -17,6 +19,7 @@ export const authKeys = {
 function applySession(session: AuthSession) {
   useAuthStore.getState().setSession({
     accessToken: session.accessToken,
+    mustChangePassword: Boolean(session.user.mustChangePassword),
   })
 }
 
@@ -25,8 +28,16 @@ export function useCurrentUserQuery() {
 
   return useQuery({
     queryKey: authKeys.me(),
-    queryFn: getCurrentUser,
+    queryFn: async () => {
+      const user = await getCurrentUser()
+      if (user.mustChangePassword !== undefined) {
+        useAuthStore.getState().setMustChangePassword(user.mustChangePassword)
+      }
+      return user
+    },
     enabled: Boolean(accessToken),
+    refetchInterval: (query) =>
+      query.state.data?.organizationId ? 30_000 : false,
   })
 }
 
@@ -52,6 +63,19 @@ export function useLogoutMutation() {
     onSettled: () => {
       useAuthStore.getState().clearAuth()
       queryClient.clear()
+    },
+  })
+}
+
+export function useChangePasswordMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: ChangePasswordInput) => changePassword(input),
+    meta: { skipErrorToast: true },
+    onSuccess: () => {
+      useAuthStore.getState().setMustChangePassword(false)
+      void queryClient.invalidateQueries({ queryKey: authKeys.me() })
     },
   })
 }

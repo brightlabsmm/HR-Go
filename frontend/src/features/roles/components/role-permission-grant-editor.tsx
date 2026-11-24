@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
+import { isPlatformPortal } from "@/app/portal"
 import { SearchBox } from "@/components/common/search-box"
 import { FilterSelect, type FilterSelectItem } from "@/components/common/filter-select"
 import { ToneBadge } from "@/components/common/tone-badge"
@@ -68,6 +69,7 @@ export function RolePermissionGrantEditor({
   const { t } = useTranslation("roles")
   const { groupingLabel, permissionLabel } = usePermissionLabels()
   const updateMutation = useUpdateRolePermissionsMutation()
+  const isPlatform = isPlatformPortal()
 
   // Track selected permission IDs in local draft state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => {
@@ -75,7 +77,9 @@ export function RolePermissionGrantEditor({
   })
   const [search, setSearch] = useState<string>("")
   const [activeGroupFilter, setActiveGroupFilter] = useState<string>("all")
-  const [scopeTab, setScopeTab] = useState<"ALL" | "PLATFORM" | "ORG">("ALL")
+  const [scopeTab, setScopeTab] = useState<"ALL" | "PLATFORM" | "ORG">(
+    isPlatform ? "ALL" : "ORG"
+  )
 
   // Hide first: All groups collapsed by default in (Grant permissions)
   // Keys formatted as `${scope}:${grouping}`
@@ -348,7 +352,95 @@ export function RolePermissionGrantEditor({
     }
 
     return (
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface shadow-xs">
+      <>
+      <div className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs md:hidden">
+        {groups.map((group) => {
+          const groupKey = `${scope}:${group.grouping}`
+          const isExpanded =
+            Boolean(search.trim()) ||
+            (effectiveGroupFilter !== "all" && group.grouping === effectiveGroupFilter) ||
+            expandedGroups.has(groupKey)
+          const groupCheckedCount = group.permissions.filter((p) =>
+            selectedIds.has(p.id)
+          ).length
+          const isAllGroupChecked =
+            groupCheckedCount === group.permissions.length &&
+            group.permissions.length > 0
+          const isGroupIndeterminate =
+            groupCheckedCount > 0 && groupCheckedCount < group.permissions.length
+
+          return (
+            <div key={groupKey} className="border-b border-border last:border-b-0">
+              <div className="flex items-start gap-3 p-3">
+                <button
+                  type="button"
+                  className="flex min-w-0 flex-1 items-start gap-2 text-left"
+                  onClick={() => toggleGroupExpanded(scope, group.grouping)}
+                >
+                  {isExpanded ? (
+                    <ChevronDownIcon className="mt-0.5 size-4 shrink-0 text-primary" />
+                  ) : (
+                    <ChevronRightIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                  )}
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="inline-flex w-fit rounded-md bg-accent px-2 py-0.5 text-small-2 font-semibold text-secondary">
+                      {groupingLabel(group.grouping)}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {groupCheckedCount} / {group.permissions.length} granted
+                    </span>
+                  </span>
+                </button>
+                <input
+                  type="checkbox"
+                  checked={isAllGroupChecked}
+                  ref={(el) => {
+                    if (el) {
+                      el.indeterminate = isGroupIndeterminate
+                    }
+                  }}
+                  onChange={() => toggleGroupPermissions(group)}
+                  className="mt-1 size-4 shrink-0 cursor-pointer rounded border-border accent-primary"
+                  aria-label={`Toggle all ${groupingLabel(group.grouping)} permissions`}
+                />
+              </div>
+              {isExpanded
+                ? group.permissions.map((permission) => {
+                    const isChecked = selectedIds.has(permission.id)
+
+                    return (
+                      <label
+                        key={`grant-mobile-${permission.id || permission.code}`}
+                        className={`flex items-start gap-3 border-t border-hair px-3 py-3 ${
+                          isChecked ? "bg-primary/5" : "bg-muted/10"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => togglePermission(permission.id)}
+                          className="mt-0.5 size-4 shrink-0 cursor-pointer rounded border-border accent-primary"
+                          aria-label={`Grant ${permission.code}`}
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-small-2 font-medium break-words text-foreground">
+                            {permissionLabel(permission)}
+                          </span>
+                          {permission.description ? (
+                            <span className="mt-0.5 block text-[11px] break-words text-muted-foreground">
+                              {permission.description}
+                            </span>
+                          ) : null}
+                        </span>
+                      </label>
+                    )
+                  })
+                : null}
+            </div>
+          )
+        })}
+      </div>
+      <div className="hidden overflow-x-auto rounded-lg border border-border bg-surface shadow-xs md:block">
         <table className="w-full min-w-[34rem] border-collapse text-small-1">
           <thead>
             <tr className="bg-muted/30">
@@ -503,21 +595,22 @@ export function RolePermissionGrantEditor({
           </tbody>
         </table>
       </div>
+      </>
     )
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6">
       {/* Role Header Card */}
       <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-5 shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
+          <div className="flex min-w-0 items-center gap-3">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <ShieldCheckIcon className="size-4.5" />
             </span>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <h2 className="text-body-1 font-semibold text-foreground">
+            <div className="flex min-w-0 flex-col">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
+                <h2 className="text-body-1 font-semibold break-words text-foreground">
                   {role.roleName}
                 </h2>
                 <span className="font-mono text-small-2 text-muted-foreground">
@@ -542,14 +635,14 @@ export function RolePermissionGrantEditor({
 
       {/* Access Section (Direct Permission List) */}
       <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="flex items-center gap-2">
             <KeyRoundIcon className="size-4 text-muted-foreground" />
             <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               {t("sections.access", { defaultValue: "Access" })}
             </h3>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="text-small-2 text-muted-foreground">
               {t("active_count", {
                 count: role.permissions.length,
@@ -579,7 +672,46 @@ export function RolePermissionGrantEditor({
         </div>
 
         {isAccessExpanded && (
-          <div className="overflow-x-auto rounded-lg border border-border bg-surface shadow-xs">
+          <>
+          <div className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs md:hidden">
+            {currentAccessPermissions.length === 0 ? (
+              <p className="p-4 text-center text-small-2 text-muted-foreground">
+                {t("permissions.none", {
+                  defaultValue: "This role has no permissions.",
+                })}
+              </p>
+            ) : (
+              currentAccessPermissions.map((permission) => {
+                const grouping = resolvePermissionGrouping(permission)
+                const scope = resolvePermissionScope(permission)
+
+                return (
+                  <div
+                    key={`access-mobile-${permission.id || permission.code}`}
+                    className="flex flex-col gap-1.5 border-b border-hair p-3 last:border-b-0"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center rounded-md bg-accent px-2.5 py-0.5 text-small-2 font-medium text-secondary">
+                        {groupingLabel(grouping)}
+                      </span>
+                      <ToneBadge tone={scope === "PLATFORM" ? "brand" : "neutral"}>
+                        {scope}
+                      </ToneBadge>
+                    </div>
+                    <p className="text-small-1 font-medium break-words text-foreground">
+                      {permissionLabel(permission)}
+                    </p>
+                    {permission.description ? (
+                      <p className="text-small-2 break-words text-muted-foreground">
+                        {permission.description}
+                      </p>
+                    ) : null}
+                  </div>
+                )
+              })
+            )}
+          </div>
+          <div className="hidden overflow-x-auto rounded-lg border border-border bg-surface shadow-xs md:block">
             <table className="w-full min-w-[32rem] border-collapse text-small-1">
               <thead>
                 <tr className="bg-muted/40">
@@ -655,15 +787,16 @@ export function RolePermissionGrantEditor({
               </tbody>
             </table>
           </div>
+          </>
         )}
       </section>
 
       {/* Visual Separator: More Space between Access & Grant Permissions */}
-      <div className="my-8 border-t border-border" />
+      <div className="my-4 border-t border-border md:my-8" />
 
       {/* Grant Permissions Section */}
       <section className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <CheckIcon className="size-4 text-primary" />
             <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -672,7 +805,7 @@ export function RolePermissionGrantEditor({
               })}
             </h3>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="text-small-2 font-medium text-foreground">
               {t("selected_permissions_counter", {
                 selected: selectedIds.size,
@@ -692,7 +825,7 @@ export function RolePermissionGrantEditor({
               loading={updateMutation.isPending}
               disabled={!isDirty || updateMutation.isPending}
               onClick={handleSave}
-              className="gap-1.5"
+              className="w-full gap-1.5 sm:w-auto"
             >
               <SaveIcon className="size-3.5" />
               {t("save", { defaultValue: "Save" })}
@@ -702,53 +835,53 @@ export function RolePermissionGrantEditor({
 
         {/* Filter Bar with Scope Switcher, Grouping Dropdown & Right-aligned Search/Actions */}
         <div className="rounded-lg border border-border bg-surface p-2 shadow-xs">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            {/* Left Tools: Scope Tabs + Grouping Dropdown */}
-            <div className="flex items-center gap-2">
-              {/* Scope Tabs */}
-              <div className="flex items-center gap-0.5 rounded-md border border-border bg-muted/20 p-0.5">
-                <button
-                  type="button"
-                  onClick={() => setScopeTab("ALL")}
-                  className={`cursor-pointer rounded px-2 py-0.5 text-xs font-medium transition-all ${
-                    scopeTab === "ALL"
-                      ? "bg-surface text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t("scopes.all", { defaultValue: "All" })} ({allPermissions.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setScopeTab("PLATFORM")}
-                  className={`flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-all ${
-                    scopeTab === "PLATFORM"
-                      ? "bg-surface text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <LayersIcon className="size-3 text-primary" />
-                  <span>{t("scopes.platform", { defaultValue: "Platform" })}</span>
-                  <span className="text-[10px] text-muted-foreground font-normal">
-                    ({platformSelectedCount}/{totalPlatformCount})
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setScopeTab("ORG")}
-                  className={`flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-xs font-medium transition-all ${
-                    scopeTab === "ORG"
-                      ? "bg-surface text-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Building2Icon className="size-3 text-muted-foreground" />
-                  <span>{t("scopes.org", { defaultValue: "Organization" })}</span>
-                  <span className="text-[10px] text-muted-foreground font-normal">
-                    ({orgSelectedCount}/{totalOrgCount})
-                  </span>
-                </button>
-              </div>
+          <div className="flex flex-col gap-2 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+              {isPlatform ? (
+                <div className="flex w-full items-center gap-0.5 overflow-x-auto rounded-md border border-border bg-muted/20 p-0.5 sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setScopeTab("ALL")}
+                    className={`shrink-0 cursor-pointer whitespace-nowrap rounded px-2 py-0.5 text-xs font-medium transition-all ${
+                      scopeTab === "ALL"
+                        ? "bg-surface text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {t("scopes.all", { defaultValue: "All" })} ({allPermissions.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScopeTab("PLATFORM")}
+                    className={`flex shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap rounded px-2 py-0.5 text-xs font-medium transition-all ${
+                      scopeTab === "PLATFORM"
+                        ? "bg-surface text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <LayersIcon className="size-3 text-primary" />
+                    <span>{t("scopes.platform", { defaultValue: "Platform" })}</span>
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      ({platformSelectedCount}/{totalPlatformCount})
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setScopeTab("ORG")}
+                    className={`flex shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap rounded px-2 py-0.5 text-xs font-medium transition-all ${
+                      scopeTab === "ORG"
+                        ? "bg-surface text-foreground shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Building2Icon className="size-3 text-muted-foreground" />
+                    <span>{t("scopes.org", { defaultValue: "Organization" })}</span>
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      ({orgSelectedCount}/{totalOrgCount})
+                    </span>
+                  </button>
+                </div>
+              ) : null}
 
               {/* Grouping Filter Dropdown */}
               <FilterSelect
@@ -756,27 +889,27 @@ export function RolePermissionGrantEditor({
                 value={effectiveGroupFilter}
                 label={t("columns.grouping", { defaultValue: "Grouping" })}
                 onValueChange={setActiveGroupFilter}
-                className="!h-7 w-32 sm:w-36 text-xs data-[size=default]:!h-7 [&>button]:!h-7 [&>button]:text-xs [&>button]:px-2"
+                className="!h-9 w-full text-xs data-[size=default]:!h-9 sm:!h-7 sm:w-36 sm:data-[size=default]:!h-7 [&>button]:!h-9 [&>button]:px-2 [&>button]:text-xs sm:[&>button]:!h-7"
               />
             </div>
 
-            {/* Right Tools: Search + Expand/Select Actions */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center">
               <SearchBox
                 value={search}
                 onValueChange={setSearch}
                 placeholder={t("search_placeholder", {
                   defaultValue: "Search permissions...",
                 })}
-                className="!h-7 w-32 sm:w-40 text-xs [&>div]:!pl-2 [&>div]:!pr-1.5 [&_svg]:!size-3 [&_input]:!text-xs [&_input]:!h-7"
+                className="h-9 w-full text-xs sm:!h-7 sm:w-40 [&>div]:!pl-2 [&>div]:!pr-1.5 [&_input]:!h-9 [&_input]:!text-xs sm:[&_input]:!h-7 [&_svg]:!size-3"
               />
 
+              <div className="flex flex-wrap gap-1.5">
               <Button
                 type="button"
                 variant="outline"
                 size="xs"
                 onClick={isAllExpanded ? handleCollapseAll : handleExpandAll}
-                className="!h-7 gap-1 px-2 text-xs"
+                className="h-9 flex-1 gap-1 px-2 text-xs sm:!h-7 sm:flex-none"
               >
                 {isAllExpanded ? (
                   <>
@@ -795,7 +928,7 @@ export function RolePermissionGrantEditor({
                 variant="outline"
                 size="xs"
                 onClick={handleSelectAllFiltered}
-                className="!h-7 px-2 text-xs"
+                className="h-9 flex-1 px-2 text-xs sm:!h-7 sm:flex-none"
               >
                 {t("select_all", { defaultValue: "Select all" })}
               </Button>
@@ -804,18 +937,19 @@ export function RolePermissionGrantEditor({
                 variant="outline"
                 size="xs"
                 onClick={handleDeselectAllFiltered}
-                className="!h-7 px-2 text-xs"
+                className="h-9 flex-1 px-2 text-xs sm:!h-7 sm:flex-none"
               >
                 {t("deselect_all", { defaultValue: "Deselect all" })}
               </Button>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Section 1: Platform Permissions */}
-        {(scopeTab === "ALL" || scopeTab === "PLATFORM") && (
+        {isPlatform && (scopeTab === "ALL" || scopeTab === "PLATFORM") && (
           <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between border-b border-border pb-1.5">
+            <div className="flex flex-col gap-1 border-b border-border pb-1.5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
                 <LayersIcon className="size-4 text-primary" />
                 <h4 className="text-small-1 font-semibold text-foreground">
@@ -836,7 +970,7 @@ export function RolePermissionGrantEditor({
         {/* Section 2: Organization Permissions */}
         {(scopeTab === "ALL" || scopeTab === "ORG") && (
           <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between border-b border-border pb-1.5 pt-2">
+            <div className="flex flex-col gap-1 border-b border-border pb-1.5 pt-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
                 <Building2Icon className="size-4 text-muted-foreground" />
                 <h4 className="text-small-1 font-semibold text-foreground">
@@ -855,13 +989,14 @@ export function RolePermissionGrantEditor({
         )}
 
         {/* Bottom Save Bar */}
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface p-3.5 shadow-xs">
+        <div className="flex flex-col-reverse gap-3 rounded-xl border border-border bg-surface p-3.5 shadow-xs sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="flex items-center gap-2">
             {isDirty ? (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
+                className="w-full sm:w-auto"
                 onClick={handleReset}
                 disabled={updateMutation.isPending}
               >
@@ -883,7 +1018,7 @@ export function RolePermissionGrantEditor({
             loading={updateMutation.isPending}
             disabled={!isDirty || updateMutation.isPending}
             onClick={handleSave}
-            className="gap-2"
+            className="w-full gap-2 sm:w-auto"
           >
             <SaveIcon className="size-4" />
             {t("save", { defaultValue: "Save permissions" })}

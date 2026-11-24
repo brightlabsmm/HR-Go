@@ -38,6 +38,18 @@ function alignClass(align: "start" | "end" | undefined) {
   return align === "end" ? "text-right" : undefined
 }
 
+function hideBelowClass(hideBelow: "sm" | "md" | "lg" | undefined) {
+  if (hideBelow === "sm") {
+    return "hidden sm:table-cell"
+  }
+  if (hideBelow === "md") {
+    return "hidden md:table-cell"
+  }
+  if (hideBelow === "lg") {
+    return "hidden lg:table-cell"
+  }
+}
+
 function readStoredVisibility(tableId: string) {
   try {
     const raw = localStorage.getItem(`${VISIBILITY_STORAGE_PREFIX}${tableId}`)
@@ -108,14 +120,14 @@ export function DataTable<TData extends RowData>({
   return (
     <table.AppTable>
       {enableColumnVisibility ? (
-        <div className="mb-2 flex justify-end">
+        <div className="mb-2 hidden justify-end md:flex">
           <DataTableColumnToggle />
         </div>
       ) : null}
       <Table className={className} aria-label={label}>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <DataTableRow key={headerGroup.id} className="h-11 hover:bg-transparent">
+            <DataTableRow key={headerGroup.id} className="h-12 hover:bg-transparent md:h-11">
               {headerGroup.headers.map((header) => {
                 const meta = header.column.columnDef.meta
 
@@ -123,7 +135,11 @@ export function DataTable<TData extends RowData>({
                   <TableHead
                     key={header.id}
                     scope="col"
-                    className={cn(alignClass(meta?.align), meta?.headerClassName)}
+                    className={cn(
+                      alignClass(meta?.align),
+                      hideBelowClass(meta?.hideBelow),
+                      meta?.headerClassName
+                    )}
                   >
                     {header.isPlaceholder ? null : (
                       <DataTableColumnHeader
@@ -153,7 +169,11 @@ export function DataTable<TData extends RowData>({
                   return (
                     <TableCell
                       key={cell.id}
-                      className={cn(alignClass(meta?.align), meta?.cellClassName)}
+                      className={cn(
+                        alignClass(meta?.align),
+                        hideBelowClass(meta?.hideBelow),
+                        meta?.cellClassName
+                      )}
                     >
                       <table.FlexRender cell={cell} />
                     </TableCell>
