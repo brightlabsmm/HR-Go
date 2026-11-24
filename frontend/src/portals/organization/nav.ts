@@ -73,6 +73,7 @@ export const ORGANIZATION_NAV: PortalNavItem[] = [
     groupKey: "nav_groups.organization",
     icon: Building2Icon,
     matchPrefix: "/settings",
+    permissions: ["org.settings.read", "org.settings.update"],
   },
   {
     to: "/account",
