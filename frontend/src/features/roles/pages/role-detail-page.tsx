@@ -26,7 +26,7 @@ export function RoleDetailPage() {
   }
 
   return (
-    <MotionStack className="flex flex-col gap-8 pb-8">
+    <MotionStack className="flex min-w-0 flex-col gap-8 pb-8">
       <PageHeader
         backTo="/roles"
         backLabel={t("title")}

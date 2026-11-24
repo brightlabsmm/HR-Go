@@ -15,10 +15,11 @@ const AVATAR_SIZE = {
     skeleton: "size-[72px] rounded-[18px]",
   },
   xl: {
-    frame: "size-48 rounded-[22px] after:rounded-[22px]",
-    image: "rounded-[22px]",
-    fallback: "rounded-[22px] text-title-2",
-    skeleton: "size-48 rounded-[22px]",
+    frame:
+      "size-28 rounded-[18px] after:rounded-[18px] sm:size-48 sm:rounded-[22px] sm:after:rounded-[22px]",
+    image: "rounded-[18px] sm:rounded-[22px]",
+    fallback: "rounded-[18px] text-subtitle-1 sm:rounded-[22px] sm:text-title-2",
+    skeleton: "size-28 rounded-[18px] sm:size-48 sm:rounded-[22px]",
   },
 } as const
 

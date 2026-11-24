@@ -187,12 +187,17 @@ export function OrganizationCreateAdminPage() {
         <Button
           type="button"
           variant="outline"
+          className="w-full sm:w-auto"
           disabled={createMutation.isPending}
           onClick={() => void navigate(`/organizations/${id}`)}
         >
           {tCommon("actions.cancel")}
         </Button>
-        <Button type="submit" loading={createMutation.isPending}>
+        <Button
+          type="submit"
+          className="w-full sm:w-auto"
+          loading={createMutation.isPending}
+        >
           {t("create_admin.submit")}
         </Button>
       </FormActions>

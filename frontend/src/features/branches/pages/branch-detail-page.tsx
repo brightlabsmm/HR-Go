@@ -17,6 +17,7 @@ import {
   useBranchQuery,
   useDeactivateBranchMutation,
 } from "@/shared/queries/branch.query"
+import { toast } from "@/shared/stores/toast.store"
 import { formatDateTime } from "@/util/format-date"
 import { getInitials } from "@/util/initials"
 
@@ -31,7 +32,7 @@ export function BranchDetailPage() {
   const canUpdate = can("org.branch.update")
   const canDeactivate = can("org.branch.deactivate")
   const deactivateMutation = useDeactivateBranchMutation()
-  const [showDeactivateDialog, setShowDeactivateDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const parentBranchQuery = useBranchQuery(branch?.parentId ?? "")
   const parentName =
@@ -75,10 +76,10 @@ export function BranchDetailPage() {
       {canDeactivate && branch && branch.status === "ACTIVE" ? (
         <DetailActionButton
           tone="destructive"
-          onClick={() => setShowDeactivateDialog(true)}
+          onClick={() => setShowDeleteDialog(true)}
         >
           <Trash2Icon />
-          {tCommon("actions.deactivate", "Deactivate")}
+          {tCommon("actions.delete")}
         </DetailActionButton>
       ) : null}
     </>
@@ -116,25 +117,25 @@ export function BranchDetailPage() {
         </div>
       </div>
       <ConfirmDialog
-        open={showDeactivateDialog}
-        title={t("deactivate.title", "Deactivate branch?")}
-        description={t(
-          "deactivate.description",
-          "This will deactivate {{name}}. You can keep using other branches.",
-          { name }
-        )}
-        confirmLabel={t("deactivate.confirm", "Deactivate")}
+        open={showDeleteDialog}
+        title={t("delete.title", { name })}
+        description={t("delete.description", { name })}
+        confirmLabel={t("delete.confirm")}
         confirmVariant="destructive"
         isPending={deactivateMutation.isPending}
         onOpenChange={(open) => {
-          if (!open) setShowDeactivateDialog(false)
+          if (!open) setShowDeleteDialog(false)
         }}
         onConfirm={() => {
           if (!branch) return
           deactivateMutation.mutate(branch.id, {
             onSuccess: () => {
-              setShowDeactivateDialog(false)
+              setShowDeleteDialog(false)
+              toast.success(t("delete.success"))
               void navigate("/branches")
+            },
+            onError: () => {
+              setShowDeleteDialog(false)
             },
           })
         }}

@@ -16,6 +16,12 @@
     "description": "จะปิดใช้งาน {{name}}",
     "confirm": "ปิดใช้งาน"
   },
+  "delete": {
+    "title": "ลบ {{name}}?",
+    "description": "จะปิดใช้งาน {{name}}",
+    "confirm": "ลบ",
+    "success": "ลบแผนกเรียบร้อยแล้ว"
+  },
   "form": {
     "create_title": "เพิ่มแผนก",
     "edit_title": "แก้ไขแผนก",

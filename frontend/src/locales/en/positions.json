@@ -16,6 +16,12 @@
     "description": "This will deactivate {{name}}.",
     "confirm": "Deactivate"
   },
+  "delete": {
+    "title": "Delete {{name}}?",
+    "description": "This will deactivate {{name}}.",
+    "confirm": "Delete",
+    "success": "Position deleted successfully."
+  },
   "form": {
     "create_title": "Add position",
     "edit_title": "Edit position",

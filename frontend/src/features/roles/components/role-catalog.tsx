@@ -54,7 +54,7 @@ export function RoleCatalog({
                 </ToneBadge>
               </span>
               <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-small-1 font-semibold text-secondary">
+                <span className="text-small-1 font-semibold break-words text-secondary">
                   {role.roleName}
                 </span>
                 <span className="text-small-2 text-muted-foreground">{role.roleCode}</span>

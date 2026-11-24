@@ -16,6 +16,12 @@
     "description": "将停用 {{name}}。",
     "confirm": "停用"
   },
+  "delete": {
+    "title": "删除 {{name}}？",
+    "description": "将停用 {{name}}。",
+    "confirm": "删除",
+    "success": "已删除该部门。"
+  },
   "form": {
     "create_title": "添加部门",
     "edit_title": "编辑部门",
