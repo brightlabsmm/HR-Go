@@ -31,6 +31,7 @@ import {
 import { toast } from "@/shared/stores/toast.store"
 import { formatDate, formatDateTime } from "@/util/format-date"
 import { getInitials } from "@/util/initials"
+import { isDeletableOrganization } from "@/features/organizations/util/organization-rules"
 
 import type { OrganizationStatus } from "@/shared/services/organization.service"
 
@@ -122,7 +123,7 @@ export function OrganizationDetailPage() {
                 {t("suspend_dialog.cancel_schedule_button", "Cancel Schedule")}
               </DetailActionButton>
             ) : null}
-            {canDelete && organization ? (
+            {isDeletableOrganization(organization, canDelete) ? (
               <DetailActionButton
                 tone="destructive"
                 onClick={() => setShowDeleteDialog(true)}

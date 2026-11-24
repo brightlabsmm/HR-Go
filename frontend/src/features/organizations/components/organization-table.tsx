@@ -17,6 +17,7 @@ import {
 import { getCountryLabel } from "@/constants/countries"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import { formatDate, formatDateTime } from "@/util/format-date"
+import { isDeletableOrganization } from "@/features/organizations/util/organization-rules"
 
 import type {
   Organization,
@@ -130,7 +131,9 @@ export function OrganizationTable({
               ) : undefined
             }
             onDelete={
-              canDelete && onDelete ? () => onDelete(organization) : undefined
+              isDeletableOrganization(organization, canDelete) && onDelete
+                ? () => onDelete(organization)
+                : undefined
             }
           />
         )
