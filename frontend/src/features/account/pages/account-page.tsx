@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/common/page-header"
 import { ProfileSummaryCard } from "@/components/common/profile-summary-card"
 import { StatusBadge } from "@/components/common/status-badge"
 import { ToneBadge } from "@/components/common/tone-badge"
+import { AccountPasswordForm } from "@/features/account/components/account-password-form"
 import { useMotionVariants } from "@/shared/hooks/use-motion-variants"
 import { useCurrentUserQuery } from "@/shared/queries/auth.query"
 import { getInitials } from "@/util/initials"
@@ -61,16 +62,30 @@ export function AccountPage() {
             ) : null
           }
         />
-        <motion.section variants={staggerItem} className="min-w-0 border-t border-hair pt-2">
-          <h2 className="mt-4 mb-6 text-body-2 font-semibold text-foreground">
-            {t("sections.profile")}
-          </h2>
-          {isPending ? (
-            <FormSkeleton fields={4} columns={2} />
-          ) : (
-            <DetailList columns={2} items={profileItems} />
-          )}
-        </motion.section>
+        <div className="flex min-w-0 flex-col gap-8">
+          <motion.section variants={staggerItem} className="min-w-0 border-t border-hair pt-2">
+            <h2 className="mt-4 mb-6 text-body-2 font-semibold text-foreground">
+              {t("sections.profile")}
+            </h2>
+            {isPending ? (
+              <FormSkeleton fields={4} columns={2} />
+            ) : (
+              <DetailList columns={2} items={profileItems} />
+            )}
+          </motion.section>
+
+          {!isPlatform ? (
+            <motion.section variants={staggerItem} className="min-w-0 border-t border-hair pt-6">
+              <h2 className="mb-2 text-body-2 font-semibold text-foreground">
+                {t("sections.security", "Security")}
+              </h2>
+              <p className="mb-6 text-small-2 text-muted-foreground">
+                {t("sections.security_description", "Change your account password.")}
+              </p>
+              <AccountPasswordForm />
+            </motion.section>
+          ) : null}
+        </div>
       </div>
     </MotionStack>
   )

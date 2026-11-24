@@ -7,6 +7,23 @@
   "organization": "Organization",
   "roles": "Roles",
   "sections": {
-    "profile": "Profile"
+    "profile": "Profile",
+    "security": "Security",
+    "security_description": "Change your account password."
+  },
+  "change_password": {
+    "title": "Change password",
+    "current_password": "Current password",
+    "new_password": "New password",
+    "confirm_password": "Confirm new password",
+    "submit": "Update password",
+    "success": "Password changed successfully.",
+    "current_password_required": "Current password is required.",
+    "new_password_min": "Password must be at least 8 characters.",
+    "new_password_complexity": "Password must include 1 uppercase letter, 1 lowercase letter, and 1 digit.",
+    "password_common": "This password is too common or weak.",
+    "confirm_password_required": "Please confirm your new password.",
+    "passwords_must_match": "Passwords do not match.",
+    "password_must_differ": "New password must be different from current password."
   }
 }

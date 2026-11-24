@@ -194,6 +194,12 @@ func (s *service) ChangePassword(ctx context.Context, accountID string, req requ
 		})
 	}
 
+	if err := security.ValidatePasswordStrength(req.NewPassword); err != nil {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "newPassword", Message: err.Error()},
+		})
+	}
+
 	hash, err := security.HashPassword(req.NewPassword)
 	if err != nil {
 		return apperrors.Internal()
