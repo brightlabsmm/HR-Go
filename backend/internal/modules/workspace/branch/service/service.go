@@ -158,6 +158,14 @@ func (s *service) Deactivate(ctx context.Context, orgID, id string) (*response.B
 		return nil, apperrors.NotFound("Branch not found")
 	}
 
+	deptCount, err := s.repo.CountActiveDepartments(ctx, orgID, id)
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+	if deptCount > 0 {
+		return nil, apperrors.BadRequest("Cannot deactivate branch with active departments. Please deactivate or reassign departments first.")
+	}
+
 	branch.Status = "INACTIVE"
 	if err := s.repo.Update(ctx, branch); err != nil {
 		return nil, apperrors.Internal()
