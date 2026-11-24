@@ -60,7 +60,7 @@ export function BranchEditPage() {
       id,
       input: {
         branchName: values.branchName.trim(),
-        parentId: values.parentId === "none" ? null : values.parentId,
+        parentId: values.parentId === "none" ? "" : values.parentId,
         address: optionalText(values.address),
       },
     })
