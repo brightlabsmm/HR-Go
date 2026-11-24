@@ -29,6 +29,18 @@ func New(repo repository.Repository) Service {
 }
 
 func (s *service) Create(ctx context.Context, orgID string, req request.CreateDepartmentRequest) (*response.DepartmentResponse, *apperrors.Error) {
+	name := strings.TrimSpace(req.DepartmentName)
+	if name == "" {
+		return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "departmentName", Message: "Department name is required."},
+		})
+	}
+	if len(name) > 150 {
+		return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "departmentName", Message: "Department name cannot exceed 150 characters."},
+		})
+	}
+
 	var branchID *string
 	if req.BranchID != nil && strings.TrimSpace(*req.BranchID) != "" {
 		bid := strings.TrimSpace(*req.BranchID)
@@ -111,7 +123,18 @@ func (s *service) Update(ctx context.Context, orgID, id string, req request.Upda
 	}
 
 	if req.DepartmentName != nil {
-		dept.Name = *req.DepartmentName
+		name := strings.TrimSpace(*req.DepartmentName)
+		if name == "" {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "departmentName", Message: "Department name is required."},
+			})
+		}
+		if len(name) > 150 {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "departmentName", Message: "Department name cannot exceed 150 characters."},
+			})
+		}
+		dept.Name = name
 	}
 
 	if err := s.repo.Update(ctx, dept); err != nil {

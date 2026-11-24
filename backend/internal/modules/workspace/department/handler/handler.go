@@ -22,8 +22,14 @@ func (h *Handler) Create(c *gin.Context) {
 	claims := security.GetClaims(c)
 	var req request.CreateDepartmentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		if len(req.DepartmentName) > 150 {
+			responses.Fail(c, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "departmentName", Message: "Department name cannot exceed 150 characters."},
+			}))
+			return
+		}
 		responses.Fail(c, apperrors.ValidationFailed([]apperrors.FieldIssue{
-			{Field: "department", Message: "Missing required department fields."},
+			{Field: "departmentName", Message: "Department name is required."},
 		}))
 		return
 	}
@@ -66,6 +72,12 @@ func (h *Handler) Update(c *gin.Context) {
 	id := c.Param("departmentId")
 	var req request.UpdateDepartmentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		if req.DepartmentName != nil && len(*req.DepartmentName) > 150 {
+			responses.Fail(c, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "departmentName", Message: "Department name cannot exceed 150 characters."},
+			}))
+			return
+		}
 		responses.Fail(c, apperrors.BadRequest("Invalid update payload."))
 		return
 	}

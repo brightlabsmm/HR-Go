@@ -15,6 +15,9 @@ type Repository interface {
 	FindByID(ctx context.Context, id string) (*models.OrganizationAccount, error)
 	UpdateLastLogin(ctx context.Context, id string) error
 	UpdatePassword(ctx context.Context, id string, passwordHash string, mustChangePassword bool) error
+	CreateSession(ctx context.Context, session *models.WorkspaceSession) error
+	RevokeSession(ctx context.Context, sessionID string, reason string) error
+	FindSessionByID(ctx context.Context, sessionID string) (*models.WorkspaceSession, error)
 }
 
 type repository struct {
@@ -78,4 +81,31 @@ func (r *repository) UpdatePassword(ctx context.Context, id string, passwordHash
 			"must_change_password": mustChangePassword,
 			"updated_at":           time.Now().UTC(),
 		}).Error
+}
+
+func (r *repository) CreateSession(ctx context.Context, session *models.WorkspaceSession) error {
+	return r.db.WithContext(ctx).Create(session).Error
+}
+
+func (r *repository) RevokeSession(ctx context.Context, sessionID string, reason string) error {
+	now := time.Now().UTC()
+	return r.db.WithContext(ctx).
+		Model(&models.WorkspaceSession{}).
+		Where("id = ? AND revoked_at IS NULL", sessionID).
+		Updates(map[string]interface{}{
+			"revoked_at":     &now,
+			"revoked_reason": reason,
+		}).Error
+}
+
+func (r *repository) FindSessionByID(ctx context.Context, sessionID string) (*models.WorkspaceSession, error) {
+	var s models.WorkspaceSession
+	err := r.db.WithContext(ctx).Where("id = ?", sessionID).First(&s).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &s, nil
 }

@@ -40,7 +40,11 @@ export function DepartmentFormPage() {
   const schema = useMemo(
     () =>
       z.object({
-        departmentName: z.string().trim().min(1, t("form.errors.name")),
+        departmentName: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.name"))
+          .max(150, t("form.errors.name_max")),
         branchId: z.string(),
       }),
     [t]
@@ -113,6 +117,7 @@ export function DepartmentFormPage() {
                 control={control}
                 name="departmentName"
                 required
+                maxLength={150}
                 label={t("form.name")}
                 disabled={isPending}
               />

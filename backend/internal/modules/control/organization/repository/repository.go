@@ -28,6 +28,9 @@ type Repository interface {
 	ListAdminAccounts(ctx context.Context, orgID string, q request.ListAdminAccountsQuery) ([]models.AdminAccountDetail, error)
 	FindEmployeeByCode(ctx context.Context, orgID string, code string) (*models.EmployeeIdentity, error)
 	FindAccountByIdentifier(ctx context.Context, orgID string, identifier string) (*models.OrganizationAccount, error)
+	SuspendAndRevokeSessions(ctx context.Context, orgID string, reason string, now time.Time) error
+	SuspendDueOrganizations(ctx context.Context, now time.Time) ([]string, error)
+	ClearSuspendSchedule(ctx context.Context, orgID string) error
 }
 
 type repository struct {
@@ -103,12 +106,119 @@ func (r *repository) Update(ctx context.Context, org *models.Organization) error
 
 func (r *repository) SoftDelete(ctx context.Context, id string) error {
 	now := time.Now().UTC()
-	return r.db.WithContext(ctx).
-		Model(&models.Organization{}).
-		Where("id = ? AND deleted_at IS NULL", id).
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&models.Organization{}).
+			Where("id = ? AND deleted_at IS NULL", id).
+			Updates(map[string]any{
+				"deleted_at":          now,
+				"updated_at":          now,
+				"sessions_revoked_at": now,
+			}).Error; err != nil {
+			return err
+		}
+
+		return tx.Model(&models.WorkspaceSession{}).
+			Where("organization_id = ? AND revoked_at IS NULL", id).
+			Updates(map[string]any{
+				"revoked_at":     now,
+				"revoked_reason": "ORGANIZATION_DELETED",
+			}).Error
+	})
+}
+
+func (r *repository) SuspendAndRevokeSessions(ctx context.Context, orgID string, reason string, now time.Time) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		updates := map[string]any{
+			"status":              "SUSPENDED",
+			"suspended_at":        now,
+			"sessions_revoked_at": now,
+			"updated_at":          now,
+		}
+		if strings.TrimSpace(reason) != "" {
+			updates["suspend_reason"] = reason
+		}
+		if err := tx.Model(&models.Organization{}).
+			Where("id = ? AND deleted_at IS NULL", orgID).
+			Updates(updates).Error; err != nil {
+			return err
+		}
+
+		revReason := "ORGANIZATION_SUSPENDED"
+		if strings.TrimSpace(reason) != "" {
+			revReason = "ORGANIZATION_SUSPENDED: " + strings.TrimSpace(reason)
+		}
+		return tx.Model(&models.WorkspaceSession{}).
+			Where("organization_id = ? AND revoked_at IS NULL", orgID).
+			Updates(map[string]any{
+				"revoked_at":     now,
+				"revoked_reason": revReason,
+			}).Error
+	})
+}
+
+func (r *repository) SuspendDueOrganizations(ctx context.Context, now time.Time) ([]string, error) {
+	var suspendedIDs []string
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var orgs []models.Organization
+		if err := tx.Raw(`
+			SELECT id, suspend_reason
+			FROM organizations
+			WHERE status = 'ACTIVE'
+			  AND deleted_at IS NULL
+			  AND scheduled_suspend_at IS NOT NULL
+			  AND scheduled_suspend_at <= ?
+			FOR UPDATE SKIP LOCKED
+		`, now).Scan(&orgs).Error; err != nil {
+			return err
+		}
+
+		if len(orgs) == 0 {
+			return nil
+		}
+
+		for _, org := range orgs {
+			updates := map[string]any{
+				"status":              "SUSPENDED",
+				"suspended_at":        now,
+				"sessions_revoked_at": now,
+				"updated_at":          now,
+			}
+			if err := tx.Model(&models.Organization{}).
+				Where("id = ?", org.ID).
+				Updates(updates).Error; err != nil {
+				return err
+			}
+
+			reason := "ORGANIZATION_SUSPENDED_SCHEDULED"
+			if org.SuspendReason != nil && strings.TrimSpace(*org.SuspendReason) != "" {
+				reason = "ORGANIZATION_SUSPENDED_SCHEDULED: " + strings.TrimSpace(*org.SuspendReason)
+			}
+			if err := tx.Model(&models.WorkspaceSession{}).
+				Where("organization_id = ? AND revoked_at IS NULL", org.ID).
+				Updates(map[string]any{
+					"revoked_at":     now,
+					"revoked_reason": reason,
+				}).Error; err != nil {
+				return err
+			}
+
+			suspendedIDs = append(suspendedIDs, org.ID)
+		}
+		return nil
+	})
+	return suspendedIDs, err
+}
+
+func (r *repository) ClearSuspendSchedule(ctx context.Context, orgID string) error {
+	now := time.Now().UTC()
+	return r.db.WithContext(ctx).Model(&models.Organization{}).
+		Where("id = ? AND deleted_at IS NULL", orgID).
 		Updates(map[string]any{
-			"deleted_at": now,
-			"updated_at": now,
+			"suspend_notify_from":  gorm.Expr("NULL"),
+			"suspend_notify_to":    gorm.Expr("NULL"),
+			"scheduled_suspend_at": gorm.Expr("NULL"),
+			"suspend_reason":       gorm.Expr("NULL"),
+			"updated_at":           now,
 		}).Error
 }
 
