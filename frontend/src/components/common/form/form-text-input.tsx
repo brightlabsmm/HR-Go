@@ -17,6 +17,7 @@ interface FormTextInputProps<TFieldValues extends FieldValues>
   placeholder?: string
   autoComplete?: string
   autoFocus?: boolean
+  maxLength?: number
 }
 
 export function FormTextInput<TFieldValues extends FieldValues>({
@@ -31,6 +32,7 @@ export function FormTextInput<TFieldValues extends FieldValues>({
   placeholder = label,
   autoComplete,
   autoFocus = false,
+  maxLength,
 }: FormTextInputProps<TFieldValues>) {
   const inputId = useId()
 
@@ -54,6 +56,7 @@ export function FormTextInput<TFieldValues extends FieldValues>({
             placeholder={placeholder}
             autoComplete={autoComplete}
             autoFocus={autoFocus}
+            maxLength={maxLength}
             disabled={disabled}
             aria-invalid={fieldState.invalid}
             {...field}
