@@ -544,6 +544,19 @@ func (s *service) Delete(ctx context.Context, id string) *apperrors.Error {
 	if org == nil {
 		return apperrors.NotFound("Organization not found")
 	}
+
+	if strings.ToUpper(strings.TrimSpace(org.Status)) != "PENDING" {
+		return apperrors.BadRequest("Cannot delete an organization that has been activated. Only never-activated organizations can be deleted.")
+	}
+
+	admins, err := s.repo.ListAdminAccounts(ctx, id, request.ListAdminAccountsQuery{})
+	if err != nil {
+		return apperrors.Internal()
+	}
+	if len(admins) > 0 {
+		return apperrors.BadRequest("Cannot delete an organization with existing admin accounts.")
+	}
+
 	if err := s.repo.SoftDelete(ctx, id); err != nil {
 		return apperrors.Internal()
 	}

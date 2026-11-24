@@ -574,9 +574,9 @@ func TestUpdateOrganization(t *testing.T) {
 }
 
 func TestDeleteOrganization(t *testing.T) {
-	t.Run("soft deletes existing organization", func(t *testing.T) {
+	t.Run("soft deletes existing pending organization without admins", func(t *testing.T) {
 		repo := &mockOrgRepo{
-			org: &models.Organization{ID: "org-1", Code: "ORG-001", Status: "ACTIVE"},
+			org: &models.Organization{ID: "org-1", Code: "ORG-001", Status: "PENDING"},
 		}
 		svc := service.New(repo)
 
@@ -586,6 +586,43 @@ func TestDeleteOrganization(t *testing.T) {
 		}
 		if repo.deletedID != "org-1" {
 			t.Errorf("expected deletedID org-1, got %s", repo.deletedID)
+		}
+	})
+
+	t.Run("rejects deleting active organization (BUG-31)", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: &models.Organization{ID: "org-1", Code: "ORG-001", Status: "ACTIVE"},
+		}
+		svc := service.New(repo)
+
+		appErr := svc.Delete(context.Background(), "org-1")
+		if appErr == nil || appErr.Status != http.StatusBadRequest {
+			t.Fatalf("expected 400 BadRequest when deleting active org, got %+v", appErr)
+		}
+	})
+
+	t.Run("rejects deleting suspended organization (BUG-31)", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: &models.Organization{ID: "org-1", Code: "ORG-001", Status: "SUSPENDED"},
+		}
+		svc := service.New(repo)
+
+		appErr := svc.Delete(context.Background(), "org-1")
+		if appErr == nil || appErr.Status != http.StatusBadRequest {
+			t.Fatalf("expected 400 BadRequest when deleting suspended org, got %+v", appErr)
+		}
+	})
+
+	t.Run("rejects deleting pending organization if admin accounts exist (BUG-31)", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org:          &models.Organization{ID: "org-1", Code: "ORG-001", Status: "PENDING"},
+			adminDetails: []models.AdminAccountDetail{{AccountID: "acc-1"}},
+		}
+		svc := service.New(repo)
+
+		appErr := svc.Delete(context.Background(), "org-1")
+		if appErr == nil || appErr.Status != http.StatusBadRequest {
+			t.Fatalf("expected 400 BadRequest when deleting org with admins, got %+v", appErr)
 		}
 	})
 
