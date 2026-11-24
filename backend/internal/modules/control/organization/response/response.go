@@ -3,17 +3,23 @@ package response
 import "time"
 
 type OrganizationResponse struct {
-	ID               string    `json:"id"`
-	OrganizationCode string    `json:"organizationCode"`
-	LegalName        string    `json:"legalName"`
-	DisplayName      string    `json:"displayName"`
-	ContactEmail     string    `json:"contactEmail,omitempty"`
-	ContactPhone     string    `json:"contactPhone,omitempty"`
-	Country          string    `json:"country"`
-	Address          string    `json:"address,omitempty"`
-	Status           string    `json:"status"`
-	CreatedAt        time.Time `json:"createdAt"`
-	UpdatedAt        time.Time `json:"updatedAt"`
+	ID                 string     `json:"id"`
+	OrganizationCode   string     `json:"organizationCode"`
+	LegalName          string     `json:"legalName"`
+	DisplayName        string     `json:"displayName"`
+	ContactEmail       string     `json:"contactEmail,omitempty"`
+	ContactPhone       string     `json:"contactPhone,omitempty"`
+	Country            string     `json:"country"`
+	Address            string     `json:"address,omitempty"`
+	Status             string     `json:"status"`
+	SuspendNotifyFrom  *time.Time `json:"suspendNotifyFrom,omitempty"`
+	SuspendNotifyTo    *time.Time `json:"suspendNotifyTo,omitempty"`
+	ScheduledSuspendAt *time.Time `json:"scheduledSuspendAt,omitempty"`
+	SuspendReason      *string    `json:"suspendReason,omitempty"`
+	SuspendedAt        *time.Time `json:"suspendedAt,omitempty"`
+	SessionsRevokedAt  *time.Time `json:"sessionsRevokedAt,omitempty"`
+	CreatedAt          time.Time  `json:"createdAt"`
+	UpdatedAt          time.Time  `json:"updatedAt"`
 }
 
 type AdminAccountResponse struct {

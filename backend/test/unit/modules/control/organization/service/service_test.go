@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"hrgo/backend/internal/modules/control/organization/models"
 	"hrgo/backend/internal/modules/control/organization/repository"
@@ -98,6 +99,47 @@ func (m *mockOrgRepo) CreateAdminAccount(ctx context.Context, emp *models.Employ
 
 func (m *mockOrgRepo) ListAdminAccounts(ctx context.Context, orgID string, q request.ListAdminAccountsQuery) ([]models.AdminAccountDetail, error) {
 	return m.adminDetails, nil
+}
+
+func (m *mockOrgRepo) SuspendAndRevokeSessions(ctx context.Context, orgID string, reason string, now time.Time) error {
+	if m.err != nil {
+		return m.err
+	}
+	if m.org != nil {
+		m.org.Status = "SUSPENDED"
+		m.org.SuspendedAt = &now
+		m.org.SessionsRevokedAt = &now
+		if reason != "" {
+			m.org.SuspendReason = &reason
+		}
+	}
+	return nil
+}
+
+func (m *mockOrgRepo) SuspendDueOrganizations(ctx context.Context, now time.Time) ([]string, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	if m.org != nil && m.org.Status == "ACTIVE" && m.org.ScheduledSuspendAt != nil && !m.org.ScheduledSuspendAt.After(now) {
+		m.org.Status = "SUSPENDED"
+		m.org.SuspendedAt = &now
+		m.org.SessionsRevokedAt = &now
+		return []string{m.org.ID}, nil
+	}
+	return nil, nil
+}
+
+func (m *mockOrgRepo) ClearSuspendSchedule(ctx context.Context, orgID string) error {
+	if m.err != nil {
+		return m.err
+	}
+	if m.org != nil {
+		m.org.ScheduledSuspendAt = nil
+		m.org.SuspendNotifyFrom = nil
+		m.org.SuspendNotifyTo = nil
+		m.org.SuspendReason = nil
+	}
+	return nil
 }
 
 func TestOrganizationStatusTransitions(t *testing.T) {
@@ -704,4 +746,164 @@ func (m mockFailingCreateRepo) FindByContactEmail(ctx context.Context, email str
 }
 func (m mockFailingCreateRepo) Create(ctx context.Context, org *models.Organization) error {
 	return m.err
+}
+
+func TestOrganizationSuspensionScheduleAndSessions(t *testing.T) {
+	now := time.Now().UTC()
+	future := now.Add(24 * time.Hour)
+	past := now.Add(-1 * time.Hour)
+
+	t.Run("immediate suspension revokes sessions and updates status", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: &models.Organization{
+				ID:     "org-1",
+				Code:   "ORG-1",
+				Status: "ACTIVE",
+			},
+		}
+		svc := service.New(repo)
+		imm := true
+		res, appErr := svc.UpdateStatus(context.Background(), "org-1", request.UpdateStatusRequest{
+			Status:       "SUSPENDED",
+			Confirmation: true,
+			Immediate:    &imm,
+			Reason:       "Non-payment",
+		})
+		if appErr != nil {
+			t.Fatalf("unexpected error: %+v", appErr)
+		}
+		if res.Status != "SUSPENDED" {
+			t.Errorf("status = %s, want SUSPENDED", res.Status)
+		}
+		if repo.org.SessionsRevokedAt == nil {
+			t.Error("sessionsRevokedAt should not be nil")
+		}
+	})
+
+	t.Run("scheduled suspension validates future suspend date", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: &models.Organization{
+				ID:     "org-1",
+				Code:   "ORG-1",
+				Status: "ACTIVE",
+			},
+		}
+		svc := service.New(repo)
+		imm := false
+		_, appErr := svc.UpdateStatus(context.Background(), "org-1", request.UpdateStatusRequest{
+			Status:       "SUSPENDED",
+			Confirmation: true,
+			Immediate:    &imm,
+			SuspendAt:    &past,
+		})
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected VALIDATION_ERROR for past suspend date, got %+v", appErr)
+		}
+	})
+
+	t.Run("scheduled suspension validates notify window order", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: &models.Organization{
+				ID:     "org-1",
+				Code:   "ORG-1",
+				Status: "ACTIVE",
+			},
+		}
+		svc := service.New(repo)
+		imm := false
+		notifyFrom := future.Add(2 * time.Hour)
+		notifyTo := future.Add(1 * time.Hour)
+		_, appErr := svc.UpdateStatus(context.Background(), "org-1", request.UpdateStatusRequest{
+			Status:       "SUSPENDED",
+			Confirmation: true,
+			Immediate:    &imm,
+			NotifyFrom:   &notifyFrom,
+			NotifyTo:     &notifyTo,
+			SuspendAt:    &future,
+		})
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected VALIDATION_ERROR for notifyFrom > notifyTo, got %+v", appErr)
+		}
+	})
+
+	t.Run("scheduled suspension succeeds and leaves org ACTIVE until scheduled date", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: &models.Organization{
+				ID:     "org-1",
+				Code:   "ORG-1",
+				Status: "ACTIVE",
+			},
+		}
+		svc := service.New(repo)
+		imm := false
+		notifyFrom := now.Add(1 * time.Hour)
+		notifyTo := now.Add(12 * time.Hour)
+		reason := "Maintenance renewal"
+		res, appErr := svc.UpdateStatus(context.Background(), "org-1", request.UpdateStatusRequest{
+			Status:       "SUSPENDED",
+			Confirmation: true,
+			Immediate:    &imm,
+			NotifyFrom:   &notifyFrom,
+			NotifyTo:     &notifyTo,
+			SuspendAt:    &future,
+			Reason:       reason,
+		})
+		if appErr != nil {
+			t.Fatalf("unexpected error: %+v", appErr)
+		}
+		if res.Status != "ACTIVE" {
+			t.Errorf("status = %s, want ACTIVE during schedule", res.Status)
+		}
+		if repo.org.ScheduledSuspendAt == nil {
+			t.Fatal("scheduledSuspendAt should not be nil")
+		}
+		if repo.org.SuspendReason == nil || *repo.org.SuspendReason != reason {
+			t.Errorf("suspendReason = %v, want %s", repo.org.SuspendReason, reason)
+		}
+	})
+
+	t.Run("cancel suspend schedule clears schedule fields", func(t *testing.T) {
+		schedAt := future
+		reason := "Maintenance"
+		repo := &mockOrgRepo{
+			org: &models.Organization{
+				ID:                 "org-1",
+				Code:               "ORG-1",
+				Status:             "ACTIVE",
+				ScheduledSuspendAt: &schedAt,
+				SuspendReason:      &reason,
+			},
+		}
+		svc := service.New(repo)
+		res, appErr := svc.CancelSuspendSchedule(context.Background(), "org-1")
+		if appErr != nil {
+			t.Fatalf("unexpected error: %+v", appErr)
+		}
+		if res.ScheduledSuspendAt != nil {
+			t.Error("scheduledSuspendAt should be nil after cancel")
+		}
+	})
+
+	t.Run("process due suspensions marks due organizations as suspended", func(t *testing.T) {
+		schedAt := now.Add(-5 * time.Minute)
+		repo := &mockOrgRepo{
+			org: &models.Organization{
+				ID:                 "org-due",
+				Code:               "ORG-DUE",
+				Status:             "ACTIVE",
+				ScheduledSuspendAt: &schedAt,
+			},
+		}
+		svc := service.New(repo)
+		ids, err := svc.ProcessDueSuspensions(context.Background())
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(ids) != 1 || ids[0] != "org-due" {
+			t.Fatalf("expected [org-due], got %v", ids)
+		}
+		if repo.org.Status != "SUSPENDED" {
+			t.Errorf("status = %s, want SUSPENDED", repo.org.Status)
+		}
+	})
 }

@@ -6,31 +6,34 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 )
 
 const (
-	defaultAppEnv         = "development"
-	defaultPort           = "8080"
-	defaultLogLevel       = "info"
-	defaultMaxBodyBytes   = int64(1 << 20) // 1 MiB
-	defaultJWTSecret      = "dev-only-secret-key-must-be-changed-in-production"
-	defaultSuperadminPass = "Admin@12345"
+	defaultAppEnv                  = "development"
+	defaultPort                    = "8080"
+	defaultLogLevel                = "info"
+	defaultMaxBodyBytes            = int64(1 << 20) // 1 MiB
+	defaultJWTSecret               = "dev-only-secret-key-must-be-changed-in-production"
+	defaultSuperadminPass          = "Admin@12345"
+	defaultOrgSuspendCheckInterval = 30 * time.Second
 )
 
 // Config holds process-level server and infrastructure configuration.
 type Config struct {
-	AppEnv                string
-	Port                  string
-	LogLevel              string
-	DatabaseURL           string
-	CORSAllowedOrigins    []string
-	MaxBodyBytes          int64
-	JWTSecret             string
-	PlatformAdminEmail    string
-	PlatformAdminPassword string
-	PlatformAdminFullName string
+	AppEnv                  string
+	Port                    string
+	LogLevel                string
+	DatabaseURL             string
+	CORSAllowedOrigins      []string
+	MaxBodyBytes            int64
+	JWTSecret               string
+	PlatformAdminEmail      string
+	PlatformAdminPassword   string
+	PlatformAdminFullName   string
+	OrgSuspendCheckInterval time.Duration
 }
 
 // Load reads .env files when present and parses environment configuration.
@@ -90,17 +93,25 @@ func Load() (Config, error) {
 		adminName = "Platform Superadmin"
 	}
 
+	suspendCheckInterval := defaultOrgSuspendCheckInterval
+	if rawInterval := strings.TrimSpace(os.Getenv("ORG_SUSPEND_CHECK_INTERVAL")); rawInterval != "" {
+		if d, err := time.ParseDuration(rawInterval); err == nil && d > 0 {
+			suspendCheckInterval = d
+		}
+	}
+
 	return Config{
-		AppEnv:                appEnv,
-		Port:                  port,
-		LogLevel:              logLevel,
-		DatabaseURL:           dbURL,
-		CORSAllowedOrigins:    splitList(os.Getenv("CORS_ALLOWED_ORIGINS")),
-		MaxBodyBytes:          maxBodyBytes,
-		JWTSecret:             jwtSecret,
-		PlatformAdminEmail:    adminEmail,
-		PlatformAdminPassword: adminPass,
-		PlatformAdminFullName: adminName,
+		AppEnv:                  appEnv,
+		Port:                    port,
+		LogLevel:                logLevel,
+		DatabaseURL:             dbURL,
+		CORSAllowedOrigins:      splitList(os.Getenv("CORS_ALLOWED_ORIGINS")),
+		MaxBodyBytes:            maxBodyBytes,
+		JWTSecret:               jwtSecret,
+		PlatformAdminEmail:      adminEmail,
+		PlatformAdminPassword:   adminPass,
+		PlatformAdminFullName:   adminName,
+		OrgSuspendCheckInterval: suspendCheckInterval,
 	}, nil
 }
 

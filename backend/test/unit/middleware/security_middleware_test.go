@@ -61,4 +61,46 @@ func TestRequireWorkspaceOrgStatusChecker(t *testing.T) {
 			t.Fatalf("status = %d, want 401", rec.Code)
 		}
 	})
+
+	t.Run("allows when session checker returns valid", func(t *testing.T) {
+		sec := security.NewMiddleware(tokens)
+		sec.SetWorkspaceSessionChecker(func(ctx context.Context, claims *security.Claims) (bool, error) {
+			return true, nil
+		})
+
+		r := gin.New()
+		r.GET("/workspace/test", sec.RequireWorkspace(), func(c *gin.Context) {
+			c.String(http.StatusOK, "ok")
+		})
+
+		req := httptest.NewRequest(http.MethodGet, "/workspace/test", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status = %d, want 200", rec.Code)
+		}
+	})
+
+	t.Run("rejects revoked session with 401 Unauthorized", func(t *testing.T) {
+		sec := security.NewMiddleware(tokens)
+		sec.SetWorkspaceSessionChecker(func(ctx context.Context, claims *security.Claims) (bool, error) {
+			return false, nil
+		})
+
+		r := gin.New()
+		r.GET("/workspace/test", sec.RequireWorkspace(), func(c *gin.Context) {
+			c.String(http.StatusOK, "ok")
+		})
+
+		req := httptest.NewRequest(http.MethodGet, "/workspace/test", nil)
+		req.Header.Set("Authorization", "Bearer "+token)
+		rec := httptest.NewRecorder()
+		r.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("status = %d, want 401", rec.Code)
+		}
+	})
 }

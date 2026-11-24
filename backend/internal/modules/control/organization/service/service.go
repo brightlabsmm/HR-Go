@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"hrgo/backend/internal/modules/control/organization/mapper"
 	"hrgo/backend/internal/modules/control/organization/models"
@@ -41,6 +42,8 @@ type Service interface {
 	List(ctx context.Context, query request.ListOrganizationsQuery) ([]response.OrganizationResponse, int, int, int64, *apperrors.Error)
 	Update(ctx context.Context, id string, req request.UpdateOrganizationRequest) (*response.OrganizationResponse, *apperrors.Error)
 	UpdateStatus(ctx context.Context, id string, req request.UpdateStatusRequest) (*response.OrganizationResponse, *apperrors.Error)
+	CancelSuspendSchedule(ctx context.Context, id string) (*response.OrganizationResponse, *apperrors.Error)
+	ProcessDueSuspensions(ctx context.Context) ([]string, error)
 	Delete(ctx context.Context, id string) *apperrors.Error
 	CreateAdminAccount(ctx context.Context, orgID string, req request.CreateAdminAccountRequest) (*response.AdminAccountResponse, *apperrors.Error)
 	ListAdminAccounts(ctx context.Context, orgID string, q request.ListAdminAccountsQuery) ([]response.AdminAccountResponse, *apperrors.Error)
@@ -409,6 +412,71 @@ func (s *service) UpdateStatus(ctx context.Context, id string, req request.Updat
 		return nil, apperrors.BadRequest("Confirmation is required for high-impact status changes.")
 	}
 
+	if target == "SUSPENDED" {
+		isImmediate := true
+		if req.Immediate != nil {
+			isImmediate = *req.Immediate
+		} else if req.SuspendAt != nil {
+			isImmediate = false
+		}
+
+		if isImmediate {
+			now := time.Now().UTC()
+			if err := s.repo.SuspendAndRevokeSessions(ctx, id, req.Reason, now); err != nil {
+				return nil, apperrors.Internal()
+			}
+			updated, err := s.repo.FindByID(ctx, id)
+			if err != nil || updated == nil {
+				return nil, apperrors.Internal()
+			}
+			res := mapper.ToOrganizationResponse(updated)
+			return &res, nil
+		}
+
+		now := time.Now().UTC()
+		if req.SuspendAt == nil {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "suspendAt", Message: "Scheduled suspension requires a suspend date and time."},
+			})
+		}
+		if !req.SuspendAt.After(now) {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "suspendAt", Message: "Scheduled suspend date must be in the future."},
+			})
+		}
+		if req.NotifyFrom != nil && req.NotifyTo != nil && req.NotifyFrom.After(*req.NotifyTo) {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "notifyFrom", Message: "Notification start date cannot be after notification end date."},
+			})
+		}
+		if req.NotifyTo != nil && req.NotifyTo.After(*req.SuspendAt) {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "notifyTo", Message: "Notification end date cannot be after suspension date."},
+			})
+		}
+		if req.NotifyFrom != nil && req.NotifyFrom.After(*req.SuspendAt) {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "notifyFrom", Message: "Notification start date cannot be after suspension date."},
+			})
+		}
+
+		org.ScheduledSuspendAt = req.SuspendAt
+		org.SuspendNotifyFrom = req.NotifyFrom
+		org.SuspendNotifyTo = req.NotifyTo
+		if strings.TrimSpace(req.Reason) != "" {
+			trimmedReason := strings.TrimSpace(req.Reason)
+			org.SuspendReason = &trimmedReason
+		} else {
+			org.SuspendReason = nil
+		}
+		if err := s.repo.Update(ctx, org); err != nil {
+			return nil, apperrors.Internal()
+		}
+
+		res := mapper.ToOrganizationResponse(org)
+		return &res, nil
+	}
+
 	if target == "ACTIVE" {
 		adminAccounts, err := s.repo.ListAdminAccounts(ctx, id, request.ListAdminAccountsQuery{})
 		if err != nil {
@@ -424,15 +492,47 @@ func (s *service) UpdateStatus(ctx context.Context, id string, req request.Updat
 		if !hasActiveAdmin {
 			return nil, apperrors.BadRequest("Cannot activate organization without an active organization administrator account.")
 		}
-	}
 
-	org.Status = target
-	if err := s.repo.Update(ctx, org); err != nil {
-		return nil, apperrors.Internal()
+		org.Status = "ACTIVE"
+		org.ScheduledSuspendAt = nil
+		org.SuspendNotifyFrom = nil
+		org.SuspendNotifyTo = nil
+		org.SuspendReason = nil
+		org.SuspendedAt = nil
+		if err := s.repo.Update(ctx, org); err != nil {
+			return nil, apperrors.Internal()
+		}
 	}
 
 	res := mapper.ToOrganizationResponse(org)
 	return &res, nil
+}
+
+func (s *service) CancelSuspendSchedule(ctx context.Context, id string) (*response.OrganizationResponse, *apperrors.Error) {
+	org, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+	if org == nil {
+		return nil, apperrors.NotFound("Organization not found")
+	}
+
+	if err := s.repo.ClearSuspendSchedule(ctx, id); err != nil {
+		return nil, apperrors.Internal()
+	}
+
+	updated, err := s.repo.FindByID(ctx, id)
+	if err != nil || updated == nil {
+		return nil, apperrors.Internal()
+	}
+
+	res := mapper.ToOrganizationResponse(updated)
+	return &res, nil
+}
+
+func (s *service) ProcessDueSuspensions(ctx context.Context) ([]string, error) {
+	now := time.Now().UTC()
+	return s.repo.SuspendDueOrganizations(ctx, now)
 }
 
 func (s *service) Delete(ctx context.Context, id string) *apperrors.Error {

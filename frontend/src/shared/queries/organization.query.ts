@@ -7,6 +7,7 @@ import {
 
 import type { Paginated } from "@/app/api/types"
 import {
+  cancelOrganizationSuspendSchedule,
   createOrganization,
   createOrganizationAdminAccount,
   deleteOrganization,
@@ -235,6 +236,43 @@ export function useDeleteOrganizationMutation() {
       )
       await queryClient.invalidateQueries({
         queryKey: organizationKeys.all,
+        refetchType: "all",
+      })
+    },
+  })
+}
+
+export function useCancelOrganizationSuspendScheduleMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => cancelOrganizationSuspendSchedule(id),
+    onSuccess: async (data, id) => {
+      queryClient.setQueryData(
+        organizationKeys.detail(id),
+        (old: Organization | undefined) => {
+          if (!old) return data
+          return { ...old, ...data }
+        }
+      )
+      queryClient.setQueriesData<Paginated<Organization>>(
+        { queryKey: organizationKeys.lists() },
+        (old) => {
+          if (!old || !Array.isArray(old.items)) return old
+          return {
+            ...old,
+            items: old.items.map((item) =>
+              item.id === id ? { ...item, ...data } : item
+            ),
+          }
+        }
+      )
+      await queryClient.invalidateQueries({
+        queryKey: organizationKeys.all,
+        refetchType: "all",
+      })
+      await queryClient.invalidateQueries({
+        queryKey: organizationKeys.detail(id),
         refetchType: "all",
       })
     },

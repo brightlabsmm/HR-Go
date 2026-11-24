@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { PencilIcon, Trash2Icon, UserPlusIcon } from "lucide-react"
+import { ClockIcon, PencilIcon, Trash2Icon, UserPlusIcon, XCircleIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router"
 
@@ -15,19 +15,21 @@ import { Button } from "@/components/ui/button"
 import { getCountryLabel } from "@/constants/countries"
 import { OrganizationDetailHeader } from "@/features/organizations/components/organization-detail-header"
 import { OrganizationStatusButtons } from "@/features/organizations/components/organization-status-buttons"
+import { OrganizationSuspendDialog } from "@/features/organizations/components/organization-suspend-dialog"
 import {
   getStatusDialogContent,
   isHighImpactOrganizationStatus,
 } from "@/features/organizations/components/organization-status-menu"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import {
+  useCancelOrganizationSuspendScheduleMutation,
   useDeleteOrganizationMutation,
   useOrganizationAdminAccountsQuery,
   useOrganizationQuery,
   useUpdateOrganizationStatusMutation,
 } from "@/shared/queries/organization.query"
 import { toast } from "@/shared/stores/toast.store"
-import { formatDate } from "@/util/format-date"
+import { formatDate, formatDateTime } from "@/util/format-date"
 import { getInitials } from "@/util/initials"
 
 import type { OrganizationStatus } from "@/shared/services/organization.service"
@@ -46,6 +48,7 @@ export function OrganizationDetailPage() {
   const canChangeStatus = can("platform.organization.status.update")
   const canDelete = can("platform.organization.delete")
   const statusMutation = useUpdateOrganizationStatusMutation()
+  const cancelScheduleMutation = useCancelOrganizationSuspendScheduleMutation()
   const deleteMutation = useDeleteOrganizationMutation()
   const [statusTarget, setStatusTarget] = useState<OrganizationStatus | null>(null)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -103,6 +106,22 @@ export function OrganizationDetailPage() {
                 onSelect={(status) => setStatusTarget(status)}
               />
             ) : null}
+            {canChangeStatus && organization?.scheduledSuspendAt ? (
+              <DetailActionButton
+                tone="warning"
+                disabled={cancelScheduleMutation.isPending}
+                onClick={() => {
+                  cancelScheduleMutation.mutate(id, {
+                    onSuccess: () => {
+                      toast.success(t("suspend_dialog.cancel_success", "Scheduled suspension cancelled successfully."))
+                    },
+                  })
+                }}
+              >
+                <XCircleIcon />
+                {t("suspend_dialog.cancel_schedule_button", "Cancel Schedule")}
+              </DetailActionButton>
+            ) : null}
             {canDelete && organization ? (
               <DetailActionButton
                 tone="destructive"
@@ -115,6 +134,41 @@ export function OrganizationDetailPage() {
           </>
         }
       />
+      {organization?.scheduledSuspendAt ? (
+        <div className="flex flex-col gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-900 sm:flex-row sm:items-center sm:justify-between dark:text-amber-200">
+          <div className="flex items-center gap-3">
+            <ClockIcon className="size-5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div>
+              <p className="font-semibold text-foreground">
+                {t("suspend_dialog.scheduled_alert_title", "Suspension Scheduled")}
+              </p>
+              <p className="mt-0.5 text-muted-foreground">
+                {t("suspend_dialog.scheduled_alert_desc", "This organization is scheduled to be suspended on {{date}}.", {
+                  date: formatDateTime(organization.scheduledSuspendAt, i18n.language),
+                })}
+                {organization.suspendReason ? ` (${organization.suspendReason})` : ""}
+              </p>
+            </div>
+          </div>
+          {canChangeStatus ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              loading={cancelScheduleMutation.isPending}
+              onClick={() => {
+                cancelScheduleMutation.mutate(id, {
+                  onSuccess: () => {
+                    toast.success(t("suspend_dialog.cancel_success", "Scheduled suspension cancelled successfully."))
+                  },
+                })
+              }}
+            >
+              {t("suspend_dialog.cancel_schedule_button", "Cancel Schedule")}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
       <div className="grid items-start gap-12 lg:grid-cols-[18.75rem_minmax(0,1fr)]">
         <ProfileSummaryCard
           isLoading={organizationQuery.isPending}
@@ -207,8 +261,42 @@ export function OrganizationDetailPage() {
           )}
         </div>
       </div>
+      <OrganizationSuspendDialog
+        open={statusTarget === "SUSPENDED"}
+        organization={organization ?? null}
+        isPending={statusMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open) setStatusTarget(null)
+        }}
+        onConfirm={(payload) => {
+          if (!organization) return
+          statusMutation.mutate(
+            {
+              id: organization.id,
+              input: {
+                status: "SUSPENDED",
+                confirmation: true,
+                immediate: payload.immediate,
+                notifyFrom: payload.notifyFrom,
+                notifyTo: payload.notifyTo,
+                suspendAt: payload.suspendAt,
+                reason: payload.reason,
+              },
+            },
+            {
+              onSuccess: () => {
+                setStatusTarget(null)
+                void organizationQuery.refetch()
+              },
+              onError: () => {
+                setStatusTarget(null)
+              },
+            }
+          )
+        }}
+      />
       <ConfirmDialog
-        open={statusTarget !== null}
+        open={statusTarget !== null && statusTarget !== "SUSPENDED"}
         title={statusDialogContent?.title ?? ""}
         description={statusDialogContent?.description ?? ""}
         confirmLabel={statusDialogContent?.confirmLabel ?? t("status_change.confirm")}

@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"hrgo/backend/internal/modules/workspace/auth/mapper"
 	"hrgo/backend/internal/modules/workspace/auth/models"
 	"hrgo/backend/internal/modules/workspace/auth/repository"
@@ -14,8 +16,14 @@ import (
 	"hrgo/backend/internal/shared/security"
 )
 
+type SessionMetadata struct {
+	IPAddress *string
+	UserAgent *string
+}
+
 type Service interface {
-	Login(ctx context.Context, req request.LoginRequest) (*response.LoginResponse, *apperrors.Error)
+	Login(ctx context.Context, req request.LoginRequest, meta ...SessionMetadata) (*response.LoginResponse, *apperrors.Error)
+	Logout(ctx context.Context, sessionID string) *apperrors.Error
 	GetMe(ctx context.Context, accountID string) (*response.WorkspaceUserProfile, *apperrors.Error)
 	ChangePassword(ctx context.Context, accountID string, req request.ChangePasswordRequest) *apperrors.Error
 }
@@ -36,7 +44,7 @@ func New(repo repository.Repository, tokens *security.TokenManager, lockout ...*
 	return &service{repo: repo, tokens: tokens, lockout: lm}
 }
 
-func (s *service) Login(ctx context.Context, req request.LoginRequest) (*response.LoginResponse, *apperrors.Error) {
+func (s *service) Login(ctx context.Context, req request.LoginRequest, meta ...SessionMetadata) (*response.LoginResponse, *apperrors.Error) {
 	ident := strings.TrimSpace(req.Identifier)
 	if s.lockout != nil && s.lockout.IsLocked(ident) {
 		return nil, apperrors.TooManyRequests("Account temporarily locked due to too many failed login attempts. Please try again in 15 minutes.")
@@ -59,12 +67,17 @@ func (s *service) Login(ctx context.Context, req request.LoginRequest) (*respons
 		s.lockout.Reset(ident)
 	}
 
+	now := time.Now().UTC()
 	if acc.Organization.DeletedAt != nil {
 		return nil, apperrors.Forbidden("Organization has been deleted. Sign in is disabled.")
 	}
 
 	if acc.Organization.Status != "ACTIVE" {
 		return nil, apperrors.Forbidden("Organization is " + strings.ToLower(acc.Organization.Status) + ". Sign in is disabled.")
+	}
+
+	if acc.Organization.ScheduledSuspendAt != nil && !now.Before(*acc.Organization.ScheduledSuspendAt) {
+		return nil, apperrors.Forbidden("Organization has been suspended. Sign in is disabled.")
 	}
 
 	if acc.Status != "ACTIVE" {
@@ -83,7 +96,10 @@ func (s *service) Login(ctx context.Context, req request.LoginRequest) (*respons
 		}
 	}
 
-	token, exp, err := s.tokens.GenerateWorkspaceToken(
+	sessionID := uuid.NewString()
+	expSeconds := int64(24 * 3600)
+	token, exp, err := s.tokens.GenerateWorkspaceTokenWithSession(
+		sessionID,
 		acc.ID,
 		acc.OrganizationID,
 		acc.EmployeeID,
@@ -95,6 +111,28 @@ func (s *service) Login(ctx context.Context, req request.LoginRequest) (*respons
 	if err != nil {
 		return nil, apperrors.Internal()
 	}
+	if exp > 0 {
+		expSeconds = exp
+	}
+
+	var ipAddr, userAgent *string
+	if len(meta) > 0 {
+		ipAddr = meta[0].IPAddress
+		userAgent = meta[0].UserAgent
+	}
+
+	session := &models.WorkspaceSession{
+		ID:             sessionID,
+		OrganizationID: acc.OrganizationID,
+		AccountID:      acc.ID,
+		IPAddress:      ipAddr,
+		UserAgent:      userAgent,
+		CreatedAt:      now,
+		ExpiresAt:      now.Add(time.Duration(expSeconds) * time.Second),
+	}
+	if err := s.repo.CreateSession(ctx, session); err != nil {
+		return nil, apperrors.Internal()
+	}
 
 	_ = s.repo.UpdateLastLogin(ctx, acc.ID)
 
@@ -102,10 +140,17 @@ func (s *service) Login(ctx context.Context, req request.LoginRequest) (*respons
 	return &response.LoginResponse{
 		AccessToken:        token,
 		TokenType:          "Bearer",
-		ExpiresIn:          exp,
+		ExpiresIn:          expSeconds,
 		MustChangePassword: acc.MustChangePassword,
 		User:               profile,
 	}, nil
+}
+
+func (s *service) Logout(ctx context.Context, sessionID string) *apperrors.Error {
+	if sessionID != "" {
+		_ = s.repo.RevokeSession(ctx, sessionID, "USER_LOGOUT")
+	}
+	return nil
 }
 
 func (s *service) GetMe(ctx context.Context, accountID string) (*response.WorkspaceUserProfile, *apperrors.Error) {

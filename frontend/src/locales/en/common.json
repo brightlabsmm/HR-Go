@@ -54,6 +54,11 @@
     "suspended": "Suspended",
     "pending": "Pending"
   },
+  "suspension_warning": {
+    "title": "Important Notice: Organization Suspension Scheduled",
+    "message": "Scheduled for suspension on {{date}}.",
+    "reason_prefix": "Reason:"
+  },
   "table": {
     "empty": "No results found",
     "columns": "Columns",

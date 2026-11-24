@@ -151,4 +151,38 @@ describe("organizationKeys & cache synchronization (BUG-11)", () => {
     const updatedDetail = queryClient.getQueryData<Organization>(detailKey)
     expect(updatedDetail?.status).toBe("ACTIVE")
   })
+
+  it("updates cached organization when suspension schedule is cancelled", () => {
+    const queryClient = new QueryClient()
+    const detailKey = organizationKeys.detail("org-1")
+
+    const scheduledOrg: Organization = {
+      id: "org-1",
+      organizationCode: "ORG-001",
+      legalName: "Org 1 LLC",
+      displayName: "Org 1",
+      status: "ACTIVE",
+      scheduledSuspendAt: "2026-12-01T10:00:00Z",
+      suspendReason: "Pending audit",
+      createdAt: "2026-11-20T10:00:00Z",
+      updatedAt: "2026-11-20T10:00:00Z",
+    }
+    queryClient.setQueryData(detailKey, scheduledOrg)
+
+    const clearedOrg: Organization = {
+      ...scheduledOrg,
+      scheduledSuspendAt: null,
+      suspendReason: null,
+      updatedAt: "2026-11-23T18:00:00Z",
+    }
+
+    queryClient.setQueryData(detailKey, (old: Organization | undefined) => {
+      if (!old) return clearedOrg
+      return { ...old, ...clearedOrg }
+    })
+
+    const updated = queryClient.getQueryData<Organization>(detailKey)
+    expect(updated?.scheduledSuspendAt).toBeNull()
+    expect(updated?.suspendReason).toBeNull()
+  })
 })
