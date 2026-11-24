@@ -188,6 +188,28 @@ func TestWorkspaceAuthService_ChangePassword(t *testing.T) {
 		}
 	})
 
+	t.Run("fails when new password fails complexity or is common weak password", func(t *testing.T) {
+		acc := &models.OrganizationAccount{
+			ID:                 "acc-1",
+			PasswordHash:       hashedPass,
+			MustChangePassword: true,
+		}
+		repo := &mockWorkspaceAuthRepo{account: acc}
+		svc := service.New(repo, tokens)
+
+		for _, weak := range []string{"12345678", "password", "Admin123", "short1"} {
+			appErr := svc.ChangePassword(context.Background(), "acc-1", request.ChangePasswordRequest{
+				CurrentPassword: "InitialPass@123",
+				NewPassword:     weak,
+				ConfirmPassword: weak,
+			})
+
+			if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+				t.Errorf("expected VALIDATION_ERROR for weak password %q, got %v", weak, appErr)
+			}
+		}
+	})
+
 	t.Run("successfully updates password and clears mustChangePassword flag", func(t *testing.T) {
 		acc := &models.OrganizationAccount{
 			ID:                 "acc-1",
