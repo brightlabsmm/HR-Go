@@ -153,6 +153,9 @@ export function BranchListPage() {
             onSuccess: () => {
               setBranchToDeactivate(null)
             },
+            onError: () => {
+              setBranchToDeactivate(null)
+            },
           })
         }}
       />

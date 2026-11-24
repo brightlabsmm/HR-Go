@@ -136,6 +136,9 @@ export function BranchDetailPage() {
               setShowDeactivateDialog(false)
               void navigate("/branches")
             },
+            onError: () => {
+              setShowDeactivateDialog(false)
+            },
           })
         }}
       />

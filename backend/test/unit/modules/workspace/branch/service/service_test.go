@@ -13,9 +13,17 @@ import (
 
 type mockBranchRepo struct {
 	repository.Repository
-	branch   *models.Branch
-	branches []models.Branch
-	err      error
+	branch          *models.Branch
+	branches        []models.Branch
+	activeDeptCount int64
+	err             error
+}
+
+func (m *mockBranchRepo) CountActiveDepartments(ctx context.Context, orgID, branchID string) (int64, error) {
+	if m.err != nil {
+		return 0, m.err
+	}
+	return m.activeDeptCount, nil
 }
 
 func (m *mockBranchRepo) Create(ctx context.Context, b *models.Branch) error {
@@ -142,6 +150,39 @@ func TestBranchService_CreatedAtAndUpdatedAt(t *testing.T) {
 		}
 		if items[0].CreatedAt.IsZero() || items[0].UpdatedAt.IsZero() {
 			t.Errorf("expected non-zero timestamps in list item")
+		}
+	})
+}
+
+func TestBranchService_Deactivate_ActiveDepartments(t *testing.T) {
+	b := &models.Branch{
+		ID:             "branch-1",
+		OrganizationID: "org-1",
+		Code:           "BR-001",
+		Name:           "Branch 1",
+		Status:         "ACTIVE",
+	}
+
+	t.Run("rejects deactivation when branch has active departments (BUG-27)", func(t *testing.T) {
+		repo := &mockBranchRepo{branch: b, activeDeptCount: 2}
+		svc := service.New(repo)
+
+		_, appErr := svc.Deactivate(context.Background(), "org-1", "branch-1")
+		if appErr == nil || appErr.Status != 400 {
+			t.Fatalf("expected 400 Bad Request error, got %v", appErr)
+		}
+	})
+
+	t.Run("allows deactivation when branch has no active departments", func(t *testing.T) {
+		repo := &mockBranchRepo{branch: b, activeDeptCount: 0}
+		svc := service.New(repo)
+
+		res, appErr := svc.Deactivate(context.Background(), "org-1", "branch-1")
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if res.Status != "INACTIVE" {
+			t.Errorf("expected status INACTIVE, got %s", res.Status)
 		}
 	})
 }
