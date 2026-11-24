@@ -53,3 +53,62 @@ describe("code format validation (BUG-20)", () => {
     expect(result.success).toBe(true)
   })
 })
+
+describe("organization settings field validation (BUG-29)", () => {
+  const schema = z.object({
+    displayName: z
+      .string()
+      .trim()
+      .min(1, "Display name is required.")
+      .max(255, "Display name must not exceed 255 characters."),
+    contactEmail: z
+      .string()
+      .trim()
+      .min(1, "Email is required.")
+      .max(255, "Email must not exceed 255 characters.")
+      .email("Please enter a valid email address."),
+    address: z
+      .string()
+      .trim()
+      .min(1, "Address is required.")
+      .max(2000, "Address must not exceed 2000 characters."),
+  })
+
+  it("rejects 300-character display name with max length error", () => {
+    const longName = "A".repeat(300)
+    const result = schema.safeParse({
+      displayName: longName,
+      contactEmail: "test@example.com",
+      address: "123 Street",
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path.includes("displayName"))
+      expect(issue).toBeDefined()
+      expect(issue?.message).toBe("Display name must not exceed 255 characters.")
+    }
+  })
+
+  it("rejects invalid email format", () => {
+    const result = schema.safeParse({
+      displayName: "Valid Name",
+      contactEmail: "invalid-email-address",
+      address: "123 Street",
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const issue = result.error.issues.find((i) => i.path.includes("contactEmail"))
+      expect(issue).toBeDefined()
+      expect(issue?.message).toBe("Please enter a valid email address.")
+    }
+  })
+
+  it("accepts valid input within character limits", () => {
+    const result = schema.safeParse({
+      displayName: "Proper Organization Name",
+      contactEmail: "admin@company.com",
+      address: "456 Main Avenue, Suite 100",
+    })
+    expect(result.success).toBe(true)
+  })
+})

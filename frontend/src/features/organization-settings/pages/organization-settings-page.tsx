@@ -140,6 +140,7 @@ export function OrganizationSettingsPage() {
         />
         <div className="flex min-w-0 flex-col gap-8">
           <form
+            noValidate
             className={formStackClassName}
             onSubmit={handleSubmit(async (values) => {
               try {
@@ -195,6 +196,7 @@ export function OrganizationSettingsPage() {
                     control={control}
                     name="displayName"
                     required
+                    maxLength={255}
                     label={t("fields.display_name")}
                     className="md:col-span-2"
                   />
@@ -215,6 +217,7 @@ export function OrganizationSettingsPage() {
                     name="contactEmail"
                     type="email"
                     required
+                    maxLength={255}
                     label={t("fields.email")}
                   />
                   <FormPhoneInput
@@ -234,6 +237,7 @@ export function OrganizationSettingsPage() {
                     control={control}
                     name="address"
                     required
+                    maxLength={2000}
                     label={t("fields.address")}
                     className="md:col-span-2"
                   />
@@ -252,12 +256,14 @@ export function OrganizationSettingsPage() {
                   <FormTextInput
                     control={control}
                     name="branchCodeFormat"
+                    maxLength={50}
                     label={t("fields.branch_code_format")}
                     placeholder={t("fields.branch_code_format_placeholder")}
                   />
                   <FormTextInput
                     control={control}
                     name="departmentCodeFormat"
+                    maxLength={50}
                     label={t("fields.department_code_format")}
                     placeholder={t("fields.department_code_format_placeholder")}
                   />
