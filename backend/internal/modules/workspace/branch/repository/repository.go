@@ -99,7 +99,7 @@ func (r *repository) FindByCode(ctx context.Context, orgID, code string) (*model
 }
 
 func (r *repository) Update(ctx context.Context, b *models.Branch) error {
-	return r.db.WithContext(ctx).Save(b).Error
+	return r.db.WithContext(ctx).Select("name", "address", "parent_id", "status").Updates(b).Error
 }
 
 func (r *repository) List(ctx context.Context, orgID string, q request.ListBranchesQuery) ([]models.Branch, int64, error) {

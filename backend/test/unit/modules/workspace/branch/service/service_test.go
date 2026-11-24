@@ -145,3 +145,34 @@ func TestBranchService_CreatedAtAndUpdatedAt(t *testing.T) {
 		}
 	})
 }
+
+func TestBranchService_RemoveParent(t *testing.T) {
+	parentID := "p-1"
+	child := &models.Branch{
+		ID:             "child-1",
+		OrganizationID: "org-1",
+		Code:           "BR-002",
+		Name:           "Child Branch",
+		ParentID:       &parentID,
+		Status:         "ACTIVE",
+	}
+
+	repo := &mockBranchRepo{branch: child}
+	svc := service.New(repo)
+
+	t.Run("clears parent when empty string is passed (BUG-26)", func(t *testing.T) {
+		emptyParent := ""
+		res, appErr := svc.Update(context.Background(), "org-1", "child-1", request.UpdateBranchRequest{
+			ParentID: &emptyParent,
+		})
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if res.ParentID != nil {
+			t.Errorf("expected ParentID to be nil, got %v", *res.ParentID)
+		}
+		if child.ParentID != nil {
+			t.Errorf("expected branch.ParentID in repo to be nil, got %v", *child.ParentID)
+		}
+	})
+}
