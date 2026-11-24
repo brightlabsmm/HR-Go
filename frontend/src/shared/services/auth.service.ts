@@ -21,6 +21,10 @@ export interface AuthProfile {
   roles: AuthRole[]
   permissions: string[]
   mustChangePassword?: boolean
+  suspensionNotice?: {
+    scheduledSuspendAt: string
+    reason?: string
+  }
 }
 
 export interface AuthSession {
@@ -56,6 +60,10 @@ interface WorkspaceUserPayload {
   roles?: AuthRole[]
   permissions?: string[]
   mustChangePassword?: boolean
+  suspensionNotice?: {
+    scheduledSuspendAt: string
+    reason?: string
+  }
 }
 
 interface LoginPayload {
@@ -88,6 +96,7 @@ function mapWorkspaceUser(user: WorkspaceUserPayload): AuthProfile {
     roles: user.roles ?? [],
     permissions: user.permissions ?? [],
     mustChangePassword: Boolean(user.mustChangePassword),
+    suspensionNotice: user.suspensionNotice,
   }
 }
 

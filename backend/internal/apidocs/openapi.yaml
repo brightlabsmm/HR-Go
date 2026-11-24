@@ -400,6 +400,23 @@ components:
           type: string
           enum: [PENDING, ACTIVE, SUSPENDED]
           example: ACTIVE
+        suspendNotifyFrom:
+          type: string
+          format: date-time
+        suspendNotifyTo:
+          type: string
+          format: date-time
+        scheduledSuspendAt:
+          type: string
+          format: date-time
+        suspendReason:
+          type: string
+        suspendedAt:
+          type: string
+          format: date-time
+        sessionsRevokedAt:
+          type: string
+          format: date-time
         createdAt:
           type: string
           format: date-time
@@ -474,6 +491,18 @@ components:
         confirmation:
           type: boolean
           example: true
+        immediate:
+          type: boolean
+          example: true
+        notifyFrom:
+          type: string
+          format: date-time
+        notifyTo:
+          type: string
+          format: date-time
+        suspendAt:
+          type: string
+          format: date-time
 
     CreateAdminAccountRequest:
       type: object
@@ -603,6 +632,14 @@ components:
             - org.branch.create
             - org.department.read
             - org.position.read
+        suspensionNotice:
+          type: object
+          properties:
+            scheduledSuspendAt:
+              type: string
+              format: date-time
+            reason:
+              type: string
 
     WorkspaceLoginRequest:
       type: object
@@ -1528,6 +1565,33 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+
+  /api/v1/control/organizations/{organizationId}/suspend-schedule:
+    delete:
+      tags: [Control - Organizations]
+      summary: Cancel scheduled organization suspension
+      description: Cancels an upcoming scheduled suspension for an organization, clearing notification and suspension dates. Requires `platform.organization.status.update`.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Scheduled suspension cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Organization"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/v1/control/organizations/{organizationId}/admin-account:
     post:

@@ -29,7 +29,8 @@
     "cancel": "Cancel",
     "errors": {
       "code": "Department code is required.",
-      "name": "Department name is required."
+      "name": "Department name is required.",
+      "name_max": "Department name cannot exceed 150 characters."
     }
   },
   "empty": {

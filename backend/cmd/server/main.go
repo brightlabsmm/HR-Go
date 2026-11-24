@@ -51,6 +51,14 @@ func main() {
 		DB:     db,
 	})
 
+	schedCtx, cancelSched := context.WithCancel(context.Background())
+	defer cancelSched()
+	bootstrap.StartSchedulers(schedCtx, bootstrap.Dependencies{
+		Config: cfg,
+		Logger: logger,
+		DB:     db,
+	})
+
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,
 		Handler:           engine,

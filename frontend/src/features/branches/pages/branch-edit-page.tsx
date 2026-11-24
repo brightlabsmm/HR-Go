@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import { useNavigate, useParams } from "react-router"
 import { useTranslation } from "react-i18next"
 
@@ -6,6 +7,7 @@ import {
   BranchForm,
   type BranchFormValues,
 } from "@/features/branches/components/branch-form"
+import { getDescendantBranchIds } from "@/features/branches/util/branch-hierarchy"
 import {
   useBranchQuery,
   useBranchesQuery,
@@ -25,8 +27,15 @@ export function BranchEditPage() {
   const branchesQuery = useBranchesQuery({ limit: 100 })
   const updateMutation = useUpdateBranchMutation()
   const branch = branchQuery.data
-  const parentOptions = (branchesQuery.data?.items ?? [])
-    .filter((item) => item.id !== id)
+  const allBranches = branchesQuery.data?.items ?? []
+
+  const descendantIds = useMemo(
+    () => getDescendantBranchIds(id, allBranches),
+    [id, allBranches]
+  )
+
+  const parentOptions = allBranches
+    .filter((item) => item.id !== id && !descendantIds.has(item.id))
     .map((item) => ({
       value: item.id,
       label: `${item.branchCode} — ${item.branchName}`,

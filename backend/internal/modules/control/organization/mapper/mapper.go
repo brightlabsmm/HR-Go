@@ -7,17 +7,23 @@ import (
 
 func ToOrganizationResponse(org *models.Organization) response.OrganizationResponse {
 	return response.OrganizationResponse{
-		ID:               org.ID,
-		OrganizationCode: org.Code,
-		LegalName:        org.LegalName,
-		DisplayName:      org.DisplayName,
-		ContactEmail:     org.ContactEmail,
-		ContactPhone:     org.ContactPhone,
-		Country:          org.Country,
-		Address:          org.Address,
-		Status:           org.Status,
-		CreatedAt:        org.CreatedAt,
-		UpdatedAt:        org.UpdatedAt,
+		ID:                 org.ID,
+		OrganizationCode:   org.Code,
+		LegalName:          org.LegalName,
+		DisplayName:        org.DisplayName,
+		ContactEmail:       org.ContactEmail,
+		ContactPhone:       org.ContactPhone,
+		Country:            org.Country,
+		Address:            org.Address,
+		Status:             org.Status,
+		SuspendNotifyFrom:  org.SuspendNotifyFrom,
+		SuspendNotifyTo:    org.SuspendNotifyTo,
+		ScheduledSuspendAt: org.ScheduledSuspendAt,
+		SuspendReason:      org.SuspendReason,
+		SuspendedAt:        org.SuspendedAt,
+		SessionsRevokedAt:  org.SessionsRevokedAt,
+		CreatedAt:          org.CreatedAt,
+		UpdatedAt:          org.UpdatedAt,
 	}
 }
 

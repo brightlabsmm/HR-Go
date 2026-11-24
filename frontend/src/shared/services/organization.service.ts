@@ -16,6 +16,12 @@ export interface Organization {
   country?: string | null
   address?: string | null
   status: OrganizationStatus | string
+  suspendNotifyFrom?: string | null
+  suspendNotifyTo?: string | null
+  scheduledSuspendAt?: string | null
+  suspendReason?: string | null
+  suspendedAt?: string | null
+  sessionsRevokedAt?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -48,6 +54,10 @@ export interface UpdateOrganizationStatusInput {
   status: OrganizationStatus
   confirmation: boolean
   reason?: string
+  immediate?: boolean
+  notifyFrom?: string
+  notifyTo?: string
+  suspendAt?: string
 }
 
 export interface CreateAdminAccountInput {
@@ -133,4 +143,10 @@ export function listOrganizationAdminAccounts(organizationId: string) {
 
 export function deleteOrganization(id: string) {
   return unwrapEmpty(apiClient.delete(controlPath(`/organizations/${id}`)))
+}
+
+export function cancelOrganizationSuspendSchedule(id: string) {
+  return unwrap<Organization>(
+    apiClient.delete(controlPath(`/organizations/${id}/suspend-schedule`))
+  )
 }

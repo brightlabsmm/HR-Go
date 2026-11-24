@@ -1,4 +1,5 @@
 import type { SortingState } from "@tanstack/react-table"
+import { ClockIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router"
 
@@ -15,7 +16,7 @@ import {
 } from "@/features/organizations/components/organization-status-menu"
 import { getCountryLabel } from "@/constants/countries"
 import { usePermissions } from "@/shared/hooks/use-permissions"
-import { formatDate } from "@/util/format-date"
+import { formatDate, formatDateTime } from "@/util/format-date"
 
 import type {
   Organization,
@@ -78,7 +79,20 @@ export function OrganizationTable({
     column.accessor("status", {
       header: t("columns.status"),
       enableSorting: true,
-      cell: ({ getValue }) => <StatusBadge status={getValue()} />,
+      cell: ({ row, getValue }) => (
+        <div className="flex flex-col items-start gap-1">
+          <StatusBadge status={getValue()} />
+          {row.original.scheduledSuspendAt ? (
+            <span
+              title={formatDateTime(row.original.scheduledSuspendAt, i18n.language)}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600 dark:text-amber-400"
+            >
+              <ClockIcon className="size-3" />
+              {t("suspend_dialog.scheduled_badge", "Suspension scheduled")}
+            </span>
+          ) : null}
+        </div>
+      ),
     }),
     column.accessor("createdAt", {
       header: t("created_at"),

@@ -36,6 +36,8 @@ export function useCurrentUserQuery() {
       return user
     },
     enabled: Boolean(accessToken),
+    refetchInterval: (query) =>
+      query.state.data?.organizationId ? 30_000 : false,
   })
 }
 
