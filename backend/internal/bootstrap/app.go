@@ -113,20 +113,18 @@ func NewEngine(deps Dependencies) *gin.Engine {
 				}
 			}
 
-			if claims.SessionID != "" {
-				var count int64
-				err := deps.DB.WithContext(ctx).Table("workspace_sessions").
-					Where("id = ? AND revoked_at IS NULL AND expires_at > ?", claims.SessionID, time.Now().UTC()).
-					Count(&count).Error
-				if err != nil {
-					return false, err
-				}
-				if count == 0 {
-					return false, nil
-				}
+			if claims.SessionID == "" {
+				return false, nil
 			}
 
-			return true, nil
+			var count int64
+			err := deps.DB.WithContext(ctx).Table("workspace_sessions").
+				Where("id = ? AND revoked_at IS NULL AND expires_at > ?", claims.SessionID, time.Now().UTC()).
+				Count(&count).Error
+			if err != nil {
+				return false, err
+			}
+			return count > 0, nil
 		})
 	}
 
