@@ -43,7 +43,7 @@ func (h *Handler) UpdateSettings(c *gin.Context) {
 
 	var req request.UpdateOrganizationSettingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		responses.Fail(c, apperrors.BadRequest("Invalid request body."))
+		responses.Fail(c, apperrors.BindError(err))
 		return
 	}
 

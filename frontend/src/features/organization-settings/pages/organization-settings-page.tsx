@@ -47,12 +47,12 @@ export function OrganizationSettingsPage() {
           .string()
           .trim()
           .min(1, t("errors.display_name_required"))
-          .max(255),
+          .max(255, t("errors.display_name_max", "Display name must not exceed 255 characters.")),
         contactEmail: z
           .string()
           .trim()
           .min(1, t("errors.email_required"))
-          .max(255)
+          .max(255, t("errors.email_max", "Email must not exceed 255 characters."))
           .email(t("errors.email_invalid")),
         contactPhone: requiredE164Phone(
           t("errors.phone_required"),
@@ -62,7 +62,7 @@ export function OrganizationSettingsPage() {
           .string()
           .trim()
           .min(1, t("errors.country_required"))
-          .max(10)
+          .max(10, t("errors.country_max", "Country must not exceed 10 characters."))
           .refine(
             isValidCountryCode,
             t("errors.country_invalid", "Please select a valid country.")
@@ -71,7 +71,7 @@ export function OrganizationSettingsPage() {
           .string()
           .trim()
           .min(1, t("errors.address_required"))
-          .max(2000),
+          .max(2000, t("errors.address_max", "Address must not exceed 2000 characters.")),
         branchCodeFormat: z
           .string()
           .trim()

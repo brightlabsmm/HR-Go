@@ -731,6 +731,110 @@ func TestOrganizationValidation(t *testing.T) {
 			t.Fatalf("expected 400 VALIDATION_ERROR, got %+v", appErr)
 		}
 	})
+
+	t.Run("rejects 300-character display name with validation error (BUG-33)", func(t *testing.T) {
+		repo := &mockOrgRepo{}
+		svc := service.New(repo)
+
+		longDisplayName := strings.Repeat("A", 300)
+		_, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ACME-CORP",
+			LegalName:        "Acme Corporation",
+			DisplayName:      longDisplayName,
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "+95912345678",
+			Country:          "MM",
+			Address:          "Yangon",
+		})
+
+		if appErr == nil {
+			t.Fatal("expected validation error for 300-char display name, got nil")
+		}
+		if appErr.Status != http.StatusBadRequest || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected 400 VALIDATION_ERROR, got %+v", appErr)
+		}
+
+		found := false
+		for _, issue := range appErr.Details {
+			if issue.Field == "displayName" {
+				found = true
+				if issue.Message != "Display name must not exceed 255 characters." {
+					t.Errorf("unexpected message: %s", issue.Message)
+				}
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected field issue for displayName, got %+v", appErr.Details)
+		}
+	})
+
+	t.Run("rejects 300-character display name on update (BUG-33)", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			org: &models.Organization{ID: "org-1", Code: "ORG-001", Status: "ACTIVE"},
+		}
+		svc := service.New(repo)
+
+		longDisplayName := strings.Repeat("A", 300)
+		_, appErr := svc.Update(context.Background(), "org-1", request.UpdateOrganizationRequest{
+			DisplayName: &longDisplayName,
+		})
+
+		if appErr == nil {
+			t.Fatal("expected validation error for 300-char display name, got nil")
+		}
+		if appErr.Status != http.StatusBadRequest || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected 400 VALIDATION_ERROR, got %+v", appErr)
+		}
+
+		found := false
+		for _, issue := range appErr.Details {
+			if issue.Field == "displayName" {
+				found = true
+				if issue.Message != "Display name must not exceed 255 characters." {
+					t.Errorf("unexpected message: %s", issue.Message)
+				}
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected field issue for displayName, got %+v", appErr.Details)
+		}
+	})
+
+	t.Run("maps DB 255-character truncation to displayName field error (BUG-33)", func(t *testing.T) {
+		repo := &mockOrgRepo{
+			err: fmt.Errorf("pq: value too long for type character varying(255)"),
+		}
+		svc := service.New(repo)
+
+		_, appErr := svc.Create(context.Background(), request.CreateOrganizationRequest{
+			OrganizationCode: "ACME-CORP",
+			LegalName:        "Acme Corporation",
+			DisplayName:      "Acme",
+			ContactEmail:     "contact@acme.com",
+			ContactPhone:     "+95912345678",
+			Country:          "MM",
+			Address:          "Yangon",
+		})
+
+		if appErr == nil {
+			t.Fatal("expected error, got nil")
+		}
+		if appErr.Status != http.StatusBadRequest || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected 400 VALIDATION_ERROR, got %+v", appErr)
+		}
+		found := false
+		for _, issue := range appErr.Details {
+			if issue.Field == "displayName" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected field issue for displayName, got %+v", appErr.Details)
+		}
+	})
 }
 
 type mockFailingCreateRepo struct {
