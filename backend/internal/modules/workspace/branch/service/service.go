@@ -108,6 +108,26 @@ func (s *service) Update(ctx context.Context, orgID, id string, req request.Upda
 			if parent == nil {
 				return nil, apperrors.BadRequest("Parent branch not found in this organization.")
 			}
+
+			// Prevent circular parent reference
+			currID := *req.ParentID
+			visited := map[string]bool{id: true}
+			for currID != "" {
+				if visited[currID] {
+					return nil, apperrors.BadRequest("Circular parent branch reference detected.")
+				}
+				visited[currID] = true
+
+				currBranch, err := s.repo.FindByID(ctx, orgID, currID)
+				if err != nil {
+					return nil, apperrors.Internal()
+				}
+				if currBranch == nil || currBranch.ParentID == nil || *currBranch.ParentID == "" {
+					break
+				}
+				currID = *currBranch.ParentID
+			}
+
 			branch.ParentID = req.ParentID
 		} else {
 			branch.ParentID = nil
@@ -136,6 +156,14 @@ func (s *service) Deactivate(ctx context.Context, orgID, id string) (*response.B
 	}
 	if branch == nil {
 		return nil, apperrors.NotFound("Branch not found")
+	}
+
+	deptCount, err := s.repo.CountActiveDepartments(ctx, orgID, id)
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+	if deptCount > 0 {
+		return nil, apperrors.BadRequest("Cannot deactivate branch with active departments. Please deactivate or reassign departments first.")
 	}
 
 	branch.Status = "INACTIVE"

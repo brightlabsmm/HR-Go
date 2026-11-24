@@ -18,6 +18,7 @@ import {
   useDeactivatePositionMutation,
   usePositionQuery,
 } from "@/shared/queries/position.query"
+import { toast } from "@/shared/stores/toast.store"
 import { formatDate } from "@/util/format-date"
 import { getInitials } from "@/util/initials"
 
@@ -33,7 +34,7 @@ export function PositionDetailPage() {
   const canUpdate = can("org.position.update")
   const canDeactivate = can("org.position.deactivate")
   const deactivateMutation = useDeactivatePositionMutation()
-  const [showDeactivateDialog, setShowDeactivateDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const departmentName =
     (departmentsQuery.data?.items ?? []).find(
@@ -78,10 +79,10 @@ export function PositionDetailPage() {
       {canDeactivate && position && position.status === "ACTIVE" ? (
         <DetailActionButton
           tone="destructive"
-          onClick={() => setShowDeactivateDialog(true)}
+          onClick={() => setShowDeleteDialog(true)}
         >
           <Trash2Icon />
-          {tCommon("actions.deactivate", "Deactivate")}
+          {tCommon("actions.delete")}
         </DetailActionButton>
       ) : null}
     </>
@@ -119,22 +120,24 @@ export function PositionDetailPage() {
         </div>
       </div>
       <ConfirmDialog
-        open={showDeactivateDialog}
-        title={t("deactivate.title")}
-        description={t("deactivate.description", { name })}
-        confirmLabel={t("deactivate.confirm")}
+        open={showDeleteDialog}
+        title={t("delete.title", { name })}
+        description={t("delete.description", { name })}
+        confirmLabel={t("delete.confirm")}
         confirmVariant="destructive"
         isPending={deactivateMutation.isPending}
         onOpenChange={(open) => {
-          if (!open) setShowDeactivateDialog(false)
+          if (!open) setShowDeleteDialog(false)
         }}
         onConfirm={() => {
           if (!position) return
           deactivateMutation.mutate(position.id, {
             onSuccess: () => {
-              setShowDeactivateDialog(false)
+              setShowDeleteDialog(false)
+              toast.success(t("delete.success"))
               void navigate("/positions")
             },
+            onError: () => setShowDeleteDialog(false),
           })
         }}
       />

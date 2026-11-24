@@ -31,6 +31,7 @@ import {
 import { toast } from "@/shared/stores/toast.store"
 import { formatDate, formatDateTime } from "@/util/format-date"
 import { getInitials } from "@/util/initials"
+import { isDeletableOrganization } from "@/features/organizations/util/organization-rules"
 
 import type { OrganizationStatus } from "@/shared/services/organization.service"
 
@@ -122,7 +123,7 @@ export function OrganizationDetailPage() {
                 {t("suspend_dialog.cancel_schedule_button", "Cancel Schedule")}
               </DetailActionButton>
             ) : null}
-            {canDelete && organization ? (
+            {isDeletableOrganization(organization, canDelete) ? (
               <DetailActionButton
                 tone="destructive"
                 onClick={() => setShowDeleteDialog(true)}
@@ -196,7 +197,7 @@ export function OrganizationDetailPage() {
                 <DetailList columns={2} items={contactItems} />
               </section>
               <section className="border-t border-hair pt-6">
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-body-2 font-semibold text-foreground">
                     {t("create_admin.title", "Organization Administrators")}
                   </h2>
@@ -204,6 +205,7 @@ export function OrganizationDetailPage() {
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="w-full sm:w-auto"
                     onClick={() => void navigate(`/organizations/${id}/create-admin`)}
                   >
                     <UserPlusIcon className="size-4" />
@@ -231,11 +233,13 @@ export function OrganizationDetailPage() {
                     {adminAccounts.map((admin) => (
                       <div
                         key={admin.id}
-                        className="flex flex-wrap items-center justify-between gap-3 p-4"
+                        className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-medium text-foreground">{admin.fullName}</span>
+                            <span className="font-medium break-words text-foreground">
+                              {admin.fullName}
+                            </span>
                             <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
                               {admin.employeeCode}
                             </span>
@@ -249,7 +253,7 @@ export function OrganizationDetailPage() {
                             </p>
                           ) : null}
                         </div>
-                        <div className="text-right">
+                        <div className="sm:text-right">
                           <StatusBadge status={admin.status} />
                           {admin.lastLoginAt ? (
                             <p className="mt-1 text-xs text-muted-foreground">

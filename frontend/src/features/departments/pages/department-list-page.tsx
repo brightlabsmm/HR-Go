@@ -26,6 +26,7 @@ import {
   useDeactivateDepartmentMutation,
   useDepartmentsQuery,
 } from "@/shared/queries/department.query"
+import { toast } from "@/shared/stores/toast.store"
 import { parsePageParam, parsePageSizeParam } from "@/util/pagination"
 
 import type { Department } from "@/shared/services/department.service"
@@ -133,7 +134,11 @@ export function DepartmentListPage() {
       cell: ({ row }) => (
         <DataTableActions
           onEdit={() => void navigate(`/departments/${row.original.id}/edit`)}
-          onDelete={() => setTarget(row.original)}
+          onDelete={
+            row.original.status === "ACTIVE"
+              ? () => window.setTimeout(() => setTarget(row.original), 0)
+              : undefined
+          }
         />
       ),
     }),
@@ -224,11 +229,12 @@ export function DepartmentListPage() {
       </ListCard>
       <ConfirmDialog
         open={target !== null}
-        title={t("deactivate.title")}
-        description={t("deactivate.description", {
+        title={t("delete.title", { name: target?.departmentName ?? "" })}
+        description={t("delete.description", {
           name: target?.departmentName ?? "",
         })}
-        confirmLabel={t("deactivate.confirm")}
+        confirmLabel={t("delete.confirm")}
+        confirmVariant="destructive"
         isPending={deactivateMutation.isPending}
         onOpenChange={(open) => {
           if (!open) {
@@ -240,7 +246,11 @@ export function DepartmentListPage() {
             return
           }
           deactivateMutation.mutate(target.id, {
-            onSuccess: () => setTarget(null),
+            onSuccess: () => {
+              setTarget(null)
+              toast.success(t("delete.success"))
+            },
+            onError: () => setTarget(null),
           })
         }}
       />

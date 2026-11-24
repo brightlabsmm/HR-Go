@@ -13,9 +13,17 @@ import (
 
 type mockBranchRepo struct {
 	repository.Repository
-	branch   *models.Branch
-	branches []models.Branch
-	err      error
+	branch          *models.Branch
+	branches        []models.Branch
+	activeDeptCount int64
+	err             error
+}
+
+func (m *mockBranchRepo) CountActiveDepartments(ctx context.Context, orgID, branchID string) (int64, error) {
+	if m.err != nil {
+		return 0, m.err
+	}
+	return m.activeDeptCount, nil
 }
 
 func (m *mockBranchRepo) Create(ctx context.Context, b *models.Branch) error {
@@ -36,6 +44,11 @@ func (m *mockBranchRepo) FindByID(ctx context.Context, orgID, id string) (*model
 	if m.branch != nil && m.branch.ID == id {
 		return m.branch, nil
 	}
+	for i := range m.branches {
+		if m.branches[i].ID == id {
+			return &m.branches[i], nil
+		}
+	}
 	return nil, nil
 }
 
@@ -46,6 +59,11 @@ func (m *mockBranchRepo) FindByCode(ctx context.Context, orgID, code string) (*m
 	if m.branch != nil && m.branch.Code == code {
 		return m.branch, nil
 	}
+	for i := range m.branches {
+		if m.branches[i].Code == code {
+			return &m.branches[i], nil
+		}
+	}
 	return nil, nil
 }
 
@@ -55,6 +73,11 @@ func (m *mockBranchRepo) Update(ctx context.Context, b *models.Branch) error {
 	}
 	b.UpdatedAt = time.Date(2026, 11, 23, 12, 0, 0, 0, time.UTC)
 	m.branch = b
+	for i := range m.branches {
+		if m.branches[i].ID == b.ID {
+			m.branches[i] = *b
+		}
+	}
 	return nil
 }
 
@@ -142,6 +165,129 @@ func TestBranchService_CreatedAtAndUpdatedAt(t *testing.T) {
 		}
 		if items[0].CreatedAt.IsZero() || items[0].UpdatedAt.IsZero() {
 			t.Errorf("expected non-zero timestamps in list item")
+		}
+	})
+}
+
+func TestBranchService_Deactivate_ActiveDepartments(t *testing.T) {
+	b := &models.Branch{
+		ID:             "branch-1",
+		OrganizationID: "org-1",
+		Code:           "BR-001",
+		Name:           "Branch 1",
+		Status:         "ACTIVE",
+	}
+
+	t.Run("rejects deactivation when branch has active departments (BUG-27)", func(t *testing.T) {
+		repo := &mockBranchRepo{branch: b, activeDeptCount: 2}
+		svc := service.New(repo)
+
+		_, appErr := svc.Deactivate(context.Background(), "org-1", "branch-1")
+		if appErr == nil || appErr.Status != 400 {
+			t.Fatalf("expected 400 Bad Request error, got %v", appErr)
+		}
+	})
+
+	t.Run("allows deactivation when branch has no active departments", func(t *testing.T) {
+		repo := &mockBranchRepo{branch: b, activeDeptCount: 0}
+		svc := service.New(repo)
+
+		res, appErr := svc.Deactivate(context.Background(), "org-1", "branch-1")
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if res.Status != "INACTIVE" {
+			t.Errorf("expected status INACTIVE, got %s", res.Status)
+		}
+	})
+}
+
+func TestBranchService_CircularParentPrevention(t *testing.T) {
+	hqID := "hq-1"
+	childID := "child-1"
+	grandChildID := "gc-1"
+
+	repo := &mockBranchRepo{
+		branches: []models.Branch{
+			{ID: hqID, OrganizationID: "org-1", Code: "HQ", Name: "HQ Branch", ParentID: nil},
+			{ID: childID, OrganizationID: "org-1", Code: "CHILD", Name: "Child Branch", ParentID: &hqID},
+			{ID: grandChildID, OrganizationID: "org-1", Code: "GC", Name: "GrandChild Branch", ParentID: &childID},
+		},
+	}
+	svc := service.New(repo)
+
+	t.Run("rejects self as parent", func(t *testing.T) {
+		_, appErr := svc.Update(context.Background(), "org-1", hqID, request.UpdateBranchRequest{
+			ParentID: &hqID,
+		})
+		if appErr == nil || appErr.Status != 400 {
+			t.Fatalf("expected 400 error for self parent, got %v", appErr)
+		}
+	})
+
+	t.Run("rejects direct child as parent (creates 2-node cycle)", func(t *testing.T) {
+		_, appErr := svc.Update(context.Background(), "org-1", hqID, request.UpdateBranchRequest{
+			ParentID: &childID,
+		})
+		if appErr == nil || appErr.Status != 400 {
+			t.Fatalf("expected 400 error for child as parent, got %v", appErr)
+		}
+	})
+
+	t.Run("rejects grandchild as parent (creates 3-node cycle)", func(t *testing.T) {
+		_, appErr := svc.Update(context.Background(), "org-1", hqID, request.UpdateBranchRequest{
+			ParentID: &grandChildID,
+		})
+		if appErr == nil || appErr.Status != 400 {
+			t.Fatalf("expected 400 error for grandchild as parent, got %v", appErr)
+		}
+	})
+
+	t.Run("allows valid non-circular parent", func(t *testing.T) {
+		otherID := "other-1"
+		repo.branches = append(repo.branches, models.Branch{
+			ID: otherID, OrganizationID: "org-1", Code: "OTHER", Name: "Other Root", ParentID: nil,
+		})
+
+		res, appErr := svc.Update(context.Background(), "org-1", hqID, request.UpdateBranchRequest{
+			ParentID: &otherID,
+		})
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if res.ParentID == nil || *res.ParentID != otherID {
+			t.Errorf("expected parent %s, got %v", otherID, res.ParentID)
+		}
+	})
+}
+
+func TestBranchService_RemoveParent(t *testing.T) {
+	parentID := "p-1"
+	child := &models.Branch{
+		ID:             "child-1",
+		OrganizationID: "org-1",
+		Code:           "BR-002",
+		Name:           "Child Branch",
+		ParentID:       &parentID,
+		Status:         "ACTIVE",
+	}
+
+	repo := &mockBranchRepo{branch: child}
+	svc := service.New(repo)
+
+	t.Run("clears parent when empty string is passed (BUG-26)", func(t *testing.T) {
+		emptyParent := ""
+		res, appErr := svc.Update(context.Background(), "org-1", "child-1", request.UpdateBranchRequest{
+			ParentID: &emptyParent,
+		})
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if res.ParentID != nil {
+			t.Errorf("expected ParentID to be nil, got %v", *res.ParentID)
+		}
+		if child.ParentID != nil {
+			t.Errorf("expected branch.ParentID in repo to be nil, got %v", *child.ParentID)
 		}
 	})
 }

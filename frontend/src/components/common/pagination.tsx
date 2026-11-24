@@ -78,7 +78,7 @@ export function Pagination({
   return (
     <nav
       className={cn(
-        "flex flex-wrap items-center justify-between gap-4",
+        "flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4",
         className
       )}
       aria-label={t("pagination.label")}
@@ -113,7 +113,7 @@ export function Pagination({
       </div>
 
       {totalPages > 0 ? (
-        <div className="flex items-center gap-1.5">
+        <div className="flex max-w-full items-center gap-1.5 overflow-x-auto">
           {canGoPrevious ? (
             <Link
               to={hrefFor(page - 1)}

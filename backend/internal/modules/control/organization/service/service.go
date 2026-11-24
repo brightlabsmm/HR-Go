@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"hrgo/backend/internal/modules/control/organization/mapper"
 	"hrgo/backend/internal/modules/control/organization/models"
@@ -83,7 +84,7 @@ func (s *service) Create(ctx context.Context, req request.CreateOrganizationRequ
 
 	if displayName == "" {
 		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "displayName", Message: "Display name is required."})
-	} else if len(displayName) > 255 {
+	} else if utf8.RuneCountInString(displayName) > 255 || len(displayName) > 255 {
 		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "displayName", Message: "Display name must not exceed 255 characters."})
 	}
 
@@ -233,7 +234,7 @@ func (s *service) Update(ctx context.Context, id string, req request.UpdateOrgan
 		displayName := strings.TrimSpace(*req.DisplayName)
 		if displayName == "" {
 			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "displayName", Message: "Display name is required."})
-		} else if len(displayName) > 255 {
+		} else if utf8.RuneCountInString(displayName) > 255 || len(displayName) > 255 {
 			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "displayName", Message: "Display name must not exceed 255 characters."})
 		} else {
 			org.DisplayName = displayName
@@ -543,6 +544,19 @@ func (s *service) Delete(ctx context.Context, id string) *apperrors.Error {
 	if org == nil {
 		return apperrors.NotFound("Organization not found")
 	}
+
+	if strings.ToUpper(strings.TrimSpace(org.Status)) != "PENDING" {
+		return apperrors.BadRequest("Cannot delete an organization that has been activated. Only never-activated organizations can be deleted.")
+	}
+
+	admins, err := s.repo.ListAdminAccounts(ctx, id, request.ListAdminAccountsQuery{})
+	if err != nil {
+		return apperrors.Internal()
+	}
+	if len(admins) > 0 {
+		return apperrors.BadRequest("Cannot delete an organization with existing admin accounts.")
+	}
+
 	if err := s.repo.SoftDelete(ctx, id); err != nil {
 		return apperrors.Internal()
 	}

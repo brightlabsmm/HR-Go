@@ -63,7 +63,11 @@ export function OrganizationListPage() {
   ]
 
   const addButton = canCreate ? (
-    <Button type="button" onClick={() => void navigate("/organizations/new")}>
+    <Button
+      type="button"
+      className="w-full sm:w-auto"
+      onClick={() => void navigate("/organizations/new")}
+    >
       <PlusIcon className="size-4" />
       {t("add")}
     </Button>
@@ -113,7 +117,7 @@ export function OrganizationListPage() {
   }
 
   return (
-    <MotionStack className="flex h-full min-h-0 flex-col gap-8">
+    <MotionStack className="flex flex-col gap-8 md:h-full md:min-h-0">
       <PageHeader title={t("title")} description={t("subtitle")} actions={addButton} />
       <ListCard
         toolbar={
@@ -122,13 +126,14 @@ export function OrganizationListPage() {
               value={params.search}
               onValueChange={params.setSearch}
               placeholder={t("search_placeholder")}
-              className="w-full sm:w-80"
+              className="w-full sm:w-80 sm:max-w-full sm:shrink-0"
             />
             <FilterSelect
               items={statusItems}
               value={params.status ?? "all"}
               label={t("all_status")}
               onValueChange={params.setStatus}
+              className="w-full sm:w-44"
             />
           </FilterBar>
         }

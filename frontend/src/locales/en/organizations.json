@@ -36,14 +36,20 @@
     "cancel": "Cancel",
     "errors": {
       "code": "Code is required.",
+      "code_max": "Code must not exceed 50 characters.",
       "legal_name": "Legal name is required.",
+      "legal_name_max": "Legal name must not exceed 255 characters.",
       "display_name": "Display name is required.",
+      "display_name_max": "Display name must not exceed 255 characters.",
       "email": "Email must be a valid email address.",
       "email_required": "Email is required.",
+      "email_max": "Email must not exceed 255 characters.",
       "phone_required": "Phone number is required.",
       "phone_invalid": "Enter a valid phone number.",
       "country_required": "Country is required.",
-      "address_required": "Address is required."
+      "country_max": "Country must not exceed 10 characters.",
+      "address_required": "Address is required.",
+      "address_max": "Address must not exceed 2000 characters."
     }
   },
   "empty": {

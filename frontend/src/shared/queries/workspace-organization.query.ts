@@ -28,6 +28,7 @@ export function useUpdateWorkspaceOrganizationMutation() {
   return useMutation({
     mutationFn: (input: UpdateWorkspaceOrganizationInput) =>
       updateWorkspaceOrganization(input),
+    meta: { skipErrorToast: true },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: workspaceOrganizationKeys.all,

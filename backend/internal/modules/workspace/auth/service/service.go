@@ -148,7 +148,9 @@ func (s *service) Login(ctx context.Context, req request.LoginRequest, meta ...S
 
 func (s *service) Logout(ctx context.Context, sessionID string) *apperrors.Error {
 	if sessionID != "" {
-		_ = s.repo.RevokeSession(ctx, sessionID, "USER_LOGOUT")
+		if err := s.repo.RevokeSession(ctx, sessionID, "USER_LOGOUT"); err != nil {
+			return apperrors.Internal()
+		}
 	}
 	return nil
 }
@@ -191,6 +193,12 @@ func (s *service) ChangePassword(ctx context.Context, accountID string, req requ
 	if req.ConfirmPassword != "" && req.NewPassword != req.ConfirmPassword {
 		return apperrors.ValidationFailed([]apperrors.FieldIssue{
 			{Field: "confirmPassword", Message: "Passwords do not match."},
+		})
+	}
+
+	if err := security.ValidatePasswordStrength(req.NewPassword); err != nil {
+		return apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "newPassword", Message: err.Error()},
 		})
 	}
 

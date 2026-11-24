@@ -226,11 +226,12 @@ export function OrganizationCreatePage() {
             type="button"
             variant="outline"
             disabled={isPending}
+            className="w-full sm:w-auto"
             onClick={() => void navigate("/")}
           >
             {t("form.cancel")}
           </Button>
-          <Button type="submit" loading={isPending}>
+          <Button type="submit" className="w-full sm:w-auto" loading={isPending}>
             {t("form.create")}
           </Button>
         </FormActions>

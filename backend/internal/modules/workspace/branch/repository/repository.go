@@ -20,6 +20,7 @@ type Repository interface {
 	FindByCode(ctx context.Context, orgID, code string) (*models.Branch, error)
 	Update(ctx context.Context, b *models.Branch) error
 	List(ctx context.Context, orgID string, q request.ListBranchesQuery) ([]models.Branch, int64, error)
+	CountActiveDepartments(ctx context.Context, orgID, branchID string) (int64, error)
 }
 
 type repository struct {
@@ -99,7 +100,15 @@ func (r *repository) FindByCode(ctx context.Context, orgID, code string) (*model
 }
 
 func (r *repository) Update(ctx context.Context, b *models.Branch) error {
-	return r.db.WithContext(ctx).Save(b).Error
+	return r.db.WithContext(ctx).Select("name", "address", "parent_id", "status").Updates(b).Error
+}
+
+func (r *repository) CountActiveDepartments(ctx context.Context, orgID, branchID string) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Table("departments").
+		Where("organization_id = ? AND branch_id = ? AND status = ?", orgID, branchID, "ACTIVE").
+		Count(&count).Error
+	return count, err
 }
 
 func (r *repository) List(ctx context.Context, orgID string, q request.ListBranchesQuery) ([]models.Branch, int64, error) {

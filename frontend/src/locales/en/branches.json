@@ -24,6 +24,12 @@
     "description": "This will deactivate {{name}}. You can keep using other branches.",
     "confirm": "Deactivate"
   },
+  "delete": {
+    "title": "Delete {{name}}?",
+    "description": "This will deactivate {{name}}. You can keep using other branches.",
+    "confirm": "Delete",
+    "success": "Branch deleted successfully."
+  },
   "form": {
     "title": "Add branch",
     "subtitle": "Fill in the details below to create a new branch.",

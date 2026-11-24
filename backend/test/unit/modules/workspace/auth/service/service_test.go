@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -60,6 +61,9 @@ func (m *mockWorkspaceAuthRepo) CreateSession(ctx context.Context, session *mode
 }
 
 func (m *mockWorkspaceAuthRepo) RevokeSession(ctx context.Context, sessionID string, reason string) error {
+	if m.err != nil {
+		return m.err
+	}
 	m.revokedSessionId = sessionID
 	return nil
 }
@@ -202,6 +206,28 @@ func TestWorkspaceAuthService_ChangePassword(t *testing.T) {
 
 		if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
 			t.Fatalf("expected VALIDATION_ERROR, got %v", appErr)
+		}
+	})
+
+	t.Run("fails when new password fails complexity or is common weak password", func(t *testing.T) {
+		acc := &models.OrganizationAccount{
+			ID:                 "acc-1",
+			PasswordHash:       hashedPass,
+			MustChangePassword: true,
+		}
+		repo := &mockWorkspaceAuthRepo{account: acc}
+		svc := service.New(repo, tokens)
+
+		for _, weak := range []string{"12345678", "password", "Admin123", "short1"} {
+			appErr := svc.ChangePassword(context.Background(), "acc-1", request.ChangePasswordRequest{
+				CurrentPassword: "InitialPass@123",
+				NewPassword:     weak,
+				ConfirmPassword: weak,
+			})
+
+			if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+				t.Errorf("expected VALIDATION_ERROR for weak password %q, got %v", weak, appErr)
+			}
 		}
 	})
 
@@ -353,6 +379,14 @@ func TestWorkspaceAuthService_ChangePassword(t *testing.T) {
 		if repo.revokedSessionId != repo.createdSession.ID {
 			t.Errorf("revokedSessionId = %s, want %s", repo.revokedSessionId, repo.createdSession.ID)
 		}
+
+		// Logout error propagation when repository fails
+		repo.err = errors.New("db error")
+		logoutErr2 := svc.Logout(context.Background(), repo.createdSession.ID)
+		if logoutErr2 == nil {
+			t.Fatal("expected error from Logout when RevokeSession fails")
+		}
+		repo.err = nil
 	})
 
 	t.Run("returns suspensionNotice in user profile when within notice window", func(t *testing.T) {

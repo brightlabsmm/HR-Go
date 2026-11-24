@@ -17,6 +17,7 @@ import {
 import { getCountryLabel } from "@/constants/countries"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import { formatDate, formatDateTime } from "@/util/format-date"
+import { isDeletableOrganization } from "@/features/organizations/util/organization-rules"
 
 import type {
   Organization,
@@ -24,10 +25,6 @@ import type {
 } from "@/shared/services/organization.service"
 
 const column = createDataTableColumns<Organization>()
-
-// Below md only Name, Status and Actions stay, so the table fits a phone without sideways scroll.
-const DESKTOP_ONLY_CLASS = "hidden md:table-cell"
-const COMPACT_CELL_CLASS = "px-2 md:px-4"
 
 interface OrganizationTableProps {
   data: Organization[]
@@ -55,7 +52,7 @@ export function OrganizationTable({
       id: "displayName",
       header: t("columns.name"),
       enableSorting: true,
-      meta: { headerClassName: COMPACT_CELL_CLASS, cellClassName: COMPACT_CELL_CLASS },
+      meta: { cellClassName: "min-w-44 max-w-[14rem] md:max-w-none" },
       cell: ({ row }) => (
         <IdentityCell
           name={row.original.displayName}
@@ -67,7 +64,7 @@ export function OrganizationTable({
       id: "code",
       header: t("columns.code"),
       enableSorting: true,
-      meta: { headerClassName: DESKTOP_ONLY_CLASS, cellClassName: DESKTOP_ONLY_CLASS },
+      meta: { hideBelow: "sm" },
       cell: ({ getValue }) => (
         <span className="font-mono text-small-2 text-muted-foreground">{getValue()}</span>
       ),
@@ -75,19 +72,18 @@ export function OrganizationTable({
     column.accessor("contactEmail", {
       header: t("columns.email"),
       enableSorting: false,
-      meta: { headerClassName: DESKTOP_ONLY_CLASS, cellClassName: DESKTOP_ONLY_CLASS },
+      meta: { hideBelow: "md" },
       cell: ({ getValue }) => getValue() || "—",
     }),
     column.accessor("country", {
       header: t("columns.country"),
       enableSorting: false,
-      meta: { headerClassName: DESKTOP_ONLY_CLASS, cellClassName: DESKTOP_ONLY_CLASS },
+      meta: { hideBelow: "md" },
       cell: ({ getValue }) => getCountryLabel(getValue()),
     }),
     column.accessor("status", {
       header: t("columns.status"),
       enableSorting: true,
-      meta: { headerClassName: COMPACT_CELL_CLASS, cellClassName: COMPACT_CELL_CLASS },
       cell: ({ row, getValue }) => (
         <div className="flex flex-col items-start gap-1">
           <StatusBadge status={getValue()} />
@@ -106,7 +102,7 @@ export function OrganizationTable({
     column.accessor("createdAt", {
       header: t("created_at"),
       enableSorting: true,
-      meta: { headerClassName: DESKTOP_ONLY_CLASS, cellClassName: DESKTOP_ONLY_CLASS },
+      meta: { hideBelow: "md" },
       cell: ({ getValue }) => (
         <span className="text-muted-foreground">{formatDate(getValue(), i18n.language)}</span>
       ),
@@ -118,8 +114,9 @@ export function OrganizationTable({
       enableHiding: false,
       meta: {
         align: "end",
-        headerClassName: COMPACT_CELL_CLASS,
-        cellClassName: COMPACT_CELL_CLASS,
+        headerClassName: "sticky right-0 z-[1] bg-surface",
+        cellClassName:
+          "sticky right-0 z-[1] bg-surface group-hover/table-row:bg-accent/40",
       },
       cell: ({ row }) => {
         const organization = row.original
@@ -144,7 +141,9 @@ export function OrganizationTable({
               ) : undefined
             }
             onDelete={
-              canDelete && onDelete ? () => onDelete(organization) : undefined
+              isDeletableOrganization(organization, canDelete) && onDelete
+                ? () => onDelete(organization)
+                : undefined
             }
           />
         )
