@@ -1,6 +1,10 @@
 package handler
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
+
 	"github.com/gin-gonic/gin"
 
 	"hrgo/backend/internal/modules/workspace/branch/request"
@@ -64,10 +68,27 @@ func (h *Handler) GetByID(c *gin.Context) {
 func (h *Handler) Update(c *gin.Context) {
 	claims := security.GetClaims(c)
 	id := c.Param("branchId")
+
+	bodyBytes, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		responses.Fail(c, apperrors.BadRequest("Invalid update payload."))
+		return
+	}
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	var rawMap map[string]json.RawMessage
+	_ = json.Unmarshal(bodyBytes, &rawMap)
+
 	var req request.UpdateBranchRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		responses.Fail(c, apperrors.BadRequest("Invalid update payload."))
 		return
+	}
+
+	// If parentId was explicitly passed in JSON (including as null), treat it as an explicit clear
+	if _, ok := rawMap["parentId"]; ok && req.ParentID == nil {
+		empty := ""
+		req.ParentID = &empty
 	}
 
 	res, appErr := h.svc.Update(c.Request.Context(), claims.OrganizationID, id, req)

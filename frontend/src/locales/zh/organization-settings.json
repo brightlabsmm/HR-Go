@@ -24,12 +24,16 @@
   },
   "errors": {
     "display_name_required": "显示名称为必填项。",
+    "display_name_max": "显示名称不能超过 255 个字符。",
     "email_required": "联系邮箱为必填项。",
+    "email_max": "邮箱不能超过 255 个字符。",
     "email_invalid": "请输入有效的邮箱地址。",
     "phone_required": "联系电话为必填项。",
     "phone_invalid": "请输入有效的电话号码。",
     "country_required": "国家/地区为必填项。",
-    "address_required": "地址为必填项。"
+    "country_max": "国家代码不能超过 10 个字符。",
+    "address_required": "地址为必填项。",
+    "address_max": "地址不能超过 2000 个字符。"
   },
   "save": "保存更改",
   "save_success": "组织设置更新成功。"

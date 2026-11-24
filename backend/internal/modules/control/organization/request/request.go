@@ -8,23 +8,23 @@ import (
 )
 
 type CreateOrganizationRequest struct {
-	OrganizationCode string `json:"organizationCode" binding:"required"`
-	LegalName        string `json:"legalName" binding:"required"`
-	DisplayName      string `json:"displayName" binding:"required"`
-	ContactEmail     string `json:"contactEmail" binding:"required,email"`
-	ContactPhone     string `json:"contactPhone" binding:"required"`
-	Country          string `json:"country" binding:"required"`
-	Address          string `json:"address" binding:"required"`
+	OrganizationCode string `json:"organizationCode" binding:"required,max=50"`
+	LegalName        string `json:"legalName" binding:"required,max=255"`
+	DisplayName      string `json:"displayName" binding:"required,max=255"`
+	ContactEmail     string `json:"contactEmail" binding:"required,email,max=255"`
+	ContactPhone     string `json:"contactPhone" binding:"required,max=50"`
+	Country          string `json:"country" binding:"required,max=10"`
+	Address          string `json:"address" binding:"required,max=2000"`
 }
 
 type UpdateOrganizationRequest struct {
-	OrganizationCode *string `json:"organizationCode"`
-	LegalName        *string `json:"legalName"`
-	DisplayName      *string `json:"displayName"`
-	ContactEmail     *string `json:"contactEmail" binding:"omitempty,email"`
-	ContactPhone     *string `json:"contactPhone"`
-	Country          *string `json:"country"`
-	Address          *string `json:"address"`
+	OrganizationCode *string `json:"organizationCode" binding:"omitempty,max=50"`
+	LegalName        *string `json:"legalName" binding:"omitempty,max=255"`
+	DisplayName      *string `json:"displayName" binding:"omitempty,max=255"`
+	ContactEmail     *string `json:"contactEmail" binding:"omitempty,email,max=255"`
+	ContactPhone     *string `json:"contactPhone" binding:"omitempty,max=50"`
+	Country          *string `json:"country" binding:"omitempty,max=10"`
+	Address          *string `json:"address" binding:"omitempty,max=2000"`
 }
 
 type UpdateStatusRequest struct {

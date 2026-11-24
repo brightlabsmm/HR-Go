@@ -45,7 +45,10 @@ func (h *Handler) Login(c *gin.Context) {
 func (h *Handler) Logout(c *gin.Context) {
 	claims := security.GetClaims(c)
 	if claims != nil && claims.SessionID != "" {
-		_ = h.svc.Logout(c.Request.Context(), claims.SessionID)
+		if appErr := h.svc.Logout(c.Request.Context(), claims.SessionID); appErr != nil {
+			responses.Fail(c, appErr)
+			return
+		}
 	}
 	responses.NoContent(c)
 }

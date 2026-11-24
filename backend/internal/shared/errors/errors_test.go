@@ -12,6 +12,7 @@ import (
 
 type sampleRequest struct {
 	OrganizationCode string `json:"organizationCode" binding:"required"`
+	DisplayName      string `json:"displayName" binding:"omitempty,max=255"`
 	ContactEmail     string `json:"contactEmail" binding:"required,email"`
 }
 
@@ -71,6 +72,34 @@ func TestBindError(t *testing.T) {
 		appErr := apperrors.BindError(syntaxErr)
 		if appErr == nil || appErr.Status != http.StatusBadRequest || appErr.Code != "BAD_REQUEST" {
 			t.Fatalf("expected BAD_REQUEST, got %+v", appErr)
+		}
+	})
+
+	t.Run("converts max tag violation to field issue (BUG-33)", func(t *testing.T) {
+		validate := validator.New()
+		validate.SetTagName("binding")
+		longName := ""
+		for i := 0; i < 300; i++ {
+			longName += "x"
+		}
+		err := validate.Struct(&sampleRequest{
+			OrganizationCode: "ORG-1",
+			DisplayName:      longName,
+			ContactEmail:     "admin@acme.com",
+		})
+		if err == nil {
+			t.Fatal("expected validation error, got nil")
+		}
+
+		appErr := apperrors.BindError(err)
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" || len(appErr.Details) != 1 {
+			t.Fatalf("expected 1 validation detail, got %+v", appErr)
+		}
+		if appErr.Details[0].Field != "displayName" {
+			t.Errorf("expected field displayName, got %s", appErr.Details[0].Field)
+		}
+		if appErr.Details[0].Message != "Must not exceed 255 characters." {
+			t.Errorf("expected max characters message, got %s", appErr.Details[0].Message)
 		}
 	})
 

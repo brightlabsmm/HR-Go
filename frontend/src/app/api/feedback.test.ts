@@ -26,6 +26,25 @@ describe("applyApiFieldErrors", () => {
     })
   })
 
+  it("applies display name max length validation error (BUG-33)", () => {
+    const setError = vi.fn()
+    const error = new ApiError({
+      status: 400,
+      code: "VALIDATION_ERROR",
+      message: "The request contains invalid data.",
+      details: [
+        { field: "displayName", message: "Display name must not exceed 255 characters." },
+      ],
+    })
+
+    const applied = applyApiFieldErrors(error, setError)
+    expect(applied).toBe(true)
+    expect(setError).toHaveBeenCalledTimes(1)
+    expect(setError).toHaveBeenCalledWith("displayName", {
+      message: "Display name must not exceed 255 characters.",
+    })
+  })
+
   it("maps generic container field names to root", () => {
     const setError = vi.fn()
     const error = new ApiError({

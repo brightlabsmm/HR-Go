@@ -27,6 +27,7 @@ import {
   useUpdateWorkspaceOrganizationMutation,
   useWorkspaceOrganizationQuery,
 } from "@/shared/queries/workspace-organization.query"
+import { usePermissions } from "@/shared/hooks/use-permissions"
 import { useToastStore } from "@/shared/stores/toast.store"
 import { getInitials } from "@/util/initials"
 import { requiredE164Phone } from "@/util/phone"
@@ -34,6 +35,8 @@ import { requiredE164Phone } from "@/util/phone"
 export function OrganizationSettingsPage() {
   const { t } = useTranslation("organization_settings")
   const { t: tCommon } = useTranslation("common")
+  const { can } = usePermissions()
+  const canUpdate = can("org.settings.update")
   const orgQuery = useWorkspaceOrganizationQuery()
   const updateMutation = useUpdateWorkspaceOrganizationMutation()
   const showToast = useToastStore((state) => state.show)
@@ -47,12 +50,12 @@ export function OrganizationSettingsPage() {
           .string()
           .trim()
           .min(1, t("errors.display_name_required"))
-          .max(255),
+          .max(255, t("errors.display_name_max", "Display name must not exceed 255 characters.")),
         contactEmail: z
           .string()
           .trim()
           .min(1, t("errors.email_required"))
-          .max(255)
+          .max(255, t("errors.email_max", "Email must not exceed 255 characters."))
           .email(t("errors.email_invalid")),
         contactPhone: requiredE164Phone(
           t("errors.phone_required"),
@@ -62,7 +65,7 @@ export function OrganizationSettingsPage() {
           .string()
           .trim()
           .min(1, t("errors.country_required"))
-          .max(10)
+          .max(10, t("errors.country_max", "Country must not exceed 10 characters."))
           .refine(
             isValidCountryCode,
             t("errors.country_invalid", "Please select a valid country.")
@@ -71,7 +74,7 @@ export function OrganizationSettingsPage() {
           .string()
           .trim()
           .min(1, t("errors.address_required"))
-          .max(2000),
+          .max(2000, t("errors.address_max", "Address must not exceed 2000 characters.")),
         branchCodeFormat: z
           .string()
           .trim()
@@ -140,6 +143,7 @@ export function OrganizationSettingsPage() {
         />
         <div className="flex min-w-0 flex-col gap-8">
           <form
+            noValidate
             className={formStackClassName}
             onSubmit={handleSubmit(async (values) => {
               try {
@@ -195,6 +199,7 @@ export function OrganizationSettingsPage() {
                     control={control}
                     name="displayName"
                     required
+                    maxLength={255}
                     label={t("fields.display_name")}
                     className="md:col-span-2"
                   />
@@ -215,6 +220,7 @@ export function OrganizationSettingsPage() {
                     name="contactEmail"
                     type="email"
                     required
+                    maxLength={255}
                     label={t("fields.email")}
                   />
                   <FormPhoneInput
@@ -234,6 +240,7 @@ export function OrganizationSettingsPage() {
                     control={control}
                     name="address"
                     required
+                    maxLength={2000}
                     label={t("fields.address")}
                     className="md:col-span-2"
                   />
@@ -252,12 +259,14 @@ export function OrganizationSettingsPage() {
                   <FormTextInput
                     control={control}
                     name="branchCodeFormat"
+                    maxLength={50}
                     label={t("fields.branch_code_format")}
                     placeholder={t("fields.branch_code_format_placeholder")}
                   />
                   <FormTextInput
                     control={control}
                     name="departmentCodeFormat"
+                    maxLength={50}
                     label={t("fields.department_code_format")}
                     placeholder={t("fields.department_code_format_placeholder")}
                   />
@@ -265,16 +274,18 @@ export function OrganizationSettingsPage() {
               )}
             </FormSection>
 
-            <FormActions>
-              <Button
-                type="submit"
-                disabled={isLoading || updateMutation.isPending || !formState.isDirty}
-              >
-                {updateMutation.isPending
-                  ? tCommon("actions.submit")
-                  : t("save")}
-              </Button>
-            </FormActions>
+            {canUpdate ? (
+              <FormActions>
+                <Button
+                  type="submit"
+                  disabled={isLoading || updateMutation.isPending || !formState.isDirty}
+                >
+                  {updateMutation.isPending
+                    ? tCommon("actions.submit")
+                    : t("save")}
+                </Button>
+              </FormActions>
+            ) : null}
           </form>
         </div>
       </div>

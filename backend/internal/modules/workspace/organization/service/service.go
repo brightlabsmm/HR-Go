@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"hrgo/backend/internal/modules/workspace/organization/models"
 	"hrgo/backend/internal/modules/workspace/organization/repository"
@@ -77,7 +78,7 @@ func (s *service) UpdateSettings(ctx context.Context, orgID string, req request.
 		name := strings.TrimSpace(*req.DisplayName)
 		if name == "" {
 			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "displayName", Message: "Display name cannot be empty."})
-		} else if len(name) > 255 {
+		} else if utf8.RuneCountInString(name) > 255 || len(name) > 255 {
 			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "displayName", Message: "Display name must not exceed 255 characters."})
 		} else {
 			org.DisplayName = name
