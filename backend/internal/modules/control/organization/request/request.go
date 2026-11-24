@@ -1,6 +1,8 @@
 package request
 
 import (
+	"time"
+
 	"hrgo/backend/internal/shared/filtering"
 	"hrgo/backend/internal/shared/sorting"
 )
@@ -26,9 +28,13 @@ type UpdateOrganizationRequest struct {
 }
 
 type UpdateStatusRequest struct {
-	Status       string `json:"status" binding:"required"`
-	Reason       string `json:"reason"`
-	Confirmation bool   `json:"confirmation"`
+	Status       string     `json:"status" binding:"required"`
+	Reason       string     `json:"reason"`
+	Confirmation bool       `json:"confirmation"`
+	Immediate    *bool      `json:"immediate"`
+	NotifyFrom   *time.Time `json:"notifyFrom"`
+	NotifyTo     *time.Time `json:"notifyTo"`
+	SuspendAt    *time.Time `json:"suspendAt"`
 }
 
 type CreateAdminAccountRequest struct {

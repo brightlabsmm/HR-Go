@@ -54,6 +54,11 @@
     "suspended": "已暂停",
     "pending": "待处理"
   },
+  "suspension_warning": {
+    "title": "重要通知：已安排暂停该组织",
+    "message": "定于 {{date}} 暂停使用。",
+    "reason_prefix": "原因："
+  },
   "table": {
     "empty": "暂无数据",
     "columns": "列",

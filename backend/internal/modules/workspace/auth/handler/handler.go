@@ -27,7 +27,14 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	res, appErr := h.svc.Login(c.Request.Context(), req)
+	clientIP := c.ClientIP()
+	userAgent := c.Request.UserAgent()
+	meta := service.SessionMetadata{
+		IPAddress: &clientIP,
+		UserAgent: &userAgent,
+	}
+
+	res, appErr := h.svc.Login(c.Request.Context(), req, meta)
 	if appErr != nil {
 		responses.Fail(c, appErr)
 		return
@@ -36,6 +43,10 @@ func (h *Handler) Login(c *gin.Context) {
 }
 
 func (h *Handler) Logout(c *gin.Context) {
+	claims := security.GetClaims(c)
+	if claims != nil && claims.SessionID != "" {
+		_ = h.svc.Logout(c.Request.Context(), claims.SessionID)
+	}
 	responses.NoContent(c)
 }
 

@@ -14,6 +14,7 @@ import { Pagination } from "@/components/common/pagination"
 import { SearchBox } from "@/components/common/search-box"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { Button } from "@/components/ui/button"
+import { OrganizationSuspendDialog } from "@/features/organizations/components/organization-suspend-dialog"
 import {
   getStatusDialogContent,
   isHighImpactOrganizationStatus,
@@ -152,6 +153,45 @@ export function OrganizationListPage() {
                 t
               )
             : null
+
+        if (statusTarget?.status === "SUSPENDED") {
+          return (
+            <OrganizationSuspendDialog
+              open={statusTarget !== null}
+              organization={statusTarget.organization}
+              isPending={statusMutation.isPending}
+              onOpenChange={(open) => {
+                if (!open) setStatusTarget(null)
+              }}
+              onConfirm={(payload) => {
+                if (!statusTarget) return
+                statusMutation.mutate(
+                  {
+                    id: statusTarget.organization.id,
+                    input: {
+                      status: "SUSPENDED",
+                      confirmation: true,
+                      immediate: payload.immediate,
+                      notifyFrom: payload.notifyFrom,
+                      notifyTo: payload.notifyTo,
+                      suspendAt: payload.suspendAt,
+                      reason: payload.reason,
+                    },
+                  },
+                  {
+                    onSuccess: () => {
+                      setStatusTarget(null)
+                      void organizationsQuery.refetch()
+                    },
+                    onError: () => {
+                      setStatusTarget(null)
+                    },
+                  }
+                )
+              }}
+            />
+          )
+        }
 
         return (
           <ConfirmDialog

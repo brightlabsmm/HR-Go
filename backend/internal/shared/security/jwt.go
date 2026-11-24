@@ -36,6 +36,7 @@ type Claims struct {
 	UserID         string      `json:"sub"`
 	AuthContext    AuthContext `json:"ctx"`
 	Email          string      `json:"email,omitempty"`
+	SessionID      string      `json:"sid,omitempty"`
 	OrganizationID string      `json:"org_id,omitempty"`
 	EmployeeID     string      `json:"emp_id,omitempty"`
 	EmployeeCode   string      `json:"emp_code,omitempty"`
@@ -82,12 +83,18 @@ func (m *TokenManager) GeneratePlatformToken(userID, email string, perms []strin
 	return signed, int64(m.expiry.Seconds()), nil
 }
 
-// GenerateWorkspaceToken creates a JWT for an organization account.
+// GenerateWorkspaceToken creates a JWT for an organization account without an explicit session ID.
 func (m *TokenManager) GenerateWorkspaceToken(accountID, orgID, empID, empCode, branchID, deptID string, perms []string) (string, int64, error) {
+	return m.GenerateWorkspaceTokenWithSession("", accountID, orgID, empID, empCode, branchID, deptID, perms)
+}
+
+// GenerateWorkspaceTokenWithSession creates a JWT for an organization account with a session ID.
+func (m *TokenManager) GenerateWorkspaceTokenWithSession(sessionID, accountID, orgID, empID, empCode, branchID, deptID string, perms []string) (string, int64, error) {
 	exp := time.Now().Add(m.expiry)
 	claims := Claims{
 		UserID:         accountID,
 		AuthContext:    ContextWorkspace,
+		SessionID:      sessionID,
 		OrganizationID: orgID,
 		EmployeeID:     empID,
 		EmployeeCode:   empCode,
@@ -95,6 +102,7 @@ func (m *TokenManager) GenerateWorkspaceToken(accountID, orgID, empID, empCode, 
 		DepartmentID:   deptID,
 		Permissions:    perms,
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        sessionID,
 			Subject:   accountID,
 			ExpiresAt: jwt.NewNumericDate(exp),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

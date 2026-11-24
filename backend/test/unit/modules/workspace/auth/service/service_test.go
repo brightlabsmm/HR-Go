@@ -3,6 +3,7 @@ package service_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"hrgo/backend/internal/modules/workspace/auth/models"
 	"hrgo/backend/internal/modules/workspace/auth/repository"
@@ -13,12 +14,14 @@ import (
 
 type mockWorkspaceAuthRepo struct {
 	repository.Repository
-	account        *models.OrganizationAccount
-	lastLoginId    string
-	updatedAccId   string
-	updatedHash    string
-	updatedMustChg bool
-	err            error
+	account          *models.OrganizationAccount
+	lastLoginId      string
+	updatedAccId     string
+	updatedHash      string
+	updatedMustChg   bool
+	createdSession   *models.WorkspaceSession
+	revokedSessionId string
+	err              error
 }
 
 func (m *mockWorkspaceAuthRepo) FindByIdentifier(ctx context.Context, identifier string) (*models.OrganizationAccount, error) {
@@ -49,6 +52,20 @@ func (m *mockWorkspaceAuthRepo) UpdatePassword(ctx context.Context, id string, p
 		m.account.MustChangePassword = mustChangePassword
 	}
 	return nil
+}
+
+func (m *mockWorkspaceAuthRepo) CreateSession(ctx context.Context, session *models.WorkspaceSession) error {
+	m.createdSession = session
+	return nil
+}
+
+func (m *mockWorkspaceAuthRepo) RevokeSession(ctx context.Context, sessionID string, reason string) error {
+	m.revokedSessionId = sessionID
+	return nil
+}
+
+func (m *mockWorkspaceAuthRepo) FindSessionByID(ctx context.Context, sessionID string) (*models.WorkspaceSession, error) {
+	return nil, nil
 }
 
 func TestWorkspaceAuthService_Login(t *testing.T) {
@@ -265,6 +282,115 @@ func TestWorkspaceAuthService_ChangePassword(t *testing.T) {
 		}
 		if appErr == nil || appErr.Status != 429 || appErr.Code != "RATE_LIMIT_EXCEEDED" {
 			t.Fatalf("attempt 6: expected 429 RATE_LIMIT_EXCEEDED for correct password during lockout, got %v", appErr)
+		}
+	})
+
+	t.Run("blocks login when organization scheduled suspension has arrived", func(t *testing.T) {
+		past := time.Now().UTC().Add(-10 * time.Minute)
+		acc := &models.OrganizationAccount{
+			ID:           "acc-due",
+			Identifier:   "EMP-DUE",
+			PasswordHash: hashedPass,
+			Status:       "ACTIVE",
+			Organization: models.Organization{
+				ID:                 "org-due",
+				Status:             "ACTIVE",
+				ScheduledSuspendAt: &past,
+			},
+		}
+		repo := &mockWorkspaceAuthRepo{account: acc}
+		svc := service.New(repo, tokens)
+
+		res, appErr := svc.Login(context.Background(), request.LoginRequest{
+			Identifier: "EMP-DUE",
+			Password:   "InitialPass@123",
+		})
+		if res != nil {
+			t.Fatal("expected nil response when org is due for suspension")
+		}
+		if appErr == nil || appErr.Status != 403 {
+			t.Fatalf("expected 403 FORBIDDEN, got %v", appErr)
+		}
+	})
+
+	t.Run("creates session on successful login and revokes on logout", func(t *testing.T) {
+		acc := &models.OrganizationAccount{
+			ID:             "acc-sess",
+			OrganizationID: "org-sess",
+			Identifier:     "EMP-SESS",
+			PasswordHash:   hashedPass,
+			Status:         "ACTIVE",
+			Organization: models.Organization{
+				ID:     "org-sess",
+				Status: "ACTIVE",
+			},
+		}
+		repo := &mockWorkspaceAuthRepo{account: acc}
+		svc := service.New(repo, tokens)
+
+		res, appErr := svc.Login(context.Background(), request.LoginRequest{
+			Identifier: "EMP-SESS",
+			Password:   "InitialPass@123",
+		})
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if res == nil || res.AccessToken == "" {
+			t.Fatal("expected valid login response with access token")
+		}
+		if repo.createdSession == nil {
+			t.Fatal("expected session to be created in DB")
+		}
+		if repo.createdSession.OrganizationID != "org-sess" {
+			t.Errorf("orgID = %s, want org-sess", repo.createdSession.OrganizationID)
+		}
+
+		// Now logout
+		logoutErr := svc.Logout(context.Background(), repo.createdSession.ID)
+		if logoutErr != nil {
+			t.Fatalf("unexpected logout error: %v", logoutErr)
+		}
+		if repo.revokedSessionId != repo.createdSession.ID {
+			t.Errorf("revokedSessionId = %s, want %s", repo.revokedSessionId, repo.createdSession.ID)
+		}
+	})
+
+	t.Run("returns suspensionNotice in user profile when within notice window", func(t *testing.T) {
+		now := time.Now().UTC()
+		notifyFrom := now.Add(-1 * time.Hour)
+		notifyTo := now.Add(24 * time.Hour)
+		schedAt := now.Add(24 * time.Hour)
+		reason := "Scheduled maintenance"
+
+		acc := &models.OrganizationAccount{
+			ID:           "acc-notice",
+			Identifier:   "EMP-NOTICE",
+			PasswordHash: hashedPass,
+			Status:       "ACTIVE",
+			Organization: models.Organization{
+				ID:                 "org-notice",
+				Status:             "ACTIVE",
+				SuspendNotifyFrom:  &notifyFrom,
+				SuspendNotifyTo:    &notifyTo,
+				ScheduledSuspendAt: &schedAt,
+				SuspendReason:      &reason,
+			},
+		}
+		repo := &mockWorkspaceAuthRepo{account: acc}
+		svc := service.New(repo, tokens)
+
+		res, appErr := svc.Login(context.Background(), request.LoginRequest{
+			Identifier: "EMP-NOTICE",
+			Password:   "InitialPass@123",
+		})
+		if appErr != nil {
+			t.Fatalf("unexpected error: %v", appErr)
+		}
+		if res.User.SuspensionNotice == nil {
+			t.Fatal("expected suspensionNotice in user profile")
+		}
+		if res.User.SuspensionNotice.Reason != reason {
+			t.Errorf("reason = %s, want %s", res.User.SuspensionNotice.Reason, reason)
 		}
 	})
 }

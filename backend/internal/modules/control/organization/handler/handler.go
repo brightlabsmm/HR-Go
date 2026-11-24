@@ -86,6 +86,16 @@ func (h *Handler) UpdateStatus(c *gin.Context) {
 	responses.OK(c, res)
 }
 
+func (h *Handler) CancelSuspendSchedule(c *gin.Context) {
+	id := c.Param("organizationId")
+	res, appErr := h.svc.CancelSuspendSchedule(c.Request.Context(), id)
+	if appErr != nil {
+		responses.Fail(c, appErr)
+		return
+	}
+	responses.OK(c, res)
+}
+
 func (h *Handler) Delete(c *gin.Context) {
 	id := c.Param("organizationId")
 	if appErr := h.svc.Delete(c.Request.Context(), id); appErr != nil {

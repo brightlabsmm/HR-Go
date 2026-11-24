@@ -92,6 +92,42 @@ func NewEngine(deps Dependencies) *gin.Engine {
 			err := deps.DB.WithContext(ctx).Table("organizations").Select("status").Where("id = ? AND deleted_at IS NULL", orgID).Scan(&status).Error
 			return status, err
 		})
+		secMiddleware.SetWorkspaceSessionChecker(func(ctx context.Context, claims *security.Claims) (bool, error) {
+			if claims == nil || claims.OrganizationID == "" {
+				return false, nil
+			}
+
+			var org struct {
+				SessionsRevokedAt *time.Time
+			}
+			if err := deps.DB.WithContext(ctx).Table("organizations").
+				Select("sessions_revoked_at").
+				Where("id = ? AND deleted_at IS NULL", claims.OrganizationID).
+				Scan(&org).Error; err != nil {
+				return false, err
+			}
+
+			if org.SessionsRevokedAt != nil && claims.IssuedAt != nil {
+				if claims.IssuedAt.Time.Before(*org.SessionsRevokedAt) {
+					return false, nil
+				}
+			}
+
+			if claims.SessionID != "" {
+				var count int64
+				err := deps.DB.WithContext(ctx).Table("workspace_sessions").
+					Where("id = ? AND revoked_at IS NULL AND expires_at > ?", claims.SessionID, time.Now().UTC()).
+					Count(&count).Error
+				if err != nil {
+					return false, err
+				}
+				if count == 0 {
+					return false, nil
+				}
+			}
+
+			return true, nil
+		})
 	}
 
 	// Ensure Superadmin platform user if DB is present
