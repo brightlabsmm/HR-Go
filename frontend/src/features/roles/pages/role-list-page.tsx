@@ -52,7 +52,7 @@ export function RoleListPage() {
   const selectedRole = roles.find((r) => r.id === activeRoleId) ?? null
 
   return (
-    <MotionStack className="flex h-full min-h-0 flex-col gap-8 pb-10">
+    <MotionStack className="flex flex-col gap-8 pb-10 md:h-full md:min-h-0">
       <PageHeader
         title={t(isPlatformPortal() ? "system_title" : "title", {
           defaultValue: isPlatformPortal() ? "Platform roles" : "Roles",
@@ -74,14 +74,13 @@ export function RoleListPage() {
           })}
         />
       ) : (
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
-          {/* L: Roles Sidebar List */}
-          <aside className="flex flex-col gap-3 lg:col-span-4 xl:col-span-3">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-8">
+          <aside className="flex min-w-0 flex-col gap-3 lg:col-span-4 xl:col-span-3">
             <h2 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               {t("catalog_heading", { defaultValue: "Roles" })}
             </h2>
 
-            <div className="flex flex-col gap-2.5">
+            <div className="-mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
               {roles.map((role) => {
                 const isSelected = role.id === activeRoleId
 
@@ -90,14 +89,14 @@ export function RoleListPage() {
                     key={role.id}
                     type="button"
                     onClick={() => handleSelectRole(role.id)}
-                    className={`flex cursor-pointer flex-col gap-2.5 rounded-xl border p-4 text-left transition-all outline-none ${
+                    className={`flex w-[16.5rem] shrink-0 cursor-pointer flex-col gap-2.5 rounded-xl border p-4 text-left transition-all outline-none lg:w-full ${
                       isSelected
                         ? "border-primary bg-primary/5 shadow-xs ring-1 ring-primary/30"
                         : "border-border bg-surface hover:border-primary/40 hover:bg-accent/40"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex min-w-0 items-center gap-2">
                         <span
                           className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${
                             isSelected
@@ -107,7 +106,7 @@ export function RoleListPage() {
                         >
                           <ShieldCheckIcon className="size-4" />
                         </span>
-                        <span className="text-small-1 font-semibold text-foreground">
+                        <span className="text-small-1 font-semibold break-words text-foreground">
                           {role.roleName}
                         </span>
                       </div>
@@ -120,7 +119,7 @@ export function RoleListPage() {
                       </ToneBadge>
                     </div>
 
-                    <div className="flex flex-col gap-0.5 pl-10">
+                    <div className="flex min-w-0 flex-col gap-0.5 lg:pl-10">
                       <span className="font-mono text-small-2 text-muted-foreground">
                         {role.roleCode}
                       </span>
@@ -136,8 +135,7 @@ export function RoleListPage() {
             </div>
           </aside>
 
-          {/* Right Panel: Role Permission Editor */}
-          <main className="flex flex-col lg:col-span-8 xl:col-span-9">
+          <main className="flex min-w-0 flex-col lg:col-span-8 xl:col-span-9">
             {selectedRole ? (
               <RolePermissionGrantEditor
                 role={selectedRole}

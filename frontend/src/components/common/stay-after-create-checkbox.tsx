@@ -18,7 +18,7 @@ export function StayAfterCreateCheckbox({
   return (
     <label
       htmlFor={inputId}
-      className="flex max-w-sm cursor-pointer items-start gap-2 text-small-1 text-muted-foreground"
+      className="flex max-w-full cursor-pointer items-start gap-2 text-small-1 text-muted-foreground sm:max-w-sm"
     >
       <input
         id={inputId}

@@ -24,6 +24,7 @@ export function RoleList() {
       id: "name",
       header: t("columns.name"),
       enableSorting: true,
+      meta: { cellClassName: "min-w-40 max-w-[14rem] md:max-w-none" },
       cell: ({ row }) => (
         <div className="flex min-w-0 flex-col">
           <span className="font-medium text-foreground">{row.original.roleName}</span>
@@ -39,6 +40,7 @@ export function RoleList() {
       id: "code",
       header: t("columns.code"),
       enableSorting: true,
+      meta: { hideBelow: "sm" },
       cell: ({ getValue }) => (
         <span className="font-mono text-small-2 text-muted-foreground">{getValue()}</span>
       ),

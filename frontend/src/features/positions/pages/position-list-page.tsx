@@ -26,6 +26,7 @@ import {
   useDeactivatePositionMutation,
   usePositionsQuery,
 } from "@/shared/queries/position.query"
+import { toast } from "@/shared/stores/toast.store"
 import { parsePageParam, parsePageSizeParam } from "@/util/pagination"
 
 import type { Position } from "@/shared/services/position.service"
@@ -136,7 +137,11 @@ export function PositionListPage() {
       cell: ({ row }) => (
         <DataTableActions
           onEdit={() => void navigate(`/positions/${row.original.id}/edit`)}
-          onDelete={() => setTarget(row.original)}
+          onDelete={
+            row.original.status === "ACTIVE"
+              ? () => window.setTimeout(() => setTarget(row.original), 0)
+              : undefined
+          }
         />
       ),
     }),
@@ -227,11 +232,12 @@ export function PositionListPage() {
       </ListCard>
       <ConfirmDialog
         open={target !== null}
-        title={t("deactivate.title")}
-        description={t("deactivate.description", {
+        title={t("delete.title", { name: target?.positionName ?? "" })}
+        description={t("delete.description", {
           name: target?.positionName ?? "",
         })}
-        confirmLabel={t("deactivate.confirm")}
+        confirmLabel={t("delete.confirm")}
+        confirmVariant="destructive"
         isPending={deactivateMutation.isPending}
         onOpenChange={(open) => {
           if (!open) {
@@ -243,7 +249,11 @@ export function PositionListPage() {
             return
           }
           deactivateMutation.mutate(target.id, {
-            onSuccess: () => setTarget(null),
+            onSuccess: () => {
+              setTarget(null)
+              toast.success(t("delete.success"))
+            },
+            onError: () => setTarget(null),
           })
         }}
       />

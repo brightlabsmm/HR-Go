@@ -52,6 +52,7 @@ export function OrganizationTable({
       id: "displayName",
       header: t("columns.name"),
       enableSorting: true,
+      meta: { cellClassName: "min-w-44 max-w-[14rem] md:max-w-none" },
       cell: ({ row }) => (
         <IdentityCell
           name={row.original.displayName}
@@ -63,6 +64,7 @@ export function OrganizationTable({
       id: "code",
       header: t("columns.code"),
       enableSorting: true,
+      meta: { hideBelow: "sm" },
       cell: ({ getValue }) => (
         <span className="font-mono text-small-2 text-muted-foreground">{getValue()}</span>
       ),
@@ -70,11 +72,13 @@ export function OrganizationTable({
     column.accessor("contactEmail", {
       header: t("columns.email"),
       enableSorting: false,
+      meta: { hideBelow: "md" },
       cell: ({ getValue }) => getValue() || "—",
     }),
     column.accessor("country", {
       header: t("columns.country"),
       enableSorting: false,
+      meta: { hideBelow: "md" },
       cell: ({ getValue }) => getCountryLabel(getValue()),
     }),
     column.accessor("status", {
@@ -98,6 +102,7 @@ export function OrganizationTable({
     column.accessor("createdAt", {
       header: t("created_at"),
       enableSorting: true,
+      meta: { hideBelow: "md" },
       cell: ({ getValue }) => (
         <span className="text-muted-foreground">{formatDate(getValue(), i18n.language)}</span>
       ),
@@ -107,7 +112,12 @@ export function OrganizationTable({
       header: () => <span className="sr-only">{t("columns.actions")}</span>,
       enableSorting: false,
       enableHiding: false,
-      meta: { align: "end" },
+      meta: {
+        align: "end",
+        headerClassName: "sticky right-0 z-[1] bg-surface",
+        cellClassName:
+          "sticky right-0 z-[1] bg-surface group-hover/table-row:bg-accent/40",
+      },
       cell: ({ row }) => {
         const organization = row.original
         const statusItems =

@@ -16,6 +16,12 @@
     "description": "{{name}} ကို ပိတ်မည်။",
     "confirm": "ပိတ်ရန်"
   },
+  "delete": {
+    "title": "{{name}} ကို ဖျက်မလား?",
+    "description": "{{name}} ကို ပိတ်မည်။",
+    "confirm": "ဖျက်ရန်",
+    "success": "ဌာနကို ဖျက်ပြီးပါပြီ။"
+  },
   "form": {
     "create_title": "ဌာန ထည့်ရန်",
     "edit_title": "ဌာန ပြင်ဆင်ရန်",

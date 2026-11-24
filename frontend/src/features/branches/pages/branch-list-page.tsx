@@ -20,6 +20,7 @@ import {
   useBranchesQuery,
   useDeactivateBranchMutation,
 } from "@/shared/queries/branch.query"
+import { toast } from "@/shared/stores/toast.store"
 
 import type { Branch } from "@/shared/services/branch.service"
 
@@ -30,9 +31,7 @@ export function BranchListPage() {
   const params = useBranchListParams()
   const branchesQuery = useBranchesQuery(params.listParams)
   const deactivateMutation = useDeactivateBranchMutation()
-  const [branchToDeactivate, setBranchToDeactivate] = useState<Branch | null>(
-    null
-  )
+  const [deleteTarget, setDeleteTarget] = useState<Branch | null>(null)
   const items = branchesQuery.data?.items ?? []
   const parentNames = new Map(items.map((branch) => [branch.id, branch.branchName]))
   const isUnfilteredEmpty =
@@ -95,7 +94,12 @@ export function BranchListPage() {
         onEdit={(branch) => {
           void navigate(`/branches/${branch.id}/edit`)
         }}
-        onDelete={setBranchToDeactivate}
+        onDelete={(branch) => {
+          if (branch.status !== "ACTIVE") {
+            return
+          }
+          window.setTimeout(() => setDeleteTarget(branch), 0)
+        }}
       />
     )
   }
@@ -132,29 +136,31 @@ export function BranchListPage() {
         {renderBody()}
       </ListCard>
       <ConfirmDialog
-        open={branchToDeactivate !== null}
-        title={t("deactivate.title")}
-        description={t("deactivate.description", {
-          name: branchToDeactivate?.branchName ?? "",
+        open={deleteTarget !== null}
+        title={t("delete.title", { name: deleteTarget?.branchName ?? "" })}
+        description={t("delete.description", {
+          name: deleteTarget?.branchName ?? "",
         })}
-        confirmLabel={t("deactivate.confirm")}
+        confirmLabel={t("delete.confirm")}
+        confirmVariant="destructive"
         isPending={deactivateMutation.isPending}
         onOpenChange={(open) => {
           if (!open) {
-            setBranchToDeactivate(null)
+            setDeleteTarget(null)
           }
         }}
         onConfirm={() => {
-          if (!branchToDeactivate) {
+          if (!deleteTarget) {
             return
           }
 
-          deactivateMutation.mutate(branchToDeactivate.id, {
+          deactivateMutation.mutate(deleteTarget.id, {
             onSuccess: () => {
-              setBranchToDeactivate(null)
+              setDeleteTarget(null)
+              toast.success(t("delete.success"))
             },
             onError: () => {
-              setBranchToDeactivate(null)
+              setDeleteTarget(null)
             },
           })
         }}

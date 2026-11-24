@@ -16,6 +16,12 @@
     "description": "This will deactivate {{name}}.",
     "confirm": "Deactivate"
   },
+  "delete": {
+    "title": "Delete {{name}}?",
+    "description": "This will deactivate {{name}}.",
+    "confirm": "Delete",
+    "success": "Department deleted successfully."
+  },
   "form": {
     "create_title": "Add department",
     "edit_title": "Edit department",

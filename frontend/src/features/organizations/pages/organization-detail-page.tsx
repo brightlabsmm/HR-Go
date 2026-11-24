@@ -170,7 +170,7 @@ export function OrganizationDetailPage() {
           ) : null}
         </div>
       ) : null}
-      <div className="grid items-start gap-12 lg:grid-cols-[18.75rem_minmax(0,1fr)]">
+      <div className="grid items-start gap-8 lg:grid-cols-[18.75rem_minmax(0,1fr)] lg:gap-12">
         <ProfileSummaryCard
           isLoading={organizationQuery.isPending}
           avatarSize="xl"
@@ -197,7 +197,7 @@ export function OrganizationDetailPage() {
                 <DetailList columns={2} items={contactItems} />
               </section>
               <section className="border-t border-hair pt-6">
-                <div className="mb-4 flex items-center justify-between">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-body-2 font-semibold text-foreground">
                     {t("create_admin.title", "Organization Administrators")}
                   </h2>
@@ -205,6 +205,7 @@ export function OrganizationDetailPage() {
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="w-full sm:w-auto"
                     onClick={() => void navigate(`/organizations/${id}/create-admin`)}
                   >
                     <UserPlusIcon className="size-4" />
@@ -230,10 +231,15 @@ export function OrganizationDetailPage() {
                 ) : (
                   <div className="divide-y divide-hair rounded-lg border border-hair">
                     {adminAccounts.map((admin) => (
-                      <div key={admin.id} className="flex items-center justify-between p-4">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-foreground">{admin.fullName}</span>
+                      <div
+                        key={admin.id}
+                        className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-medium break-words text-foreground">
+                              {admin.fullName}
+                            </span>
                             <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
                               {admin.employeeCode}
                             </span>
@@ -242,10 +248,12 @@ export function OrganizationDetailPage() {
                             </span>
                           </div>
                           {admin.email ? (
-                            <p className="mt-0.5 text-xs text-muted-foreground">{admin.email}</p>
+                            <p className="mt-0.5 text-xs break-all text-muted-foreground">
+                              {admin.email}
+                            </p>
                           ) : null}
                         </div>
-                        <div className="text-right">
+                        <div className="sm:text-right">
                           <StatusBadge status={admin.status} />
                           {admin.lastLoginAt ? (
                             <p className="mt-1 text-xs text-muted-foreground">

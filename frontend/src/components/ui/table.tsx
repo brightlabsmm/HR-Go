@@ -3,11 +3,14 @@ import { cn } from "cn"
 
 function Table({ className, ...props }: ComponentProps<"table">) {
   return (
-    <div data-slot="table-container" className={cn("bg-transparent", className)}>
+    <div
+      data-slot="table-container"
+      className={cn("min-h-[50dvh] bg-transparent md:min-h-0", className)}
+    >
       <div className="w-full overflow-x-auto">
         <table
           data-slot="table"
-          className="w-full border-collapse text-small-1 text-foreground"
+          className="w-full min-w-max border-collapse text-small-1 text-foreground"
           {...props}
         />
       </div>
@@ -33,7 +36,7 @@ function TableRow({ className, ...props }: ComponentProps<"tr">) {
   return (
     <tr
       data-slot="table-row"
-      className={cn("transition-colors hover:bg-accent/40", className)}
+      className={cn("group/table-row transition-colors hover:bg-accent/40", className)}
       {...props}
     />
   )
@@ -44,7 +47,7 @@ function TableHead({ className, ...props }: ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-11 border-b border-border bg-transparent px-4 text-left align-middle text-small-2 font-medium whitespace-nowrap text-muted-foreground first:pl-1 last:pr-1",
+        "h-12 border-b border-border bg-transparent px-3 text-left align-middle text-small-2 font-medium whitespace-nowrap text-muted-foreground first:pl-0 last:pr-0 md:h-11 md:px-4 md:first:pl-1 md:last:pr-1",
         className
       )}
       {...props}
@@ -57,7 +60,7 @@ function TableCell({ className, ...props }: ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "h-16 border-b border-hair px-4 align-middle whitespace-nowrap first:pl-1 last:pr-1",
+        "h-20 border-b border-hair px-3 align-middle whitespace-nowrap first:pl-0 last:pr-0 md:h-16 md:px-4 md:first:pl-1 md:last:pr-1",
         className
       )}
       {...props}

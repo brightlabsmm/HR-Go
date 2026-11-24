@@ -17,13 +17,13 @@ export function FormActions({ className, start, children }: FormActionsProps) {
     <motion.div
       variants={staggerItem}
       className={cn(
-        "flex flex-wrap items-center gap-3 border-t border-hair pt-6",
-        start ? "justify-between" : "justify-end",
+        "flex flex-col gap-3 border-t border-hair pt-6 sm:flex-row sm:flex-wrap sm:items-center",
+        start ? "sm:justify-between" : "sm:justify-end",
         className
       )}
     >
-      {start}
-      <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+      {start ? <div className="w-full sm:w-auto">{start}</div> : null}
+      <div className="flex w-full flex-col-reverse gap-3 sm:ml-auto sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
         {children}
       </div>
     </motion.div>

@@ -46,10 +46,10 @@ export function PageHeader({
           {backLabel ?? t("actions.back")}
         </Link>
       ) : null}
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="min-w-0 truncate text-title-2 font-semibold text-secondary">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
+            <h1 className="min-w-0 text-title-2 font-semibold break-words text-secondary">
               {title}
             </h1>
             {meta}
@@ -61,7 +61,7 @@ export function PageHeader({
           ) : null}
         </div>
         {actions ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
             {actions}
           </div>
         ) : null}

@@ -85,6 +85,7 @@ export function PermissionListPage() {
         column.accessor("grouping", {
           header: t("columns.grouping", { defaultValue: "Grouping" }),
           enableSorting: true,
+          meta: { cellClassName: "min-w-28" },
           cell: ({ row }) => {
             const grouping = resolvePermissionGrouping(row.original)
             return (
@@ -107,6 +108,7 @@ export function PermissionListPage() {
         column.accessor("code", {
           header: t("columns.code", { defaultValue: "Code" }),
           enableSorting: true,
+          meta: { hideBelow: "md" },
           cell: ({ getValue }) => (
             <span className="font-mono text-small-2 text-muted-foreground">
               {getValue()}
@@ -116,6 +118,7 @@ export function PermissionListPage() {
         column.accessor("scope", {
           header: t("columns.scope", { defaultValue: "Scope" }),
           enableSorting: true,
+          meta: { hideBelow: "sm" },
           cell: ({ getValue }) => {
             const scope = getValue() ?? "PLATFORM"
             return (
@@ -128,6 +131,7 @@ export function PermissionListPage() {
         column.accessor("description", {
           header: t("columns.description", { defaultValue: "Description" }),
           enableSorting: false,
+          meta: { hideBelow: "md" },
           cell: ({ getValue }) => (
             <span className="text-small-2 text-muted-foreground">
               {getValue() || "—"}
@@ -168,7 +172,7 @@ export function PermissionListPage() {
   }
 
   return (
-    <MotionStack className="flex h-full min-h-0 flex-col gap-8">
+    <MotionStack className="flex flex-col gap-8 md:h-full md:min-h-0">
       <PageHeader
         title={t("permissions_page_title", { defaultValue: "Permissions" })}
         description={t("permissions_page_subtitle", {
@@ -184,7 +188,7 @@ export function PermissionListPage() {
               placeholder={t("search_placeholder", {
                 defaultValue: "Search permissions...",
               })}
-              className="w-80 max-w-full shrink-0"
+              className="w-full sm:w-80 sm:max-w-full sm:shrink-0"
             />
             <FilterSelect
               value={groupingFilter}

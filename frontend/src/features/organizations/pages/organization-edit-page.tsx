@@ -229,12 +229,14 @@ export function OrganizationEditPage() {
             type="button"
             variant="outline"
             disabled={updateMutation.isPending}
+            className="w-full sm:w-auto"
             onClick={() => void navigate(detailPath)}
           >
             {t("form.cancel")}
           </Button>
           <Button
             type="submit"
+            className="w-full sm:w-auto"
             disabled={isLoading || !formState.isDirty}
             loading={updateMutation.isPending}
           >

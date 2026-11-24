@@ -43,7 +43,7 @@ export function RoleOverviewPage() {
       <PageHeader title={t("title")} description={t("catalog_subtitle")} />
       <motion.div
         variants={staggerItem}
-        className="flex items-center gap-2.5 rounded-[10px] bg-info-muted px-4 py-3 text-small-1 text-foreground"
+        className="flex items-start gap-2.5 rounded-[10px] bg-info-muted px-4 py-3 text-small-1 text-foreground"
       >
         <InfoIcon className="size-4 shrink-0 text-info" aria-hidden />
         {t("managed_hint")}

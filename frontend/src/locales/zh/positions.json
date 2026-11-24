@@ -16,6 +16,12 @@
     "description": "将停用 {{name}}。",
     "confirm": "停用"
   },
+  "delete": {
+    "title": "删除 {{name}}？",
+    "description": "将停用 {{name}}。",
+    "confirm": "删除",
+    "success": "已删除该职位。"
+  },
   "form": {
     "create_title": "添加职位",
     "edit_title": "编辑职位",
