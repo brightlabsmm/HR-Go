@@ -174,4 +174,26 @@ func TestWorkspaceOrgSettings(t *testing.T) {
 			t.Errorf("expected contact email INFO@ACME.COM, got %s", res.ContactEmail)
 		}
 	})
+
+	t.Run("UpdateSettings rejects display name exceeding 255 characters (BUG-29)", func(t *testing.T) {
+		longName := strings.Repeat("a", 300)
+		_, appErr := svc.UpdateSettings(context.Background(), "org-1", request.UpdateOrganizationSettingsRequest{
+			DisplayName: &longName,
+		})
+		if appErr == nil || appErr.Code != "VALIDATION_ERROR" {
+			t.Fatalf("expected VALIDATION_ERROR, got %+v", appErr)
+		}
+		found := false
+		for _, issue := range appErr.Details {
+			if issue.Field == "displayName" {
+				found = true
+				if issue.Message != "Display name must not exceed 255 characters." {
+					t.Errorf("unexpected message: %s", issue.Message)
+				}
+			}
+		}
+		if !found {
+			t.Errorf("expected field issue for displayName")
+		}
+	})
 }
