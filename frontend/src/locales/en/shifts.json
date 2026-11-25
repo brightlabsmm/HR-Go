@@ -1,0 +1,59 @@
+{
+  "title": "Shifts",
+  "subtitle": "Configure working hours, break durations, and shift assignments",
+  "add": "Add Shift",
+  "all_status": "All status",
+  "all_branches": "All branches",
+  "columns": {
+    "name": "Shift Name",
+    "timing": "Hours",
+    "break": "Break",
+    "branch": "Branch",
+    "default": "Default",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "sections": {
+    "details": "Shift Schedule Details"
+  },
+  "form": {
+    "create_title": "Create Shift",
+    "edit_title": "Edit Shift",
+    "name": "Shift Name",
+    "start_time": "Start Time (HH:MM)",
+    "end_time": "End Time (HH:MM)",
+    "break_minutes": "Break Duration (Minutes)",
+    "branch": "Branch",
+    "status": "Status",
+    "is_default": "Set as Default Shift",
+    "is_default_desc": "Automatically applied to employees without specific shift assignments",
+    "cancel": "Cancel",
+    "save": "Save Changes",
+    "create": "Create Shift",
+    "errors": {
+      "name": "Shift name is required",
+      "start_time": "Start time is required",
+      "end_time": "End time is required"
+    }
+  },
+  "assignments": {
+    "title": "Shift Assignments",
+    "assign": "Assign Employee to Shift",
+    "columns": {
+      "employee": "Employee",
+      "shift": "Shift",
+      "period": "Effective Period",
+      "status": "Status"
+    }
+  },
+  "empty": {
+    "title": "No shifts configured",
+    "description": "Create shift schedules for your team to track attendance against regular hours."
+  },
+  "delete": {
+    "title": "Delete Shift",
+    "description": "Are you sure you want to delete {{name}}?",
+    "confirm": "Delete Shift",
+    "success": "Shift deleted successfully"
+  }
+}

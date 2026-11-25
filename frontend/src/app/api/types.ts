@@ -10,12 +10,22 @@ export interface Paginated<T> {
   meta: PageMeta
 }
 
+export interface BackendPagination {
+  total?: number
+  page?: number
+  pageSize?: number
+  totalPages?: number
+  hasNextPage?: boolean
+  hasPrevPage?: boolean
+}
+
 export interface PageResponse<T> {
   items: T[]
   page?: number
   pageSize?: number
   totalItems?: number
   totalPages?: number
+  pagination?: BackendPagination
 }
 
 export interface FieldIssue {
