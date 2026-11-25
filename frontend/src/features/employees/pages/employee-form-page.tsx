@@ -91,20 +91,48 @@ export function EmployeeFormPage() {
           .string()
           .trim()
           .min(1, t("form.errors.last_name")),
-        email: z.string().trim().email(t("form.errors.email")).or(z.literal("")),
+        email: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.email_required"))
+          .email(t("form.errors.email")),
         phone: z.string().trim().optional(),
-        branchId: z.string(),
-        departmentId: z.string(),
-        positionId: z.string(),
-        roleId: z.string().optional(),
+        branchId: z
+          .string()
+          .min(1, t("form.errors.branch"))
+          .refine((val) => val !== "none", t("form.errors.branch")),
+        departmentId: z
+          .string()
+          .min(1, t("form.errors.department"))
+          .refine((val) => val !== "none", t("form.errors.department")),
+        positionId: z
+          .string()
+          .min(1, t("form.errors.position"))
+          .refine((val) => val !== "none", t("form.errors.position")),
+        roleId: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.role")),
         dateOfJoining: z.string().optional(),
         employmentStatus: z.string(),
-        dateOfBirth: z.string().optional(),
-        gender: z.string().optional(),
-        nationality: z.string().trim().optional(),
+        dateOfBirth: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.date_of_birth")),
+        gender: z
+          .string()
+          .min(1, t("form.errors.gender"))
+          .refine((val) => val !== "none", t("form.errors.gender")),
+        nationality: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.nationality")),
         maritalStatus: z.string().optional(),
         address: z.string().trim().optional(),
-        emergencyContact: z.string().trim().optional(),
+        emergencyContact: z
+          .string()
+          .trim()
+          .min(1, t("form.errors.emergency_contact")),
       }),
     [t]
   )
@@ -370,6 +398,7 @@ export function EmployeeFormPage() {
                 control={control}
                 name="email"
                 type="email"
+                required
                 label={t("form.email")}
                 disabled={isPending}
               />
@@ -383,6 +412,7 @@ export function EmployeeFormPage() {
               <FormSelectInput
                 control={control}
                 name="branchId"
+                required
                 label={t("form.branch")}
                 options={branchOptions}
                 disabled={isPending}
@@ -390,6 +420,7 @@ export function EmployeeFormPage() {
               <FormSelectInput
                 control={control}
                 name="departmentId"
+                required
                 label={t("form.department")}
                 options={departmentOptions}
                 disabled={isPending}
@@ -397,6 +428,7 @@ export function EmployeeFormPage() {
               <FormSelectInput
                 control={control}
                 name="positionId"
+                required
                 label={t("form.position")}
                 options={positionOptions}
                 disabled={isPending}
@@ -414,12 +446,14 @@ export function EmployeeFormPage() {
                 control={control}
                 name="dateOfBirth"
                 type="date"
+                required
                 label={t("form.date_of_birth")}
                 disabled={isPending}
               />
               <FormSelectInput
                 control={control}
                 name="gender"
+                required
                 label={t("form.gender")}
                 options={genderOptions}
                 disabled={isPending}
@@ -427,6 +461,7 @@ export function EmployeeFormPage() {
               <FormTextInput
                 control={control}
                 name="nationality"
+                required
                 label={t("form.nationality")}
                 disabled={isPending}
               />
@@ -440,6 +475,7 @@ export function EmployeeFormPage() {
               <FormTextInput
                 control={control}
                 name="emergencyContact"
+                required
                 label={t("form.emergency_contact")}
                 disabled={isPending}
               />
@@ -463,6 +499,7 @@ export function EmployeeFormPage() {
               <RolePicker
                 control={control}
                 name="roleId"
+                required
                 label={t("form.role")}
                 options={roleOptions}
                 disabled={isPending}

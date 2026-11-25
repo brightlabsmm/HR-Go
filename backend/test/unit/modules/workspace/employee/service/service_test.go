@@ -98,11 +98,28 @@ func TestEmployeeService_CreateAndList(t *testing.T) {
 	ctx := context.Background()
 
 	email := "john.doe@example.com"
+	branchID := "00000000-0000-0000-0000-000000000001"
+	deptID := "00000000-0000-0000-0000-000000000002"
+	posID := "00000000-0000-0000-0000-000000000003"
+	roleID := "00000000-0000-0000-0000-000000000004"
+	dob := "1990-01-01"
+	gender := "MALE"
+	nationality := "US"
+	emergencyContact := "Emergency Person 555-1234"
+
 	req := request.CreateEmployeeRequest{
-		EmployeeCode: "EMP001",
-		FirstName:    "John",
-		LastName:     "Doe",
-		Email:        &email,
+		EmployeeCode:     "EMP001",
+		FirstName:        "John",
+		LastName:         "Doe",
+		Email:            &email,
+		BranchID:         &branchID,
+		DepartmentID:     &deptID,
+		PositionID:       &posID,
+		RoleID:           &roleID,
+		DateOfBirth:      &dob,
+		Gender:           &gender,
+		Nationality:      &nationality,
+		EmergencyContact: &emergencyContact,
 	}
 
 	res, err := svc.Create(ctx, "org-1", req)
@@ -120,9 +137,19 @@ func TestEmployeeService_CreateAndList(t *testing.T) {
 	}
 
 	// Test auto-generation when EmployeeCode is empty
+	email2 := "jane.smith@example.com"
 	autoReq := request.CreateEmployeeRequest{
-		FirstName: "Jane",
-		LastName:  "Smith",
+		FirstName:        "Jane",
+		LastName:         "Smith",
+		Email:            &email2,
+		BranchID:         &branchID,
+		DepartmentID:     &deptID,
+		PositionID:       &posID,
+		RoleID:           &roleID,
+		DateOfBirth:      &dob,
+		Gender:           &gender,
+		Nationality:      &nationality,
+		EmergencyContact: &emergencyContact,
 	}
 	autoRes, err := svc.Create(ctx, "org-1", autoReq)
 	if err != nil {

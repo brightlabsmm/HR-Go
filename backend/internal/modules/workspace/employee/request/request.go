@@ -4,22 +4,22 @@ type CreateEmployeeRequest struct {
 	EmployeeCode     string  `json:"employeeCode" binding:"omitempty,max=50"`
 	FirstName        string  `json:"firstName" binding:"required,max=100"`
 	LastName         string  `json:"lastName" binding:"required,max=100"`
-	Email            *string `json:"email" binding:"omitempty,email,max=255"`
+	Email            *string `json:"email" binding:"required,email,max=255"`
 	Phone            *string `json:"phone" binding:"omitempty,max=50"`
-	BranchID         *string `json:"branchId" binding:"omitempty,uuid"`
-	DepartmentID     *string `json:"departmentId" binding:"omitempty,uuid"`
-	PositionID       *string `json:"positionId" binding:"omitempty,uuid"`
-	RoleID           *string `json:"roleId" binding:"omitempty,uuid"`
+	BranchID         *string `json:"branchId" binding:"required,uuid"`
+	DepartmentID     *string `json:"departmentId" binding:"required,uuid"`
+	PositionID       *string `json:"positionId" binding:"required,uuid"`
+	RoleID           *string `json:"roleId" binding:"required,uuid"`
 	DateOfJoining    *string `json:"dateOfJoining"` // YYYY-MM-DD
 	EmploymentStatus *string `json:"employmentStatus" binding:"omitempty,oneof=ACTIVE PROBATION SUSPENDED TERMINATED RESIGNED"`
 
 	// Profile fields
-	DateOfBirth      *string `json:"dateOfBirth"` // YYYY-MM-DD
-	Gender           *string `json:"gender" binding:"omitempty,oneof=MALE FEMALE OTHER"`
-	Nationality      *string `json:"nationality" binding:"omitempty,max=50"`
+	DateOfBirth      *string `json:"dateOfBirth" binding:"required"` // YYYY-MM-DD
+	Gender           *string `json:"gender" binding:"required,oneof=MALE FEMALE OTHER"`
+	Nationality      *string `json:"nationality" binding:"required,max=50"`
 	MaritalStatus    *string `json:"maritalStatus" binding:"omitempty,oneof=SINGLE MARRIED DIVORCED WIDOWED OTHER"`
 	Address          *string `json:"address" binding:"omitempty,max=1000"`
-	EmergencyContact *string `json:"emergencyContact" binding:"omitempty,max=255"`
+	EmergencyContact *string `json:"emergencyContact" binding:"required,max=255"`
 }
 
 type UpdateEmployeeRequest struct {
