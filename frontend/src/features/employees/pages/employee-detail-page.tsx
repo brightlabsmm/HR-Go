@@ -105,6 +105,7 @@ export function EmployeeDetailPage() {
     { label: t("columns.branch"), value: employee?.branchName || "—" },
     { label: t("columns.department"), value: employee?.departmentName || "—" },
     { label: t("columns.position"), value: employee?.positionTitle || "—" },
+    { label: t("form.role", { defaultValue: "Role" }), value: employee?.roleName || "—" },
     {
       label: t("columns.joined"),
       value: employee?.dateOfJoining

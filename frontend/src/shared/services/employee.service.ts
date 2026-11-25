@@ -38,6 +38,9 @@ export interface Employee {
   departmentName?: string | null
   positionId?: string | null
   positionTitle?: string | null
+  roleId?: string | null
+  roleName?: string | null
+  roleCode?: string | null
   dateOfJoining?: string | null
   employmentStatus: EmploymentStatus | string
   profile?: EmployeeProfile | null
@@ -73,6 +76,7 @@ export interface CreateEmployeeInput {
   branchId?: string | null
   departmentId?: string | null
   positionId?: string | null
+  roleId?: string | null
   dateOfJoining?: string | null
   employmentStatus?: EmploymentStatus | string
   dateOfBirth?: string | null
@@ -91,6 +95,7 @@ export interface UpdateEmployeeInput {
   branchId?: string | null
   departmentId?: string | null
   positionId?: string | null
+  roleId?: string | null
   dateOfJoining?: string | null
   employmentStatus?: EmploymentStatus | string
   dateOfBirth?: string | null

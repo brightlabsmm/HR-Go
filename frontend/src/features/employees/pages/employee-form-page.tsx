@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   CheckCircle2Icon,
@@ -32,6 +32,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { RolePermissionReview } from "@/features/users/components/role-permission-review"
+import { RolePicker } from "@/features/users/components/role-picker"
 import { useStayAfterCreate } from "@/shared/hooks/use-stay-after-create"
 import { useBranchesQuery } from "@/shared/queries/branch.query"
 import { useDepartmentsQuery } from "@/shared/queries/department.query"
@@ -41,6 +43,7 @@ import {
   useUpdateEmployeeMutation,
 } from "@/shared/queries/employee.query"
 import { usePositionsQuery } from "@/shared/queries/position.query"
+import { useRolesQuery } from "@/shared/queries/role.query"
 import { toast } from "@/shared/stores/toast.store"
 
 interface CreatedCredentials {
@@ -59,6 +62,7 @@ export function EmployeeFormPage() {
   const branchesQuery = useBranchesQuery({ status: "active", limit: 100 })
   const departmentsQuery = useDepartmentsQuery({ status: "active", limit: 100 })
   const positionsQuery = usePositionsQuery({ status: "active", limit: 100 })
+  const rolesQuery = useRolesQuery()
 
   const createMutation = useCreateEmployeeMutation()
   const updateMutation = useUpdateEmployeeMutation()
@@ -92,6 +96,7 @@ export function EmployeeFormPage() {
         branchId: z.string(),
         departmentId: z.string(),
         positionId: z.string(),
+        roleId: z.string().optional(),
         dateOfJoining: z.string().optional(),
         employmentStatus: z.string(),
         dateOfBirth: z.string().optional(),
@@ -107,7 +112,7 @@ export function EmployeeFormPage() {
   type FormValues = z.infer<typeof schema>
   const employee = employeeQuery.data
 
-  const { control, handleSubmit, setError, reset, watch } = useForm<FormValues>({
+  const { control, handleSubmit, setError, reset, watch, setValue } = useForm<FormValues>({
     resolver: zodResolver(schema),
     values: {
       employeeCode: employee?.employeeCode ?? "",
@@ -118,6 +123,7 @@ export function EmployeeFormPage() {
       branchId: employee?.branchId ?? "none",
       departmentId: employee?.departmentId ?? "none",
       positionId: employee?.positionId ?? "none",
+      roleId: employee?.roleId ?? "",
       dateOfJoining: employee?.dateOfJoining ?? "",
       employmentStatus: employee?.employmentStatus ?? "ACTIVE",
       dateOfBirth: employee?.profile?.dateOfBirth ?? "",
@@ -128,6 +134,26 @@ export function EmployeeFormPage() {
       emergencyContact: employee?.profile?.emergencyContact ?? "",
     },
   })
+
+  const selectedRoleId = watch("roleId")
+  const selectedRole =
+    rolesQuery.data?.find((role) => role.id === selectedRoleId) ?? null
+  const roleOptions = (rolesQuery.data ?? []).map((role) => ({
+    value: role.id,
+    label: role.roleName,
+    description: role.description ?? role.roleCode,
+  }))
+
+  useEffect(() => {
+    if (!isEdit && !selectedRoleId && rolesQuery.data && rolesQuery.data.length > 0) {
+      const defaultRole =
+        rolesQuery.data.find((r) => r.roleCode === "EMPLOYEE") ??
+        rolesQuery.data[0]
+      if (defaultRole) {
+        setValue("roleId", defaultRole.id)
+      }
+    }
+  }, [isEdit, selectedRoleId, rolesQuery.data, setValue])
 
   const selectedBranchId = watch("branchId")
   const filteredDepartments = (departmentsQuery.data?.items ?? []).filter(
@@ -191,6 +217,9 @@ export function EmployeeFormPage() {
     setShowPassword(false)
     setCopiedField(null)
     if (shouldStay) {
+      const defaultRole =
+        rolesQuery.data?.find((r) => r.roleCode === "EMPLOYEE") ??
+        rolesQuery.data?.[0]
       reset({
         employeeCode: "",
         firstName: "",
@@ -200,6 +229,7 @@ export function EmployeeFormPage() {
         branchId: "none",
         departmentId: "none",
         positionId: "none",
+        roleId: defaultRole?.id ?? "",
         dateOfJoining: "",
         employmentStatus: "ACTIVE",
         dateOfBirth: "",
@@ -258,6 +288,7 @@ export function EmployeeFormPage() {
                   branchId,
                   departmentId,
                   positionId,
+                  roleId: values.roleId || null,
                   dateOfJoining,
                   employmentStatus: values.employmentStatus,
                   dateOfBirth,
@@ -279,6 +310,7 @@ export function EmployeeFormPage() {
                 branchId,
                 departmentId,
                 positionId,
+                roleId: values.roleId || null,
                 dateOfJoining,
                 employmentStatus: values.employmentStatus,
                 dateOfBirth,
@@ -420,6 +452,28 @@ export function EmployeeFormPage() {
                 />
               </div>
             </FormFieldGrid>
+          )}
+        </FormSection>
+
+        <FormSection legend={t("sections.access")}>
+          {rolesQuery.isPending ? (
+            <FormSkeleton fields={1} />
+          ) : (
+            <div className="flex flex-col gap-6">
+              <RolePicker
+                control={control}
+                name="roleId"
+                label={t("form.role")}
+                options={roleOptions}
+                disabled={isPending}
+              />
+              <div className="flex flex-col gap-3">
+                <p className="text-small-1 font-medium text-foreground">
+                  {t("form.permissions")}
+                </p>
+                <RolePermissionReview role={selectedRole} />
+              </div>
+            </div>
           )}
         </FormSection>
 

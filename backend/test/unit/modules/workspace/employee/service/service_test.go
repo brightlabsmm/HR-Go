@@ -27,13 +27,14 @@ func (m *mockEmployeeRepo) GetNextEmployeeCode(ctx context.Context, orgID string
 	return "EMP-001", nil
 }
 
-func (m *mockEmployeeRepo) Create(ctx context.Context, emp *models.Employee, prof *models.EmployeeProfile, account *models.OrganizationAccount) error {
+func (m *mockEmployeeRepo) Create(ctx context.Context, emp *models.Employee, prof *models.EmployeeProfile, account *models.OrganizationAccount, roleID *string) error {
 	if m.err != nil {
 		return m.err
 	}
 	emp.ID = fmt.Sprintf("emp-%d", len(m.employees)+1)
 	emp.CreatedAt = time.Now().UTC()
 	emp.UpdatedAt = time.Now().UTC()
+	emp.RoleID = roleID
 	m.employees = append(m.employees, *emp)
 	if prof != nil {
 		if m.profiles == nil {
@@ -83,7 +84,7 @@ func (m *mockEmployeeRepo) List(ctx context.Context, orgID string, q request.Lis
 	return m.employees, int64(len(m.employees)), nil
 }
 
-func (m *mockEmployeeRepo) Update(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile) error {
+func (m *mockEmployeeRepo) Update(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile, roleID *string) error {
 	return nil
 }
 

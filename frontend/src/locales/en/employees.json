@@ -19,6 +19,7 @@
   "sections": {
     "basic": "Employment Information",
     "personal": "Personal Profile",
+    "access": "Access",
     "position_history": "Position History",
     "shift_assignments": "Shift Assignments"
   },
@@ -33,6 +34,8 @@
     "branch": "Branch",
     "department": "Department",
     "position": "Position",
+    "role": "Role",
+    "permissions": "Permissions",
     "date_of_joining": "Date of Joining",
     "employment_status": "Employment Status",
     "date_of_birth": "Date of Birth",

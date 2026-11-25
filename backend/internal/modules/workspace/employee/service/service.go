@@ -211,7 +211,7 @@ func (s *service) Create(ctx context.Context, orgID string, req request.CreateEm
 		MustChangePassword: true,
 	}
 
-	if err := s.repo.Create(ctx, &emp, profile, account); err != nil {
+	if err := s.repo.Create(ctx, &emp, profile, account, req.RoleID); err != nil {
 		return nil, apperrors.Internal()
 	}
 
@@ -422,7 +422,7 @@ func (s *service) Update(ctx context.Context, orgID, id string, req request.Upda
 		return nil, apperrors.ValidationFailed(validationIssues)
 	}
 
-	if err := s.repo.Update(ctx, emp, profile); err != nil {
+	if err := s.repo.Update(ctx, emp, profile, req.RoleID); err != nil {
 		return nil, apperrors.Internal()
 	}
 
@@ -498,7 +498,7 @@ func (s *service) ChangePosition(ctx context.Context, orgID, id string, req requ
 	}
 
 	emp.PositionID = &req.NewPositionID
-	if err := s.repo.Update(ctx, emp, nil); err != nil {
+	if err := s.repo.Update(ctx, emp, nil, nil); err != nil {
 		return nil, apperrors.Internal()
 	}
 

@@ -9,6 +9,7 @@ type CreateEmployeeRequest struct {
 	BranchID         *string `json:"branchId" binding:"omitempty,uuid"`
 	DepartmentID     *string `json:"departmentId" binding:"omitempty,uuid"`
 	PositionID       *string `json:"positionId" binding:"omitempty,uuid"`
+	RoleID           *string `json:"roleId" binding:"omitempty,uuid"`
 	DateOfJoining    *string `json:"dateOfJoining"` // YYYY-MM-DD
 	EmploymentStatus *string `json:"employmentStatus" binding:"omitempty,oneof=ACTIVE PROBATION SUSPENDED TERMINATED RESIGNED"`
 
@@ -29,6 +30,7 @@ type UpdateEmployeeRequest struct {
 	BranchID         *string `json:"branchId" binding:"omitempty,uuid"`
 	DepartmentID     *string `json:"departmentId" binding:"omitempty,uuid"`
 	PositionID       *string `json:"positionId" binding:"omitempty,uuid"`
+	RoleID           *string `json:"roleId" binding:"omitempty,uuid"`
 	DateOfJoining    *string `json:"dateOfJoining"`
 	EmploymentStatus *string `json:"employmentStatus" binding:"omitempty,oneof=ACTIVE PROBATION SUSPENDED TERMINATED RESIGNED"`
 

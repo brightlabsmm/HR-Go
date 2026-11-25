@@ -26,6 +26,9 @@ type EmployeeResponse struct {
 	DepartmentName    *string                  `json:"departmentName,omitempty"`
 	PositionID        *string                  `json:"positionId,omitempty"`
 	PositionTitle     *string                  `json:"positionTitle,omitempty"`
+	RoleID            *string                  `json:"roleId,omitempty"`
+	RoleName          *string                  `json:"roleName,omitempty"`
+	RoleCode          *string                  `json:"roleCode,omitempty"`
 	DateOfJoining     *string                  `json:"dateOfJoining,omitempty"`
 	EmploymentStatus  string                   `json:"employmentStatus"`
 	Profile           *EmployeeProfileResponse `json:"profile,omitempty"`
