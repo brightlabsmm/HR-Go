@@ -14,13 +14,13 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile, account *models.OrganizationAccount) error
+	Create(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile, account *models.OrganizationAccount, roleID *string) error
 	GetNextEmployeeCode(ctx context.Context, orgID string) (string, error)
 	FindByID(ctx context.Context, orgID, id string) (*models.Employee, error)
 	FindByCode(ctx context.Context, orgID, code string) (*models.Employee, error)
 	FindByEmail(ctx context.Context, orgID, email string) (*models.Employee, error)
 	List(ctx context.Context, orgID string, q request.ListEmployeesQuery) ([]models.Employee, int64, error)
-	Update(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile) error
+	Update(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile, roleID *string) error
 	SoftDelete(ctx context.Context, orgID, id string) error
 	GetProfile(ctx context.Context, orgID, employeeID string) (*models.EmployeeProfile, error)
 	AddPositionHistory(ctx context.Context, history *models.EmployeePositionHistory) error
@@ -35,7 +35,7 @@ func New(db *gorm.DB) Repository {
 	return &repository{db: db}
 }
 
-func (r *repository) Create(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile, account *models.OrganizationAccount) error {
+func (r *repository) Create(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile, account *models.OrganizationAccount, roleID *string) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(emp).Error; err != nil {
 			return err
@@ -54,13 +54,22 @@ func (r *repository) Create(ctx context.Context, emp *models.Employee, profile *
 				return err
 			}
 
-			// Assign default EMPLOYEE role if present in org_roles
-			var role struct{ ID string }
-			if err := tx.Table("org_roles").
-				Select("id").
-				Where("code = 'EMPLOYEE' AND (organization_id IS NULL OR organization_id = ?)", emp.OrganizationID).
-				First(&role).Error; err == nil && role.ID != "" {
-				_ = tx.Exec("INSERT INTO org_user_roles (account_id, role_id) VALUES (?, ?) ON CONFLICT DO NOTHING", account.ID, role.ID).Error
+			assignedRoleID := ""
+			if roleID != nil && *roleID != "" {
+				assignedRoleID = *roleID
+			} else {
+				// Assign default EMPLOYEE role if present in org_roles
+				var role struct{ ID string }
+				if err := tx.Table("org_roles").
+					Select("id").
+					Where("code = 'EMPLOYEE' AND (organization_id IS NULL OR organization_id = ?)", emp.OrganizationID).
+					First(&role).Error; err == nil && role.ID != "" {
+					assignedRoleID = role.ID
+				}
+			}
+
+			if assignedRoleID != "" {
+				_ = tx.Exec("INSERT INTO org_user_roles (account_id, role_id) VALUES (?, ?) ON CONFLICT DO NOTHING", account.ID, assignedRoleID).Error
 			}
 		}
 		if emp.PositionID != nil && *emp.PositionID != "" {
@@ -108,10 +117,13 @@ func (r *repository) GetNextEmployeeCode(ctx context.Context, orgID string) (str
 func (r *repository) FindByID(ctx context.Context, orgID, id string) (*models.Employee, error) {
 	var emp models.Employee
 	err := r.db.WithContext(ctx).Table("employee_identities e").
-		Select("e.*, b.name as branch_name, d.name as department_name, p.name as position_title").
+		Select("e.*, b.name as branch_name, d.name as department_name, p.name as position_title, r.id as role_id, r.name as role_name, r.code as role_code").
 		Joins("LEFT JOIN branches b ON b.id = e.branch_id").
 		Joins("LEFT JOIN departments d ON d.id = e.department_id").
 		Joins("LEFT JOIN positions p ON p.id = e.position_id").
+		Joins("LEFT JOIN organization_accounts oa ON oa.employee_id = e.id AND oa.organization_id = e.organization_id").
+		Joins("LEFT JOIN org_user_roles our ON our.account_id = oa.id").
+		Joins("LEFT JOIN org_roles r ON r.id = our.role_id").
 		Where("e.id = ? AND e.organization_id = ? AND e.deleted_at IS NULL", id, orgID).
 		First(&emp).Error
 	if err != nil {
@@ -153,10 +165,13 @@ func (r *repository) FindByEmail(ctx context.Context, orgID, email string) (*mod
 
 func (r *repository) List(ctx context.Context, orgID string, q request.ListEmployeesQuery) ([]models.Employee, int64, error) {
 	query := r.db.WithContext(ctx).Table("employee_identities e").
-		Select("e.*, b.name as branch_name, d.name as department_name, p.name as position_title").
+		Select("e.*, b.name as branch_name, d.name as department_name, p.name as position_title, r.id as role_id, r.name as role_name, r.code as role_code").
 		Joins("LEFT JOIN branches b ON b.id = e.branch_id").
 		Joins("LEFT JOIN departments d ON d.id = e.department_id").
 		Joins("LEFT JOIN positions p ON p.id = e.position_id").
+		Joins("LEFT JOIN organization_accounts oa ON oa.employee_id = e.id AND oa.organization_id = e.organization_id").
+		Joins("LEFT JOIN org_user_roles our ON our.account_id = oa.id").
+		Joins("LEFT JOIN org_roles r ON r.id = our.role_id").
 		Where("e.organization_id = ? AND e.deleted_at IS NULL", orgID)
 
 	if q.BranchID != "" {
@@ -199,7 +214,7 @@ func (r *repository) List(ctx context.Context, orgID string, q request.ListEmplo
 	return items, total, nil
 }
 
-func (r *repository) Update(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile) error {
+func (r *repository) Update(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile, roleID *string) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Save(emp).Error; err != nil {
 			return err
@@ -223,6 +238,13 @@ func (r *repository) Update(ctx context.Context, emp *models.Employee, profile *
 				if err := tx.Save(profile).Error; err != nil {
 					return err
 				}
+			}
+		}
+		if roleID != nil && *roleID != "" {
+			var account models.OrganizationAccount
+			if err := tx.Where("employee_id = ? AND organization_id = ?", emp.ID, emp.OrganizationID).First(&account).Error; err == nil {
+				_ = tx.Exec("DELETE FROM org_user_roles WHERE account_id = ?", account.ID).Error
+				_ = tx.Exec("INSERT INTO org_user_roles (account_id, role_id) VALUES (?, ?) ON CONFLICT DO NOTHING", account.ID, *roleID).Error
 			}
 		}
 		return nil
