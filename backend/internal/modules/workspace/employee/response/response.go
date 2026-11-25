@@ -29,6 +29,7 @@ type EmployeeResponse struct {
 	DateOfJoining    *string                  `json:"dateOfJoining,omitempty"`
 	EmploymentStatus string                   `json:"employmentStatus"`
 	Profile          *EmployeeProfileResponse `json:"profile,omitempty"`
+	GeneratedPassword *string                  `json:"generatedPassword,omitempty"`
 	CreatedAt        time.Time                `json:"createdAt"`
 	UpdatedAt        time.Time                `json:"updatedAt"`
 }

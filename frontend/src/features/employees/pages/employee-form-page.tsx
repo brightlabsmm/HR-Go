@@ -1,5 +1,12 @@
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
+import {
+  CheckCircle2Icon,
+  CheckIcon,
+  CopyIcon,
+  EyeClosed,
+  EyeIcon,
+} from "lucide-react"
 import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router"
@@ -17,6 +24,14 @@ import { FormSection, formStackClassName } from "@/components/common/form-sectio
 import { NotFoundState } from "@/components/common/not-found-state"
 import { StayAfterCreateCheckbox } from "@/components/common/stay-after-create-checkbox"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { useStayAfterCreate } from "@/shared/hooks/use-stay-after-create"
 import { useBranchesQuery } from "@/shared/queries/branch.query"
 import { useDepartmentsQuery } from "@/shared/queries/department.query"
@@ -27,6 +42,12 @@ import {
 } from "@/shared/queries/employee.query"
 import { usePositionsQuery } from "@/shared/queries/position.query"
 import { toast } from "@/shared/stores/toast.store"
+
+interface CreatedCredentials {
+  employeeCode: string
+  fullName: string
+  generatedPassword?: string | null
+}
 
 export function EmployeeFormPage() {
   const { t } = useTranslation("employees")
@@ -42,18 +63,22 @@ export function EmployeeFormPage() {
   const createMutation = useCreateEmployeeMutation()
   const updateMutation = useUpdateEmployeeMutation()
 
-  const { stayAfterCreate, setStayAfterCreate, finishCreate } =
+  const { stayAfterCreate, setStayAfterCreate } =
     useStayAfterCreate("/employees")
+  const [createdCredentials, setCreatedCredentials] =
+    useState<CreatedCredentials | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [copiedField, setCopiedField] = useState<"code" | "password" | "all" | null>(
+    null
+  )
+
   const isPending = createMutation.isPending || updateMutation.isPending
   const isLoading = isEdit && employeeQuery.isPending
 
   const schema = useMemo(
     () =>
       z.object({
-        employeeCode: z
-          .string()
-          .trim()
-          .min(1, t("form.errors.code")),
+        employeeCode: z.string().trim().optional(),
         firstName: z
           .string()
           .trim()
@@ -160,6 +185,35 @@ export function EmployeeFormPage() {
     { value: "OTHER", label: "Other" },
   ]
 
+  const handleModalClose = () => {
+    const shouldStay = stayAfterCreate
+    setCreatedCredentials(null)
+    setShowPassword(false)
+    setCopiedField(null)
+    if (shouldStay) {
+      reset({
+        employeeCode: "",
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        branchId: "none",
+        departmentId: "none",
+        positionId: "none",
+        dateOfJoining: "",
+        employmentStatus: "ACTIVE",
+        dateOfBirth: "",
+        gender: "none",
+        nationality: "",
+        maritalStatus: "none",
+        address: "",
+        emergencyContact: "",
+      })
+    } else {
+      void navigate("/employees")
+    }
+  }
+
   if (isEdit && employeeQuery.isFetched && !employee) {
     return <NotFoundState backTo="/employees" backLabel={t("title")} />
   }
@@ -168,7 +222,13 @@ export function EmployeeFormPage() {
     <section className="flex flex-col gap-8 pb-6">
       <FormPageHeader
         title={isEdit ? t("form.edit_title") : t("form.create_title")}
-        subtitle={isEdit ? employee?.fullName : t("subtitle")}
+        subtitle={
+          isEdit
+            ? employee?.employeeCode
+              ? `${employee.employeeCode} · ${employee.fullName}`
+              : employee?.fullName
+            : t("subtitle")
+        }
       />
       <form
         className={formStackClassName}
@@ -209,9 +269,9 @@ export function EmployeeFormPage() {
                 },
               })
               toast.success(t("form.save"))
+              void navigate("/employees")
             } else {
-              await createMutation.mutateAsync({
-                employeeCode: values.employeeCode.trim(),
+              const created = await createMutation.mutateAsync({
                 firstName: values.firstName.trim(),
                 lastName: values.lastName.trim(),
                 email,
@@ -229,29 +289,13 @@ export function EmployeeFormPage() {
                 emergencyContact: values.emergencyContact?.trim() || null,
               })
               toast.success(t("form.create"))
-              finishCreate(() =>
-                reset({
-                  employeeCode: "",
-                  firstName: "",
-                  lastName: "",
-                  email: "",
-                  phone: "",
-                  branchId: "none",
-                  departmentId: "none",
-                  positionId: "none",
-                  dateOfJoining: "",
-                  employmentStatus: "ACTIVE",
-                  dateOfBirth: "",
-                  gender: "none",
-                  nationality: "",
-                  maritalStatus: "none",
-                  address: "",
-                  emergencyContact: "",
-                })
-              )
-              return
+              setCreatedCredentials({
+                employeeCode: created.employeeCode,
+                fullName:
+                  created.fullName || `${created.firstName} ${created.lastName}`,
+                generatedPassword: created.generatedPassword,
+              })
             }
-            void navigate("/employees")
           } catch (error) {
             applyApiFieldErrors(error, setError)
           }
@@ -264,20 +308,6 @@ export function EmployeeFormPage() {
             <FormFieldGrid>
               <FormTextInput
                 control={control}
-                name="employeeCode"
-                required
-                disabled={isEdit || isPending}
-                label={t("form.code")}
-              />
-              <FormSelectInput
-                control={control}
-                name="employmentStatus"
-                label={t("form.employment_status")}
-                options={statusOptions}
-                disabled={isPending}
-              />
-              <FormTextInput
-                control={control}
                 name="firstName"
                 required
                 label={t("form.first_name")}
@@ -288,6 +318,20 @@ export function EmployeeFormPage() {
                 name="lastName"
                 required
                 label={t("form.last_name")}
+                disabled={isPending}
+              />
+              <FormSelectInput
+                control={control}
+                name="employmentStatus"
+                label={t("form.employment_status")}
+                options={statusOptions}
+                disabled={isPending}
+              />
+              <FormTextInput
+                control={control}
+                name="dateOfJoining"
+                type="date"
+                label={t("form.date_of_joining")}
                 disabled={isPending}
               />
               <FormTextInput
@@ -323,13 +367,6 @@ export function EmployeeFormPage() {
                 name="positionId"
                 label={t("form.position")}
                 options={positionOptions}
-                disabled={isPending}
-              />
-              <FormTextInput
-                control={control}
-                name="dateOfJoining"
-                type="date"
-                label={t("form.date_of_joining")}
                 disabled={isPending}
               />
             </FormFieldGrid>
@@ -410,6 +447,155 @@ export function EmployeeFormPage() {
           </Button>
         </FormActions>
       </form>
+
+      <Dialog
+        open={Boolean(createdCredentials)}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleModalClose()
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
+          <DialogHeader>
+            <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30">
+              <CheckCircle2Icon className="size-6" />
+            </div>
+            <DialogTitle className="text-center font-heading text-lg font-semibold text-foreground">
+              Employee Created Successfully
+            </DialogTitle>
+            <DialogDescription className="text-center text-sm text-muted-foreground">
+              Account created for{" "}
+              <strong className="font-semibold text-foreground">
+                {createdCredentials?.fullName}
+              </strong>
+              . Please share these login credentials with the employee.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 rounded-lg border border-border bg-subtle/50 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Employee Code
+                </div>
+                <div className="font-mono text-base font-semibold text-foreground">
+                  {createdCredentials?.employeeCode}
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (createdCredentials?.employeeCode) {
+                    void navigator.clipboard.writeText(
+                      createdCredentials.employeeCode
+                    )
+                    setCopiedField("code")
+                    setTimeout(() => setCopiedField(null), 2000)
+                  }
+                }}
+              >
+                {copiedField === "code" ? (
+                  <CheckIcon className="size-4 text-emerald-600" />
+                ) : (
+                  <CopyIcon className="size-4" />
+                )}
+                <span className="text-xs">
+                  {copiedField === "code" ? "Copied" : "Copy"}
+                </span>
+              </Button>
+            </div>
+
+            {createdCredentials?.generatedPassword && (
+              <div className="border-t border-border pt-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Temporary Password
+                    </div>
+                    <div className="font-mono text-base font-semibold text-foreground">
+                      {showPassword
+                        ? createdCredentials.generatedPassword
+                        : "••••••••••••"}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? (
+                        <EyeClosed className="size-4" />
+                      ) : (
+                        <EyeIcon className="size-4" />
+                      )}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (createdCredentials?.generatedPassword) {
+                          void navigator.clipboard.writeText(
+                            createdCredentials.generatedPassword
+                          )
+                          setCopiedField("password")
+                          setTimeout(() => setCopiedField(null), 2000)
+                        }
+                      }}
+                    >
+                      {copiedField === "password" ? (
+                        <CheckIcon className="size-4 text-emerald-600" />
+                      ) : (
+                        <CopyIcon className="size-4" />
+                      )}
+                      <span className="text-xs">
+                        {copiedField === "password" ? "Copied" : "Copy"}
+                      </span>
+                    </Button>
+                  </div>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  The employee will be required to change this temporary password
+                  upon their first login.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                const text = `Employee: ${createdCredentials?.fullName}\nEmployee Code: ${createdCredentials?.employeeCode}${
+                  createdCredentials?.generatedPassword
+                    ? `\nTemporary Password: ${createdCredentials.generatedPassword}`
+                    : ""
+                }`
+                void navigator.clipboard.writeText(text)
+                setCopiedField("all")
+                setTimeout(() => setCopiedField(null), 2000)
+              }}
+            >
+              {copiedField === "all" ? (
+                <CheckIcon className="size-4 text-emerald-600" />
+              ) : (
+                <CopyIcon className="size-4" />
+              )}
+              {copiedField === "all" ? "Credentials Copied" : "Copy All Credentials"}
+            </Button>
+            <Button type="button" onClick={handleModalClose}>
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   )
 }

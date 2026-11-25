@@ -67,9 +67,33 @@ export function EmployeeListPage() {
   const deleteMutation = useDeleteEmployeeMutation()
 
   const [target, setTarget] = useState<Employee | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const rows = employeesQuery.data?.items ?? []
   const total = employeesQuery.data?.meta.totalItems ?? 0
   const isUnfilteredEmpty = employeesQuery.isSuccess && !hasFilters && total === 0
+
+  const isAllSelected = rows.length > 0 && rows.every((r) => selectedIds.has(r.id))
+  const isSomeSelected = rows.some((r) => selectedIds.has(r.id))
+
+  function toggleSelectAll() {
+    if (isAllSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(rows.map((r) => r.id)))
+    }
+  }
+
+  function toggleSelectRow(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
 
   function patch(key: string, value: string | null) {
     const next = new URLSearchParams(searchParams)
@@ -117,6 +141,42 @@ export function EmployeeListPage() {
   ]
 
   const columns = column.columns([
+    column.display({
+      id: "select",
+      header: () => (
+        <div className="flex items-center justify-center pl-1">
+          <input
+            type="checkbox"
+            className="size-4 cursor-pointer rounded border-border accent-primary"
+            checked={isAllSelected}
+            ref={(input) => {
+              if (input) {
+                input.indeterminate = !isAllSelected && isSomeSelected
+              }
+            }}
+            onChange={toggleSelectAll}
+            aria-label="Select all"
+          />
+        </div>
+      ),
+      enableSorting: false,
+      enableHiding: false,
+      meta: { align: "start" },
+      cell: ({ row }) => (
+        <div
+          className="flex items-center justify-center pl-1"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <input
+            type="checkbox"
+            className="size-4 cursor-pointer rounded border-border accent-primary"
+            checked={selectedIds.has(row.original.id)}
+            onChange={() => toggleSelectRow(row.original.id)}
+            aria-label={`Select ${row.original.fullName}`}
+          />
+        </div>
+      ),
+    }),
     column.accessor("fullName", {
       id: "name",
       header: t("columns.name"),
@@ -252,37 +312,56 @@ export function EmployeeListPage() {
       />
       <ListCard
         toolbar={
-          <FilterBar hasFilters={hasFilters} onReset={resetFilters}>
-            <div className="w-56">
-              <Input
-                placeholder={t("search_placeholder")}
-                value={search ?? ""}
-                onChange={(e) => patch("q", e.target.value || null)}
-                className="h-9"
+          <div className="flex flex-col gap-3">
+            <FilterBar hasFilters={hasFilters} onReset={resetFilters}>
+              <div className="w-56">
+                <Input
+                  placeholder={t("search_placeholder")}
+                  value={search ?? ""}
+                  onChange={(e) => patch("q", e.target.value || null)}
+                  className="h-9"
+                />
+              </div>
+              <FilterSelect
+                items={statusItems}
+                value={status ?? "all"}
+                label={t("all_status")}
+                onValueChange={(val) => patch("status", val)}
+                className="w-40"
               />
-            </div>
-            <FilterSelect
-              items={statusItems}
-              value={status ?? "all"}
-              label={t("all_status")}
-              onValueChange={(val) => patch("status", val)}
-              className="w-40"
-            />
-            <FilterSelect
-              items={branchItems}
-              value={branchId ?? "all"}
-              label={t("all_branches")}
-              onValueChange={(val) => patch("branch", val)}
-              className="w-44"
-            />
-            <FilterSelect
-              items={departmentItems}
-              value={departmentId ?? "all"}
-              label={t("all_departments")}
-              onValueChange={(val) => patch("department", val)}
-              className="w-48"
-            />
-          </FilterBar>
+              <FilterSelect
+                items={branchItems}
+                value={branchId ?? "all"}
+                label={t("all_branches")}
+                onValueChange={(val) => patch("branch", val)}
+                className="w-44"
+              />
+              <FilterSelect
+                items={departmentItems}
+                value={departmentId ?? "all"}
+                label={t("all_departments")}
+                onValueChange={(val) => patch("department", val)}
+                className="w-48"
+              />
+            </FilterBar>
+            {selectedIds.size > 0 && (
+              <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-2 text-xs text-foreground">
+                <span className="font-medium">
+                  {selectedIds.size}{" "}
+                  {selectedIds.size === 1 ? "employee" : "employees"} selected
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setSelectedIds(new Set())}
+                >
+                  Clear selection
+                </Button>
+              </div>
+            )}
+          </div>
         }
         footer={
           isUnfilteredEmpty ? null : (

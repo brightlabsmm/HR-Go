@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -15,14 +16,22 @@ type mockEmployeeRepo struct {
 	repository.Repository
 	employees []models.Employee
 	profiles  map[string]models.EmployeeProfile
+	accounts  []models.OrganizationAccount
 	err       error
 }
 
-func (m *mockEmployeeRepo) Create(ctx context.Context, emp *models.Employee, prof *models.EmployeeProfile) error {
+func (m *mockEmployeeRepo) GetNextEmployeeCode(ctx context.Context, orgID string) (string, error) {
+	if m.err != nil {
+		return "", m.err
+	}
+	return "EMP-001", nil
+}
+
+func (m *mockEmployeeRepo) Create(ctx context.Context, emp *models.Employee, prof *models.EmployeeProfile, account *models.OrganizationAccount) error {
 	if m.err != nil {
 		return m.err
 	}
-	emp.ID = "emp-1"
+	emp.ID = fmt.Sprintf("emp-%d", len(m.employees)+1)
 	emp.CreatedAt = time.Now().UTC()
 	emp.UpdatedAt = time.Now().UTC()
 	m.employees = append(m.employees, *emp)
@@ -30,9 +39,12 @@ func (m *mockEmployeeRepo) Create(ctx context.Context, emp *models.Employee, pro
 		if m.profiles == nil {
 			m.profiles = make(map[string]models.EmployeeProfile)
 		}
-		prof.ID = "prof-1"
+		prof.ID = fmt.Sprintf("prof-%d", len(m.employees))
 		prof.EmployeeID = emp.ID
 		m.profiles[emp.ID] = *prof
+	}
+	if account != nil {
+		m.accounts = append(m.accounts, *account)
 	}
 	return nil
 }
@@ -99,6 +111,25 @@ func TestEmployeeService_CreateAndList(t *testing.T) {
 	if res.EmployeeCode != "EMP001" {
 		t.Errorf("expected EMP001, got %s", res.EmployeeCode)
 	}
+	if res.GeneratedPassword == nil || len(*res.GeneratedPassword) < 8 {
+		t.Errorf("expected generated password to be at least 8 chars, got %v", res.GeneratedPassword)
+	}
+	if len(repo.accounts) != 1 || repo.accounts[0].Identifier != "EMP001" {
+		t.Errorf("expected organization account with identifier EMP001, got %+v", repo.accounts)
+	}
+
+	// Test auto-generation when EmployeeCode is empty
+	autoReq := request.CreateEmployeeRequest{
+		FirstName: "Jane",
+		LastName:  "Smith",
+	}
+	autoRes, err := svc.Create(ctx, "org-1", autoReq)
+	if err != nil {
+		t.Fatalf("unexpected error auto-creating employee: %v", err)
+	}
+	if autoRes.EmployeeCode != "EMP-001" {
+		t.Errorf("expected auto code EMP-001, got %s", autoRes.EmployeeCode)
+	}
 
 	// Conflict check on duplicate code
 	_, err = svc.Create(ctx, "org-1", req)
@@ -106,12 +137,12 @@ func TestEmployeeService_CreateAndList(t *testing.T) {
 		t.Fatalf("expected error on duplicate employee code, got nil")
 	}
 
-	// List check
+	// List check (2 employees created: EMP001 and EMP-001)
 	list, err := svc.List(ctx, "org-1", request.ListEmployeesQuery{})
 	if err != nil {
 		t.Fatalf("unexpected error listing employees: %v", err)
 	}
-	if list.Pagination.Total != 1 {
-		t.Errorf("expected 1 item, got %d", list.Pagination.Total)
+	if list.Pagination.Total != 2 {
+		t.Errorf("expected 2 items, got %d", list.Pagination.Total)
 	}
 }
