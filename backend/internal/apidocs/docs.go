@@ -13,7 +13,7 @@ var openAPISpec []byte
 const scalarHTML = `<!doctype html>
 <html>
   <head>
-    <title>HRGo API Reference — Phase 0 & Phase 1</title>
+    <title>HRGo API Reference — Phase 0, Phase 1 & Phase 2</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
