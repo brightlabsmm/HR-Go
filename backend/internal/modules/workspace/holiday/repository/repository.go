@@ -19,6 +19,7 @@ type Repository interface {
 	Update(ctx context.Context, h *models.Holiday) error
 	SoftDelete(ctx context.Context, orgID, id string) error
 	GetCalendarHolidays(ctx context.Context, orgID string, branchID string, from, to time.Time) ([]models.Holiday, error)
+	ValidateBranch(ctx context.Context, orgID, branchID string) (bool, error)
 }
 
 type repository struct {
@@ -132,4 +133,12 @@ func (r *repository) GetCalendarHolidays(ctx context.Context, orgID string, bran
 	var items []models.Holiday
 	err := query.Order("h.start_date ASC").Scan(&items).Error
 	return items, err
+}
+
+func (r *repository) ValidateBranch(ctx context.Context, orgID, branchID string) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Table("branches").
+		Where("id = ? AND organization_id = ? AND status = 'ACTIVE'", branchID, orgID).
+		Count(&count).Error
+	return count > 0, err
 }

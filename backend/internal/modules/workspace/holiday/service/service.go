@@ -60,6 +60,18 @@ func (s *service) Create(ctx context.Context, orgID string, req request.CreateHo
 		return nil, apperrors.ValidationFailed(validationIssues)
 	}
 
+	if req.BranchID != nil && strings.TrimSpace(*req.BranchID) != "" {
+		ok, err := s.repo.ValidateBranch(ctx, orgID, strings.TrimSpace(*req.BranchID))
+		if err != nil {
+			return nil, apperrors.Internal()
+		}
+		if !ok {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "branchId", Message: "Selected branch was not found in this organization or is inactive."},
+			})
+		}
+	}
+
 	holidayType := "PUBLIC"
 	if req.HolidayType != nil && *req.HolidayType != "" {
 		holidayType = strings.ToUpper(strings.TrimSpace(*req.HolidayType))
@@ -189,7 +201,19 @@ func (s *service) Update(ctx context.Context, orgID, id string, req request.Upda
 	}
 
 	if req.BranchID != nil {
-		h.BranchID = req.BranchID
+		if strings.TrimSpace(*req.BranchID) != "" {
+			ok, err := s.repo.ValidateBranch(ctx, orgID, strings.TrimSpace(*req.BranchID))
+			if err != nil {
+				return nil, apperrors.Internal()
+			}
+			if !ok {
+				validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "branchId", Message: "Selected branch was not found in this organization or is inactive."})
+			} else {
+				h.BranchID = req.BranchID
+			}
+		} else {
+			h.BranchID = nil
+		}
 	}
 	if req.HolidayType != nil && *req.HolidayType != "" {
 		h.HolidayType = strings.ToUpper(strings.TrimSpace(*req.HolidayType))

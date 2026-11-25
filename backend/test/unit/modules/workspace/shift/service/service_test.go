@@ -13,8 +13,18 @@ import (
 
 type mockShiftRepo struct {
 	repository.Repository
-	shifts      []models.Shift
-	assignments []models.EmployeeShiftAssignment
+	shifts         []models.Shift
+	assignments    []models.EmployeeShiftAssignment
+	rejectEmployee bool
+	rejectBranch   bool
+}
+
+func (m *mockShiftRepo) ValidateBranch(ctx context.Context, orgID, branchID string) (bool, error) {
+	return !m.rejectBranch, nil
+}
+
+func (m *mockShiftRepo) ValidateEmployee(ctx context.Context, orgID, employeeID string) (bool, error) {
+	return !m.rejectEmployee, nil
 }
 
 func (m *mockShiftRepo) CreateShift(ctx context.Context, shift *models.Shift) error {
