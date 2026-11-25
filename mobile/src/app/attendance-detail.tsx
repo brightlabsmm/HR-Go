@@ -14,6 +14,7 @@ import { Badge, StatusType } from '../components/Badge';
 export default function AttendanceDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
+    id?: string;
     day?: string;
     dow?: string;
     date?: string;
@@ -119,7 +120,12 @@ export default function AttendanceDetailScreen() {
             activeOpacity={0.8}
             onPress={() => router.push({
               pathname: '/correction-request',
-              params: { type: 'corr', date: '2026-11-20' },
+              params: {
+                type: 'corr',
+                date: params.day ? `2026-11-${String(params.day).padStart(2, '0')}` : '2026-11-20',
+                attendanceRecordId: params.id,
+                recordedTimes: params.times,
+              },
             })}
           >
             <Ionicons name="pencil" size={20} color="#ffffff" />
@@ -131,7 +137,12 @@ export default function AttendanceDetailScreen() {
             activeOpacity={0.8}
             onPress={() => router.push({
               pathname: '/correction-request',
-              params: { type: 'late', date: '2026-11-20' },
+              params: {
+                type: 'late',
+                date: params.day ? `2026-11-${String(params.day).padStart(2, '0')}` : '2026-11-20',
+                attendanceRecordId: params.id,
+                recordedTimes: params.times,
+              },
             })}
           >
             <Text style={styles.secondaryButtonText}>Explain late arrival</Text>

@@ -7,21 +7,25 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
+import { authApi } from '../services/api/authApi';
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
 
-  const [currentPw, setCurrentPw] = useState('password1');
-  const [newPw, setNewPw] = useState('Yangon2026');
-  const [confirmPw, setConfirmPw] = useState('Yangon2026');
+  const [currentPw, setCurrentPw] = useState('Password@123');
+  const [newPw, setNewPw] = useState('Yangon@2026');
+  const [confirmPw, setConfirmPw] = useState('Yangon@2026');
 
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const checks = [
     { label: 'At least 8 characters', ok: newPw.length >= 8 },
@@ -39,14 +43,39 @@ export default function ChangePasswordScreen() {
   const strengthLabel = strengthLabels[score];
   const strengthTextColor = strengthTextColors[score];
 
-  const handleUpdate = () => {
-    if (newPw !== confirmPw) {
-      Alert.alert('Error', 'New passwords do not match.');
+  const handleUpdate = async () => {
+    if (!currentPw) {
+      setErrorMessage('Please enter your current password.');
       return;
     }
-    Alert.alert('Success', 'Password has been updated successfully.', [
-      { text: 'OK', onPress: () => router.back() },
-    ]);
+    if (newPw.length < 8) {
+      setErrorMessage('New password must be at least 8 characters.');
+      return;
+    }
+    if (newPw !== confirmPw) {
+      setErrorMessage('New passwords do not match.');
+      return;
+    }
+
+    setErrorMessage(null);
+    setSubmitting(true);
+
+    try {
+      await authApi.changePassword({
+        oldPassword: currentPw,
+        newPassword: newPw,
+      });
+
+      Alert.alert('Success', 'Your password has been updated successfully.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (err: any) {
+      const msg = err.message || 'Failed to update password. Please check your current password.';
+      setErrorMessage(msg);
+      Alert.alert('Change Password Failed', msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -71,6 +100,13 @@ export default function ChangePasswordScreen() {
         <Text style={styles.headerNote}>
           You will stay signed in on this device. Other devices will need to sign in again.
         </Text>
+
+        {errorMessage && (
+          <View style={styles.errorBanner}>
+            <Ionicons name="alert-circle-outline" size={18} color={colors.error} />
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        )}
 
         {/* Current Password */}
         <View style={styles.fieldGroup}>
@@ -190,11 +226,16 @@ export default function ChangePasswordScreen() {
 
         {/* Update Button */}
         <TouchableOpacity
-          style={styles.updateButton}
+          style={[styles.updateButton, submitting && { opacity: 0.8 }]}
           activeOpacity={0.8}
           onPress={handleUpdate}
+          disabled={submitting}
         >
-          <Text style={styles.updateButtonText}>Update password</Text>
+          {submitting ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text style={styles.updateButtonText}>Update password</Text>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -235,6 +276,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
     lineHeight: 19,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FDE8E7',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.error,
+    fontWeight: '500',
   },
   fieldGroup: {
     gap: 6,

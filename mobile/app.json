@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "hrgo-mobile",
-    "slug": "hrgo-mobile",
+    "name": "HR Go",
+    "slug": "hr-go",
+    "owner": "brightlabsmms-team",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -37,6 +38,11 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "627825d3-776b-4be2-b0e8-c3789811a82d"
+      }
     }
   }
 }

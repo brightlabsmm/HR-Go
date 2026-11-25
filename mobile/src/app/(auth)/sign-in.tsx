@@ -8,23 +8,66 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/theme';
 import { HrGoLogo } from '../../components/HrGoLogo';
+import { useAuth } from '../../context/AuthContext';
 
 export default function SignInScreen() {
   const router = useRouter();
-  const [code, setCode] = useState('EMP-0142');
-  const [password, setPassword] = useState('password1');
+  const { login, savedOrgCode } = useAuth();
+
+  const [code, setCode] = useState('EMP-001');
+  const [password, setPassword] = useState('Password@123');
+  const [orgCode, setOrgCode] = useState(savedOrgCode || 'ORG-001');
+  const [showOrgField, setShowOrgField] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [selectedLang, setSelectedLang] = useState<'en' | 'my' | 'th'>('en');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSignIn = () => {
-    router.replace('/(tabs)');
+  const handleSignIn = async () => {
+    if (!code.trim()) {
+      setErrorMessage('Please enter your employee code or identifier.');
+      return;
+    }
+    if (!password) {
+      setErrorMessage('Please enter your password.');
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsSubmitting(true);
+
+    try {
+      await login(code, password, orgCode.trim() || undefined);
+      router.replace('/(tabs)');
+    } catch (err: any) {
+      const msg = err.message || 'Sign in failed. Please check your credentials or network.';
+      setErrorMessage(msg);
+      // Give option to continue with demo mode if server is unreachable
+      if (err.code === 'NETWORK_ERROR' || err.code === 'TIMEOUT') {
+        Alert.alert(
+          'Backend Server Unreachable',
+          `${msg}\n\nWould you like to enter offline preview mode?`,
+          [
+            { text: 'Retry', style: 'cancel' },
+            {
+              text: 'Enter Offline Mode',
+              onPress: () => router.replace('/(tabs)'),
+            },
+          ]
+        );
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -60,6 +103,14 @@ export default function SignInScreen() {
               </Text>
             </View>
 
+            {/* Error Message Alert */}
+            {errorMessage && (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle-outline" size={18} color={Colors.error} />
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+            )}
+
             {/* Employee ID Field */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Employee ID or code</Text>
@@ -69,7 +120,7 @@ export default function SignInScreen() {
                   style={styles.textInput}
                   value={code}
                   onChangeText={setCode}
-                  placeholder="e.g. EMP-0142"
+                  placeholder="e.g. EMP-001 or EMP-0142"
                   placeholderTextColor={Colors.textDisabled}
                   autoCapitalize="characters"
                 />
@@ -104,63 +155,100 @@ export default function SignInScreen() {
               </View>
             </View>
 
-            {/* Remember Me */}
-            <TouchableOpacity
-              style={styles.rememberRow}
-              onPress={() => setRememberMe(!rememberMe)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
-                {rememberMe && <Ionicons name="checkmark" size={14} color={Colors.white} />}
+            {/* Organization Code (Collapsible) */}
+            {showOrgField ? (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Organization Code</Text>
+                <View style={styles.inputBox}>
+                  <Feather name="briefcase" size={19} color={Colors.textMuted} />
+                  <TextInput
+                    style={styles.textInput}
+                    value={orgCode}
+                    onChangeText={setOrgCode}
+                    placeholder="e.g. ORG-001"
+                    placeholderTextColor={Colors.textDisabled}
+                    autoCapitalize="characters"
+                  />
+                </View>
               </View>
-              <Text style={styles.rememberText}>Keep me signed in on this device</Text>
-            </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.orgToggleBtn}
+                onPress={() => setShowOrgField(true)}
+              >
+                <Text style={styles.orgToggleText}>+ Enter organization code ({orgCode})</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Remember Me & Help Row */}
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={styles.rememberRow}
+                onPress={() => setRememberMe(!rememberMe)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, rememberMe && styles.checkboxActive]}>
+                  {rememberMe && <Ionicons name="checkmark" size={14} color={Colors.white} />}
+                </View>
+                <Text style={styles.rememberText}>Remember me</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() =>
+                  Alert.alert(
+                    'Need Help?',
+                    'Default demo credentials:\nEmployee: EMP-001\nPassword: Password@123\nOrg: ORG-001\n\nContact your HR administrator if you forgot your credentials.'
+                  )
+                }
+              >
+                <Text style={styles.forgotText}>Need help?</Text>
+              </TouchableOpacity>
+            </View>
 
             {/* Sign In Button */}
             <TouchableOpacity
-              style={styles.signInButton}
+              style={[styles.signInButton, isSubmitting && { opacity: 0.8 }]}
               onPress={handleSignIn}
+              disabled={isSubmitting}
               activeOpacity={0.8}
             >
-              <Text style={styles.signInButtonText}>Sign in</Text>
+              {isSubmitting ? (
+                <ActivityIndicator color={Colors.white} />
+              ) : (
+                <Text style={styles.signInButtonText}>Sign in</Text>
+              )}
             </TouchableOpacity>
 
-            {/* Forgot Password Hint */}
-            <Text style={styles.forgotHint}>
-              Forgot your password? Ask your HR admin to reset it.
-            </Text>
-
-            {/* Language Selector Pills */}
-            <View style={styles.langRow}>
-              <TouchableOpacity
-                style={[styles.langPill, selectedLang === 'en' && styles.langPillActive]}
-                onPress={() => setSelectedLang('en')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.langText, selectedLang === 'en' && styles.langTextActive]}>
-                  English
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.langPill, selectedLang === 'my' && styles.langPillActive]}
-                onPress={() => setSelectedLang('my')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.langText, selectedLang === 'my' && styles.langTextActive]}>
-                  မြန်မာ
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.langPill, selectedLang === 'th' && styles.langPillActive]}
-                onPress={() => setSelectedLang('th')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.langText, selectedLang === 'th' && styles.langTextActive]}>
-                  ไทย
-                </Text>
-              </TouchableOpacity>
+            {/* Language Switcher */}
+            <View style={styles.languageContainer}>
+              <Text style={styles.languageLabel}>Language</Text>
+              <View style={styles.langPillsRow}>
+                {(['en', 'my', 'th'] as const).map((lang) => {
+                  const labels = { en: 'English', my: 'မြန်မာ', th: 'ไทย' };
+                  const isSelected = selectedLang === lang;
+                  return (
+                    <TouchableOpacity
+                      key={lang}
+                      style={[
+                        styles.langPill,
+                        isSelected && styles.langPillActive,
+                      ]}
+                      onPress={() => setSelectedLang(lang)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.langPillText,
+                          isSelected && styles.langPillTextActive,
+                        ]}
+                      >
+                        {labels[lang]}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
           </View>
         </ScrollView>
@@ -181,37 +269,36 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   banner: {
-    height: 190,
+    height: 200,
     backgroundColor: Colors.primary,
-    paddingHorizontal: 24,
-    justifyContent: 'center',
     position: 'relative',
     overflow: 'hidden',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
   },
   bannerDecorCircle1: {
     position: 'absolute',
-    right: -30,
-    top: -30,
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: Colors.accent,
-    opacity: 0.25,
+    top: -50,
+    right: -40,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: 'rgba(23, 135, 245, 0.25)',
   },
   bannerDecorCircle2: {
     position: 'absolute',
-    right: 50,
-    bottom: -50,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: Colors.white,
-    opacity: 0.08,
+    bottom: -60,
+    right: 60,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 16,
+    zIndex: 1,
   },
   brandTitle: {
     fontSize: 26,
@@ -221,28 +308,50 @@ const styles = StyleSheet.create({
   },
   brandTagline: {
     fontSize: 13,
-    color: '#BFD3F5',
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontWeight: '500',
     marginTop: 2,
   },
   formContainer: {
     flex: 1,
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -20,
     paddingHorizontal: 24,
     paddingTop: 28,
-    paddingBottom: 24,
+    paddingBottom: 36,
     gap: 18,
   },
   headerTextCol: {
-    gap: 4,
+    gap: 6,
+    marginBottom: 4,
   },
   title: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '700',
-    color: Colors.textNavy,
+    color: Colors.text,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: Colors.textMuted,
-    lineHeight: 20,
+    lineHeight: 18,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FDE8E7',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 12,
+    color: Colors.error,
+    fontWeight: '500',
+    lineHeight: 16,
   },
   inputGroup: {
     gap: 6,
@@ -253,13 +362,13 @@ const styles = StyleSheet.create({
     color: Colors.textSubtle,
   },
   inputBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
     height: 52,
     borderWidth: 1.5,
     borderColor: Colors.border,
     borderRadius: 14,
     backgroundColor: Colors.inputBg,
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: 14,
     gap: 10,
   },
@@ -272,82 +381,102 @@ const styles = StyleSheet.create({
   eyeButton: {
     padding: 6,
   },
+  orgToggleBtn: {
+    paddingVertical: 4,
+  },
+  orgToggleText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.accent,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 2,
+  },
   rememberRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginTop: 2,
+    gap: 8,
   },
   checkbox: {
     width: 20,
     height: 20,
     borderRadius: 6,
-    borderWidth: 1.5,
+    borderWidth: 1.8,
     borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: Colors.white,
   },
-  checkboxChecked: {
+  checkboxActive: {
     backgroundColor: Colors.accent,
     borderColor: Colors.accent,
   },
   rememberText: {
     fontSize: 13,
     color: Colors.textSubtle,
+    fontWeight: '500',
+  },
+  forgotText: {
+    fontSize: 13,
+    color: Colors.accent,
+    fontWeight: '600',
   },
   signInButton: {
     height: 54,
     borderRadius: 14,
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 4,
-    shadowColor: Colors.accent,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 4,
+    marginTop: 8,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
   },
   signInButtonText: {
-    color: Colors.white,
     fontSize: 16,
     fontWeight: '600',
+    color: Colors.white,
   },
-  forgotHint: {
-    fontSize: 13,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  langRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  languageContainer: {
+    alignItems: 'center',
+    marginTop: 14,
     gap: 8,
-    marginTop: 'auto',
-    paddingTop: 16,
+  },
+  languageLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.textDisabled,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  langPillsRow: {
+    flexDirection: 'row',
+    gap: 8,
   },
   langPill: {
-    minHeight: 36,
     paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: 999,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    backgroundColor: Colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: Colors.inputBg,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
   },
   langPillActive: {
-    borderColor: Colors.accent,
     backgroundColor: Colors.accentLight,
+    borderColor: Colors.accent,
   },
-  langText: {
-    fontSize: 13,
-    color: Colors.textSubtle,
+  langPillText: {
+    fontSize: 12,
     fontWeight: '500',
+    color: Colors.textMuted,
   },
-  langTextActive: {
-    color: Colors.textNavy,
+  langPillTextActive: {
+    color: Colors.accentDark,
     fontWeight: '600',
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,65 +6,72 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
 import { Badge, StatusType } from '../components/Badge';
-
-interface SyncEvent {
-  id: number;
-  short: 'IN' | 'OUT';
-  title: string;
-  time: string;
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CONFLICT';
-  note: string;
-}
+import { offlineQueue, StoredOfflineEvent } from '../services/offline/offlineQueue';
 
 export default function OfflineSyncScreen() {
   const router = useRouter();
-  const [synced, setSynced] = useState(false);
-  const [checkedOutOffline, setCheckedOutOffline] = useState(false);
+  const [events, setEvents] = useState<StoredOfflineEvent[]>([]);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [checkedOutOffline, setCheckedOutOffline] = useState<boolean>(false);
 
-  const events: SyncEvent[] = [
-    {
-      id: 1,
-      short: 'IN',
-      title: 'Check in',
-      time: 'Tue 24 Nov · 08:52',
-      status: synced ? 'ACCEPTED' : 'PENDING',
-      note: synced ? 'Synced 09:41' : 'Waiting for connection',
-    },
-    {
-      id: 2,
-      short: 'OUT',
-      title: 'Check out',
-      time: 'Mon 22 Nov · 17:10',
-      status: 'CONFLICT',
-      note: 'A check-out already exists for this day',
-    },
-    {
-      id: 3,
-      short: 'IN',
-      title: 'Check in',
-      time: 'Mon 22 Nov · 08:58',
-      status: 'ACCEPTED',
-      note: 'Synced 22 Nov, 12:04',
-    },
-    {
-      id: 4,
-      short: 'OUT',
-      title: 'Check out',
-      time: 'Sun 21 Nov · 16:40',
-      status: 'REJECTED',
-      note: 'Not a working day for your shift',
-    },
-  ];
+  const loadEvents = useCallback(async () => {
+    const list = await offlineQueue.getEvents();
+    setEvents(list);
+  }, []);
 
-  const handleCheckOutOffline = () => {
-    setCheckedOutOffline(true);
-    Alert.alert('Offline Action Stored', 'Check-out at 17:06 has been saved offline on this device.');
+  useEffect(() => {
+    loadEvents();
+  }, [loadEvents]);
+
+  const handleCheckOutOffline = async () => {
+    try {
+      await offlineQueue.addPunch('CHECK_OUT', {
+        notes: 'Offline check-out on this device',
+      });
+      setCheckedOutOffline(true);
+      await loadEvents();
+      Alert.alert(
+        'Offline Action Stored',
+        'Check-out has been securely timestamped and stored offline on this device.'
+      );
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to save offline punch.');
+    }
   };
+
+  const handleSyncNow = async () => {
+    const pendingCount = events.filter((e) => e.status === 'PENDING').length;
+    if (pendingCount === 0) {
+      Alert.alert('Queue Up to Date', 'All offline events have already been synced.');
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      const res = await offlineQueue.sync();
+      await loadEvents();
+      Alert.alert(
+        'Sync Complete',
+        `Successfully synced ${res.success} of ${res.processed} event(s) to HRGo server.`
+      );
+    } catch (err: any) {
+      Alert.alert(
+        'Sync Failed',
+        err.message || 'Unable to connect to HRGo server. Actions remain safely queued offline.'
+      );
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const pendingCount = events.filter((e) => e.status === 'PENDING').length;
+  const isAllSynced = pendingCount === 0;
 
   return (
     <View style={styles.container}>
@@ -88,31 +95,31 @@ export default function OfflineSyncScreen() {
         <View
           style={[
             styles.banner,
-            synced ? styles.bannerOnline : styles.bannerOffline,
+            isAllSynced ? styles.bannerOnline : styles.bannerOffline,
           ]}
         >
           <Ionicons
-            name={synced ? 'cloud-done-outline' : 'cloud-offline-outline'}
+            name={isAllSynced ? 'cloud-done-outline' : 'cloud-offline-outline'}
             size={22}
-            color={synced ? '#0E6B4C' : '#ffffff'}
+            color={isAllSynced ? '#0E6B4C' : '#ffffff'}
             style={styles.bannerIcon}
           />
           <View style={styles.bannerTextCol}>
             <Text
               style={[
                 styles.bannerTitle,
-                { color: synced ? '#0E6B4C' : '#ffffff' },
+                { color: isAllSynced ? '#0E6B4C' : '#ffffff' },
               ]}
             >
-              {synced ? 'Back online · 1 action synced' : 'You are offline'}
+              {isAllSynced ? 'All actions synced' : 'You have offline actions'}
             </Text>
             <Text
               style={[
                 styles.bannerBody,
-                { color: synced ? '#0E6B4C' : 'rgba(255,255,255,0.85)' },
+                { color: isAllSynced ? '#0E6B4C' : 'rgba(255,255,255,0.85)' },
               ]}
             >
-              {synced
+              {isAllSynced
                 ? 'Conflicts and rejections need your review or an HR correction.'
                 : 'You can still check in, check out and view saved attendance. We will sync automatically when you reconnect.'}
             </Text>
@@ -126,7 +133,7 @@ export default function OfflineSyncScreen() {
               <Text style={styles.shiftMeta}>Today · Morning Shift</Text>
               <Text style={styles.punchStatus}>
                 {checkedOutOffline
-                  ? 'Checked out 17:06 (offline)'
+                  ? 'Checked out offline'
                   : 'Checked in 08:52 (offline)'}
               </Text>
             </View>
@@ -160,19 +167,24 @@ export default function OfflineSyncScreen() {
           <TouchableOpacity
             style={[
               styles.syncButton,
-              synced && styles.syncButtonDone,
+              isAllSynced && styles.syncButtonDone,
             ]}
-            onPress={() => setSynced(!synced)}
+            onPress={handleSyncNow}
+            disabled={isSyncing}
             activeOpacity={0.7}
           >
-            <Text
-              style={[
-                styles.syncButtonText,
-                synced && styles.syncButtonTextDone,
-              ]}
-            >
-              {synced ? 'Synced' : 'Sync now'}
-            </Text>
+            {isSyncing ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Text
+                style={[
+                  styles.syncButtonText,
+                  isAllSynced && styles.syncButtonTextDone,
+                ]}
+              >
+                {isAllSynced ? 'Synced' : 'Sync now'}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
 
@@ -182,7 +194,7 @@ export default function OfflineSyncScreen() {
             const isConflict = ev.status === 'CONFLICT';
             const isRejected = ev.status === 'REJECTED';
             return (
-              <View key={ev.id} style={styles.eventItem}>
+              <View key={ev.localEventId} style={styles.eventItem}>
                 <View
                   style={[
                     styles.eventIconBox,
@@ -206,7 +218,7 @@ export default function OfflineSyncScreen() {
                     <Text style={styles.eventTitle}>{ev.title}</Text>
                     <Badge status={ev.status as StatusType} />
                   </View>
-                  <Text style={styles.eventTime}>{ev.time}</Text>
+                  <Text style={styles.eventTime}>{ev.timeFormatted}</Text>
                   <Text
                     style={[
                       styles.eventNote,

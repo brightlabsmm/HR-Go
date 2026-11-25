@@ -1,24 +1,103 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
-import { CORRECTION_REQUESTS } from '../constants/mockData';
+import { CORRECTION_REQUESTS, CorrectionRequestItem } from '../constants/mockData';
 import { Badge, StatusType } from '../components/Badge';
+import { attendanceApi } from '../services/api/attendanceApi';
 
 type TabType = 'All' | 'Pending' | 'Approved' | 'Rejected';
+
+function formatSimpleDate(iso?: string): string {
+  if (!iso) return 'Recent';
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString('en-GB', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function formatSimpleTime(iso?: string): string {
+  if (!iso) return '--:--';
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  } catch {
+    return iso;
+  }
+}
 
 export default function MyRequestsScreen() {
   const router = useRouter();
   const [tab, setTab] = useState<TabType>('All');
+  const [requests, setRequests] = useState<CorrectionRequestItem[]>(CORRECTION_REQUESTS);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  const filteredRequests = CORRECTION_REQUESTS.filter((r) => {
+  const fetchCorrections = useCallback(async () => {
+    try {
+      const res = await attendanceApi.listCorrections({ pageSize: 50 });
+      if (res && res.items && res.items.length > 0) {
+        const mapped: CorrectionRequestItem[] = res.items.map((item) => {
+          const wasIn = formatSimpleTime(item.originalCheckInTime);
+          const wasOut = formatSimpleTime(item.originalCheckOutTime);
+          const reqIn = formatSimpleTime(item.requestedCheckInTime);
+          const reqOut = formatSimpleTime(item.requestedCheckOutTime);
+
+          const reviewerNote = item.reviewerNotes
+            ? `${item.status === 'REJECTED' ? 'Rejected' : 'Approved'}: "${item.reviewerNotes}"`
+            : item.status === 'PENDING'
+            ? 'Waiting for HR Manager review.'
+            : `Reviewed and ${item.status.toLowerCase()}`;
+
+          return {
+            id: item.id,
+            date: formatSimpleDate(item.createdAt),
+            type: 'Correct times',
+            sent: formatSimpleDate(item.createdAt),
+            was: `In ${wasIn} · Out ${wasOut}`,
+            req: `In ${reqIn} · Out ${reqOut}`,
+            status: item.status,
+            note: reviewerNote,
+          };
+        });
+        setRequests(mapped);
+      }
+    } catch {
+      // Retain fallback data if offline
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCorrections();
+  }, [fetchCorrections]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchCorrections();
+  };
+
+  const filteredRequests = requests.filter((r) => {
     if (tab === 'All') return true;
     return r.status.toLowerCase() === tab.toLowerCase();
   });
@@ -50,6 +129,9 @@ export default function MyRequestsScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
       >
         {/* Status Filter Tabs */}
         <View style={styles.tabsContainer}>
@@ -113,10 +195,12 @@ export default function MyRequestsScreen() {
                   <TouchableOpacity
                     style={styles.resubmitButton}
                     activeOpacity={0.8}
-                    onPress={() => router.push({
-                      pathname: '/correction-request',
-                      params: { type: 'corr', date: req.date },
-                    })}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/correction-request',
+                        params: { type: 'corr', date: req.date, attendanceRecordId: req.id },
+                      })
+                    }
                   >
                     <Text style={styles.resubmitButtonText}>Edit and resubmit</Text>
                   </TouchableOpacity>
