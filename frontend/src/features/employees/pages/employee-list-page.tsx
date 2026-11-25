@@ -226,6 +226,11 @@ export function EmployeeListPage() {
       enableSorting: false,
       cell: ({ getValue }) => getValue() || "—",
     }),
+    column.accessor("roleName", {
+      header: t("columns.role"),
+      enableSorting: false,
+      cell: ({ getValue }) => getValue() || "—",
+    }),
     column.accessor("employmentStatus", {
       header: t("columns.status"),
       enableSorting: false,

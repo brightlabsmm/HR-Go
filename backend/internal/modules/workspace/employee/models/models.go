@@ -20,12 +20,12 @@ type Employee struct {
 	DeletedAt        *time.Time `gorm:"index"`
 
 	// Relational metadata populated when loaded with joins/preloads
-	BranchName     string  `gorm:"-"`
-	DepartmentName string  `gorm:"-"`
-	PositionTitle  string  `gorm:"-"`
-	RoleID         *string `gorm:"-"`
-	RoleName       *string `gorm:"-"`
-	RoleCode       *string `gorm:"-"`
+	BranchName     string  `gorm:"->;column:branch_name"`
+	DepartmentName string  `gorm:"->;column:department_name"`
+	PositionTitle  string  `gorm:"->;column:position_title"`
+	RoleID         *string `gorm:"->;column:role_id"`
+	RoleName       *string `gorm:"->;column:role_name"`
+	RoleCode       *string `gorm:"->;column:role_code"`
 }
 
 func (Employee) TableName() string {

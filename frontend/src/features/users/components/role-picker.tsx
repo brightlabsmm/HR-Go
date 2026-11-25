@@ -18,6 +18,7 @@ interface RolePickerProps<TFieldValues extends FieldValues> {
   label: string
   options: RolePickerOption[]
   disabled?: boolean
+  required?: boolean
 }
 
 export function RolePicker<TFieldValues extends FieldValues>({
@@ -26,6 +27,7 @@ export function RolePicker<TFieldValues extends FieldValues>({
   label,
   options,
   disabled = false,
+  required = false,
 }: RolePickerProps<TFieldValues>) {
   const { t } = useTranslation("roles")
 
@@ -35,7 +37,14 @@ export function RolePicker<TFieldValues extends FieldValues>({
       name={name}
       render={({ field, fieldState }) => (
         <fieldset className="flex flex-col gap-3" disabled={disabled}>
-          <legend className="mb-3 text-small-1 font-medium text-foreground">{label}</legend>
+          <legend className="mb-3 text-small-1 font-medium text-foreground">
+            {label}
+            {required ? (
+              <span className="ml-1 text-destructive" aria-hidden>
+                *
+              </span>
+            ) : null}
+          </legend>
           <RadioGroup
             value={typeof field.value === "string" ? field.value : ""}
             onValueChange={(value) => field.onChange(value ?? "")}

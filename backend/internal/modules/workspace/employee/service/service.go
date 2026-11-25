@@ -106,6 +106,24 @@ func (s *service) Create(ctx context.Context, orgID string, req request.CreateEm
 	if req.Email != nil && strings.TrimSpace(*req.Email) != "" {
 		em := strings.TrimSpace(*req.Email)
 		email = &em
+	} else {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "email", Message: "Work email is required."})
+	}
+
+	if req.BranchID == nil || strings.TrimSpace(*req.BranchID) == "" {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "branchId", Message: "Branch is required."})
+	}
+
+	if req.DepartmentID == nil || strings.TrimSpace(*req.DepartmentID) == "" {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "departmentId", Message: "Department is required."})
+	}
+
+	if req.PositionID == nil || strings.TrimSpace(*req.PositionID) == "" {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "positionId", Message: "Position is required."})
+	}
+
+	if req.RoleID == nil || strings.TrimSpace(*req.RoleID) == "" {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "roleId", Message: "Role is required."})
 	}
 
 	var phone *string
@@ -125,13 +143,27 @@ func (s *service) Create(ctx context.Context, orgID string, req request.CreateEm
 	}
 
 	var dateOfBirth *time.Time
-	if req.DateOfBirth != nil && strings.TrimSpace(*req.DateOfBirth) != "" {
+	if req.DateOfBirth == nil || strings.TrimSpace(*req.DateOfBirth) == "" {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "dateOfBirth", Message: "Date of birth is required."})
+	} else {
 		d, err := mapper.ParseDate(*req.DateOfBirth)
 		if err != nil {
 			validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "dateOfBirth", Message: "Invalid date format, expected YYYY-MM-DD."})
 		} else {
 			dateOfBirth = d
 		}
+	}
+
+	if req.Gender == nil || strings.TrimSpace(*req.Gender) == "" {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "gender", Message: "Gender is required."})
+	}
+
+	if req.Nationality == nil || strings.TrimSpace(*req.Nationality) == "" {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "nationality", Message: "Nationality is required."})
+	}
+
+	if req.EmergencyContact == nil || strings.TrimSpace(*req.EmergencyContact) == "" {
+		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "emergencyContact", Message: "Emergency contact is required."})
 	}
 
 	if len(validationIssues) > 0 {

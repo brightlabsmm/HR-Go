@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import {
   AlertCircleIcon,
   CalendarCheckIcon,
@@ -164,6 +164,30 @@ export function AttendanceListPage() {
   const [reviewDecision, setReviewDecision] = useState<"APPROVED" | "REJECTED">("APPROVED")
   const [reviewReason, setReviewReason] = useState("")
 
+  const employeeItems = useMemo(
+    () =>
+      (employeesQuery.data?.items ?? []).map((e) => ({
+        value: e.id,
+        label: `${e.fullName} (${e.employeeCode})`,
+      })),
+    [employeesQuery.data?.items]
+  )
+
+  const shiftItems = useMemo(
+    () =>
+      (shiftsQuery.data?.items ?? []).map((s) => ({
+        value: s.id,
+        label: `${s.shiftName} (${s.startTime} - ${s.endTime})`,
+      })),
+    [shiftsQuery.data?.items]
+  )
+
+  const selectedPunchEmp = employeesQuery.data?.items?.find((e) => e.id === punchEmployeeId)
+  const selectedPunchShift = shiftsQuery.data?.items?.find((s) => s.id === punchShiftId)
+  const selectedManualEmp = employeesQuery.data?.items?.find((e) => e.id === manualEmployeeId)
+  const selectedManualShift = shiftsQuery.data?.items?.find((s) => s.id === manualShiftId)
+  const selectedCorrEmp = employeesQuery.data?.items?.find((e) => e.id === corrEmployeeId)
+
   function patch(key: string, value: string | null) {
     const next = new URLSearchParams(searchParams)
     if (!value || value === "all") {
@@ -204,23 +228,27 @@ export function AttendanceListPage() {
     recordCol.accessor("employeeName", {
       header: t("columns.employee"),
       enableSorting: false,
-      cell: ({ row }) => (
-        <div className="flex items-center gap-3">
-          <Avatar className="size-8">
-            <AvatarFallback className="text-caption font-semibold">
-              {getInitials(row.original.employeeName)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col">
-            <span className="font-medium text-foreground">
-              {row.original.employeeName}
-            </span>
-            <span className="font-mono text-small-2 text-muted-foreground">
-              {row.original.employeeCode}
-            </span>
+      cell: ({ row }) => {
+        const name = row.original.employeeName || row.original.employeeId
+        const code = row.original.employeeCode || "—"
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar className="size-8">
+              <AvatarFallback className="text-caption font-semibold">
+                {getInitials(name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <span className="font-medium text-foreground">
+                {name}
+              </span>
+              <span className="font-mono text-small-2 text-muted-foreground">
+                {code}
+              </span>
+            </div>
           </div>
-        </div>
-      ),
+        )
+      },
     }),
     recordCol.accessor("attendanceDate", {
       header: t("columns.date"),
@@ -301,23 +329,27 @@ export function AttendanceListPage() {
     correctionCol.accessor("employeeName", {
       header: t("corrections.columns.employee"),
       enableSorting: false,
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Avatar className="size-7">
-            <AvatarFallback className="text-[10px] font-semibold">
-              {getInitials(row.original.employeeName)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col">
-            <span className="font-medium text-foreground">
-              {row.original.employeeName}
-            </span>
-            <span className="font-mono text-caption text-muted-foreground">
-              {row.original.employeeCode}
-            </span>
+      cell: ({ row }) => {
+        const name = row.original.employeeName || row.original.employeeId
+        const code = row.original.employeeCode || "—"
+        return (
+          <div className="flex items-center gap-2">
+            <Avatar className="size-7">
+              <AvatarFallback className="text-[10px] font-semibold">
+                {getInitials(name)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <span className="font-medium text-foreground">
+                {name}
+              </span>
+              <span className="font-mono text-caption text-muted-foreground">
+                {code}
+              </span>
+            </div>
           </div>
-        </div>
-      ),
+        )
+      },
     }),
     correctionCol.accessor("attendanceDate", {
       header: t("corrections.columns.date"),
@@ -638,16 +670,21 @@ export function AttendanceListPage() {
             <div>
               <Label htmlFor="punch-emp">{t("form.employee")}</Label>
               <Select
+                items={employeeItems}
                 value={punchEmployeeId}
                 onValueChange={(val) => setPunchEmployeeId(val ?? "")}
               >
                 <SelectTrigger id="punch-emp" className="mt-1 w-full">
-                  <SelectValue placeholder="Select employee" />
+                  <SelectValue placeholder="Select employee">
+                    {selectedPunchEmp
+                      ? `${selectedPunchEmp.fullName} (${selectedPunchEmp.employeeCode})`
+                      : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {(employeesQuery.data?.items ?? []).map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.fullName} ({e.employeeCode})
+                  {employeeItems.map((e) => (
+                    <SelectItem key={e.value} value={e.value}>
+                      {e.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -658,16 +695,21 @@ export function AttendanceListPage() {
               <div>
                 <Label htmlFor="punch-shift">{t("form.shift")}</Label>
                 <Select
+                  items={shiftItems}
                   value={punchShiftId}
                   onValueChange={(val) => setPunchShiftId(val ?? "")}
                 >
                   <SelectTrigger id="punch-shift" className="mt-1 w-full">
-                    <SelectValue placeholder="Default assigned shift" />
+                    <SelectValue placeholder="Default assigned shift">
+                      {selectedPunchShift
+                        ? `${selectedPunchShift.shiftName} (${selectedPunchShift.startTime} - ${selectedPunchShift.endTime})`
+                        : undefined}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {(shiftsQuery.data?.items ?? []).map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.shiftName} ({s.startTime} - {s.endTime})
+                    {shiftItems.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>
+                        {s.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -762,16 +804,21 @@ export function AttendanceListPage() {
             <div>
               <Label htmlFor="man-emp">{t("form.employee")}</Label>
               <Select
+                items={employeeItems}
                 value={manualEmployeeId}
                 onValueChange={(val) => setManualEmployeeId(val ?? "")}
               >
                 <SelectTrigger id="man-emp" className="mt-1 w-full">
-                  <SelectValue placeholder="Select employee" />
+                  <SelectValue placeholder="Select employee">
+                    {selectedManualEmp
+                      ? `${selectedManualEmp.fullName} (${selectedManualEmp.employeeCode})`
+                      : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {(employeesQuery.data?.items ?? []).map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.fullName} ({e.employeeCode})
+                  {employeeItems.map((e) => (
+                    <SelectItem key={e.value} value={e.value}>
+                      {e.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -836,16 +883,21 @@ export function AttendanceListPage() {
             <div>
               <Label htmlFor="man-shift">{t("form.shift")}</Label>
               <Select
+                items={shiftItems}
                 value={manualShiftId}
                 onValueChange={(val) => setManualShiftId(val ?? "")}
               >
                 <SelectTrigger id="man-shift" className="mt-1 w-full">
-                  <SelectValue placeholder="Default assigned shift" />
+                  <SelectValue placeholder="Default assigned shift">
+                    {selectedManualShift
+                      ? `${selectedManualShift.shiftName} (${selectedManualShift.startTime} - ${selectedManualShift.endTime})`
+                      : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {(shiftsQuery.data?.items ?? []).map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.shiftName} ({s.startTime} - {s.endTime})
+                  {shiftItems.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -919,16 +971,21 @@ export function AttendanceListPage() {
             <div>
               <Label htmlFor="corr-emp">{t("form.employee")}</Label>
               <Select
+                items={employeeItems}
                 value={corrEmployeeId}
                 onValueChange={(val) => setCorrEmployeeId(val ?? "")}
               >
                 <SelectTrigger id="corr-emp" className="mt-1 w-full">
-                  <SelectValue placeholder="Select employee" />
+                  <SelectValue placeholder="Select employee">
+                    {selectedCorrEmp
+                      ? `${selectedCorrEmp.fullName} (${selectedCorrEmp.employeeCode})`
+                      : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {(employeesQuery.data?.items ?? []).map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.fullName} ({e.employeeCode})
+                  {employeeItems.map((e) => (
+                    <SelectItem key={e.value} value={e.value}>
+                      {e.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

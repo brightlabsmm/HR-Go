@@ -12,6 +12,7 @@
     "branch": "Branch",
     "department": "Department",
     "position": "Position",
+    "role": "Role",
     "status": "Status",
     "joined": "Joined",
     "actions": "Actions"
@@ -52,7 +53,16 @@
       "code": "Employee code is required",
       "first_name": "First name is required",
       "last_name": "Last name is required",
-      "email": "Invalid email address"
+      "email": "Invalid email address",
+      "email_required": "Work email is required",
+      "branch": "Branch is required",
+      "department": "Department is required",
+      "position": "Position is required",
+      "role": "Role is required",
+      "date_of_birth": "Date of birth is required",
+      "gender": "Gender is required",
+      "nationality": "Nationality is required",
+      "emergency_contact": "Emergency contact is required"
     }
   },
   "change_position": {

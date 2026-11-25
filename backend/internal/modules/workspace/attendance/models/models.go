@@ -19,11 +19,11 @@ type AttendanceRecord struct {
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 
-	EmployeeCode   string `gorm:"-"`
-	EmployeeName   string `gorm:"-"`
-	ShiftName      string `gorm:"-"`
-	BranchName     string `gorm:"-"`
-	DepartmentName string `gorm:"-"`
+	EmployeeCode   string `gorm:"->;column:employee_code"`
+	EmployeeName   string `gorm:"->;column:employee_name"`
+	ShiftName      string `gorm:"->;column:shift_name"`
+	BranchName     string `gorm:"->;column:branch_name"`
+	DepartmentName string `gorm:"->;column:department_name"`
 }
 
 func (AttendanceRecord) TableName() string {
@@ -46,8 +46,8 @@ type AttendanceCorrectionRequest struct {
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 
-	EmployeeCode string `gorm:"-"`
-	EmployeeName string `gorm:"-"`
+	EmployeeCode string `gorm:"->;column:employee_code"`
+	EmployeeName string `gorm:"->;column:employee_name"`
 	ReviewerName string `gorm:"-"`
 }
 
