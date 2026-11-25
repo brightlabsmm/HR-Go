@@ -178,3 +178,13 @@ export const AuditLogListPage = pageLoader(
   () => import("@/features/audit-logs/pages/audit-log-list-page"),
   "AuditLogListPage"
 )
+
+export const LeaveListPage = pageLoader(
+  () => import("@/features/leave/pages/leave-list-page"),
+  "LeaveListPage"
+)
+
+export const OvertimeListPage = pageLoader(
+  () => import("@/features/overtime/pages/overtime-list-page"),
+  "OvertimeListPage"
+)

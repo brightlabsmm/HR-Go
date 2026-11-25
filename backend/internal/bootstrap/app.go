@@ -109,6 +109,17 @@ import (
 	lifecycleroutes "hrgo/backend/internal/modules/workspace/lifecycle/routes"
 	lifecyclesvc "hrgo/backend/internal/modules/workspace/lifecycle/service"
 
+	// Phase 2: Leave & Overtime
+	leavehandler "hrgo/backend/internal/modules/workspace/leave/handler"
+	leaverepo "hrgo/backend/internal/modules/workspace/leave/repository"
+	leaveroutes "hrgo/backend/internal/modules/workspace/leave/routes"
+	leavesvc "hrgo/backend/internal/modules/workspace/leave/service"
+
+	overtimehandler "hrgo/backend/internal/modules/workspace/overtime/handler"
+	overtimerepo "hrgo/backend/internal/modules/workspace/overtime/repository"
+	overtimeroutes "hrgo/backend/internal/modules/workspace/overtime/routes"
+	overtimesvc "hrgo/backend/internal/modules/workspace/overtime/service"
+
 	"hrgo/backend/internal/shared/audit"
 	apperrors "hrgo/backend/internal/shared/errors"
 	"hrgo/backend/internal/shared/responses"
@@ -304,6 +315,15 @@ func NewEngine(deps Dependencies) *gin.Engine {
 		auditLogRepo := auditlogrepo.New(deps.DB)
 		auditLogService := auditlogsvc.New(auditLogRepo)
 		auditlogroutes.Register(v1, auditloghandler.New(auditLogService), secMiddleware)
+
+		// Phase 2: Leave & Overtime (Web + Mobile)
+		leaveRepo := leaverepo.New(deps.DB)
+		leaveService := leavesvc.New(leaveRepo)
+		leaveroutes.Register(v1, leavehandler.New(leaveService), secMiddleware)
+
+		overtimeRepo := overtimerepo.New(deps.DB)
+		overtimeService := overtimesvc.New(overtimeRepo)
+		overtimeroutes.Register(v1, overtimehandler.New(overtimeService), secMiddleware)
 	}
 
 	engine.GET("/ping", func(c *gin.Context) {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,37 +7,94 @@ import {
   TouchableOpacity,
   TextInput,
   Switch,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
+import { leaveApi, MobileLeaveBalance } from '../services/api/leaveApi';
 
-type LeaveTypeKey = 'casual' | 'earned' | 'medical' | 'unpaid';
+function todayYMD(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function calcDays(from: string, to: string, half: boolean): number {
+  const s = new Date(`${from.trim()}T00:00:00`);
+  const e = new Date(`${to.trim()}T00:00:00`);
+  if (isNaN(s.getTime()) || isNaN(e.getTime()) || e < s) return 0;
+  const raw = Math.round((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  return half ? Math.max(0.5, raw - 0.5) : raw;
+}
 
 export default function NewLeaveScreen() {
   const router = useRouter();
 
-  const [leaveType, setLeaveType] = useState<LeaveTypeKey>('casual');
-  const [fromDate, setFromDate] = useState('2026-12-10');
-  const [toDate, setToDate] = useState('2026-12-11');
+  const [leaveOptions, setLeaveOptions] = useState<MobileLeaveBalance[]>([]);
+  const [selectedTypeId, setSelectedTypeId] = useState<string>('');
+  const [fromDate, setFromDate] = useState<string>(todayYMD);
+  const [toDate, setToDate] = useState<string>(todayYMD);
   const [halfDay, setHalfDay] = useState(false);
-  const [reason, setReason] = useState("Sister's wedding in Bago.");
+  const [reason, setReason] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const leaveOptions: { id: LeaveTypeKey; name: string; left: number | null }[] = [
-    { id: 'casual', name: 'Casual', left: 4 },
-    { id: 'earned', name: 'Earned', left: 8 },
-    { id: 'medical', name: 'Medical', left: 28 },
-    { id: 'unpaid', name: 'Unpaid', left: null },
-  ];
+  useEffect(() => {
+    void (async () => {
+      try {
+        const list = await leaveApi.listBalances();
+        setLeaveOptions(list);
+        if (list.length > 0) {
+          setSelectedTypeId(list[0].leaveTypeId);
+        }
+      } catch (err: any) {
+        Alert.alert('Load Failed', err?.message || 'Unable to load leave types.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
-  const currentOption = leaveOptions.find((o) => o.id === leaveType)!;
-  const requestedDays: number = halfDay ? 1.5 : 2;
+  const currentOption = leaveOptions.find((o) => o.leaveTypeId === selectedTypeId) ?? null;
+  const requestedDays = calcDays(fromDate, toDate, halfDay);
   const daysText = `${requestedDays} ${requestedDays === 1 ? 'day' : 'days'}`;
   const afterBalanceText =
-    currentOption.left != null && typeof currentOption.left === 'number'
-      ? `${currentOption.left - requestedDays} days`
+    currentOption && currentOption.requiresBalance
+      ? `${Math.max(0, currentOption.remainingDays - requestedDays)} days`
       : 'Not tracked';
+
+  const handleSubmit = async () => {
+    if (!selectedTypeId) {
+      Alert.alert('Leave Type Required', 'Please select a leave type.');
+      return;
+    }
+    if (requestedDays <= 0) {
+      Alert.alert('Invalid Dates', 'Please enter valid YYYY-MM-DD From and To dates.');
+      return;
+    }
+    if (!reason.trim()) {
+      Alert.alert('Reason Required', 'Please provide a reason for your leave request.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await leaveApi.submitRequest({
+        leaveTypeId: selectedTypeId,
+        startDate: fromDate.trim(),
+        endDate: toDate.trim(),
+        isHalfDay: halfDay,
+        reason: reason.trim(),
+      });
+      setSent(true);
+    } catch (err: any) {
+      Alert.alert('Submission Failed', err?.message || 'Unable to submit leave request.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -62,34 +119,40 @@ export default function NewLeaveScreen() {
           {/* Leave Type Selector 2x2 */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Leave type</Text>
-            <View style={styles.typesGrid}>
-              {leaveOptions.map((opt) => {
-                const active = leaveType === opt.id;
-                return (
-                  <TouchableOpacity
-                    key={opt.id}
-                    style={[
-                      styles.typeCard,
-                      active && styles.typeCardActive,
-                    ]}
-                    onPress={() => setLeaveType(opt.id)}
-                    activeOpacity={0.8}
-                  >
-                    <Text
+            {loading ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : leaveOptions.length === 0 ? (
+              <Text style={styles.typeLeft}>No leave types configured for your organization.</Text>
+            ) : (
+              <View style={styles.typesGrid}>
+                {leaveOptions.map((opt) => {
+                  const active = selectedTypeId === opt.leaveTypeId;
+                  return (
+                    <TouchableOpacity
+                      key={opt.leaveTypeId}
                       style={[
-                        styles.typeName,
-                        active && styles.typeNameActive,
+                        styles.typeCard,
+                        active && styles.typeCardActive,
                       ]}
+                      onPress={() => setSelectedTypeId(opt.leaveTypeId)}
+                      activeOpacity={0.8}
                     >
-                      {opt.name}
-                    </Text>
-                    <Text style={styles.typeLeft}>
-                      {opt.left != null ? `${opt.left} days left` : 'No balance'}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+                      <Text
+                        style={[
+                          styles.typeName,
+                          active && styles.typeNameActive,
+                        ]}
+                      >
+                        {opt.leaveTypeName}
+                      </Text>
+                      <Text style={styles.typeLeft}>
+                        {opt.requiresBalance ? `${opt.remainingDays} days left` : 'No limit'}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
           </View>
 
           {/* Date Range 2 Columns */}
@@ -160,11 +223,16 @@ export default function NewLeaveScreen() {
 
           {/* Submit Button */}
           <TouchableOpacity
-            style={styles.submitButton}
+            style={[styles.submitButton, submitting && { opacity: 0.7 }]}
             activeOpacity={0.8}
-            onPress={() => setSent(true)}
+            disabled={submitting}
+            onPress={() => void handleSubmit()}
           >
-            <Text style={styles.submitButtonText}>Submit leave request</Text>
+            {submitting ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={styles.submitButtonText}>Submit leave request</Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       ) : (
@@ -175,7 +243,7 @@ export default function NewLeaveScreen() {
           </View>
           <Text style={styles.successTitle}>Leave request sent</Text>
           <Text style={styles.successSubtitle}>
-            {currentOption.name} leave for {daysText} (10–11 Dec) is pending. Your balance
+            {currentOption?.leaveTypeName || 'Leave'} for {daysText} ({fromDate} to {toDate}) is pending. Your balance
             changes only after it is approved.
           </Text>
 

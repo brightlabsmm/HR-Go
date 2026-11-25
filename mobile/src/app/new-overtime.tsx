@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,28 +6,96 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
+import {
+  MobileOvertimeCategory,
+  overtimeApi,
+} from '../services/api/overtimeApi';
 
-type OtCategory = 'w' | 'r' | 'h';
+function todayYMD(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function calcDurationMinutes(start: string, end: string): number {
+  const m1 = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(start.trim());
+  const m2 = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(end.trim());
+  if (!m1 || !m2) return 0;
+  let diff = (Number(m2[1]) * 60 + Number(m2[2])) - (Number(m1[1]) * 60 + Number(m1[2]));
+  if (diff <= 0) diff += 24 * 60;
+  return diff;
+}
 
 export default function NewOvertimeScreen() {
   const router = useRouter();
 
-  const [category, setCategory] = useState<OtCategory>('w');
-  const [date, setDate] = useState('2026-11-26');
+  const [categories, setCategories] = useState<MobileOvertimeCategory[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [date, setDate] = useState<string>(todayYMD);
   const [startTime, setStartTime] = useState('17:30');
   const [endTime, setEndTime] = useState('20:00');
-  const [reason, setReason] = useState('Month-end closing support.');
+  const [reason, setReason] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const categories = [
-    { id: 'w' as OtCategory, label: 'Weekday overtime', hint: 'After regular shift hours' },
-    { id: 'r' as OtCategory, label: 'Rest day overtime', hint: 'Weekends and assigned rest days' },
-    { id: 'h' as OtCategory, label: 'Holiday overtime', hint: 'Gazetted and company holidays' },
-  ];
+  useEffect(() => {
+    void (async () => {
+      try {
+        const list = await overtimeApi.listCategories();
+        setCategories(list);
+        if (list.length > 0) {
+          setSelectedCategoryId(list[0].id);
+        }
+      } catch (err: any) {
+        Alert.alert('Load Failed', err?.message || 'Unable to load overtime categories.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const durationMins = calcDurationMinutes(startTime, endTime);
+  const durationLabel =
+    durationMins > 0
+      ? `${Math.floor(durationMins / 60)}h ${durationMins % 60}m`
+      : '—';
+
+  const handleSubmit = async () => {
+    if (!selectedCategoryId) {
+      Alert.alert('Category Required', 'Please select an overtime category.');
+      return;
+    }
+    if (durationMins <= 0) {
+      Alert.alert('Invalid Times', 'Enter start and end times in HH:MM format.');
+      return;
+    }
+    if (!reason.trim()) {
+      Alert.alert('Reason Required', 'Please describe the overtime work performed.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await overtimeApi.submitRequest({
+        overtimeCategoryId: selectedCategoryId,
+        workDate: date.trim(),
+        startTime: startTime.trim(),
+        endTime: endTime.trim(),
+        reason: reason.trim(),
+      });
+      setSent(true);
+    } catch (err: any) {
+      Alert.alert('Submission Failed', err?.message || 'Unable to submit overtime request.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -52,37 +120,45 @@ export default function NewOvertimeScreen() {
           {/* Overtime Category Radio Cards */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Overtime category</Text>
-            <View style={styles.categoryList}>
-              {categories.map((c) => {
-                const active = category === c.id;
-                return (
-                  <TouchableOpacity
-                    key={c.id}
-                    style={[
-                      styles.categoryCard,
-                      active && styles.categoryCardActive,
-                    ]}
-                    onPress={() => setCategory(c.id)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.radioRow}>
-                      <View
-                        style={[
-                          styles.radioOuter,
-                          active && styles.radioOuterActive,
-                        ]}
-                      >
-                        {active && <View style={styles.radioInner} />}
+            {loading ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : categories.length === 0 ? (
+              <Text style={styles.categoryHint}>No overtime categories configured.</Text>
+            ) : (
+              <View style={styles.categoryList}>
+                {categories.map((c) => {
+                  const active = selectedCategoryId === c.id;
+                  return (
+                    <TouchableOpacity
+                      key={c.id}
+                      style={[
+                        styles.categoryCard,
+                        active && styles.categoryCardActive,
+                      ]}
+                      onPress={() => setSelectedCategoryId(c.id)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={styles.radioRow}>
+                        <View
+                          style={[
+                            styles.radioOuter,
+                            active && styles.radioOuterActive,
+                          ]}
+                        >
+                          {active && <View style={styles.radioInner} />}
+                        </View>
+                        <View style={styles.categoryInfo}>
+                          <Text style={styles.categoryTitle}>{c.name}</Text>
+                          <Text style={styles.categoryHint}>
+                            {c.description || `${c.rateMultiplier}x rate`}
+                          </Text>
+                        </View>
                       </View>
-                      <View style={styles.categoryInfo}>
-                        <Text style={styles.categoryTitle}>{c.label}</Text>
-                        <Text style={styles.categoryHint}>{c.hint}</Text>
-                      </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
           </View>
 
           {/* Date Input */}
@@ -126,7 +202,7 @@ export default function NewOvertimeScreen() {
           <View style={styles.durationStrip}>
             <Ionicons name="time-outline" size={18} color={colors.primary} />
             <Text style={styles.durationLabel}>Calculated duration:</Text>
-            <Text style={styles.durationValue}>2h 30m</Text>
+            <Text style={styles.durationValue}>{durationLabel}</Text>
           </View>
 
           {/* Reason Field */}
@@ -149,11 +225,16 @@ export default function NewOvertimeScreen() {
 
           {/* Submit Button */}
           <TouchableOpacity
-            style={styles.submitButton}
+            style={[styles.submitButton, submitting && { opacity: 0.7 }]}
             activeOpacity={0.8}
-            onPress={() => setSent(true)}
+            disabled={submitting}
+            onPress={() => void handleSubmit()}
           >
-            <Text style={styles.submitButtonText}>Submit overtime request</Text>
+            {submitting ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={styles.submitButtonText}>Submit overtime request</Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       ) : (
@@ -164,7 +245,7 @@ export default function NewOvertimeScreen() {
           </View>
           <Text style={styles.successTitle}>Overtime request sent</Text>
           <Text style={styles.successSubtitle}>
-            2h 30m for 26 Nov has been submitted for manager approval.
+            {durationLabel} for {date} has been submitted for manager approval.
           </Text>
 
           <TouchableOpacity

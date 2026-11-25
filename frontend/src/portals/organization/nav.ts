@@ -3,6 +3,7 @@ import {
   Building2Icon,
   CalendarCheckIcon,
   CalendarDaysIcon,
+  CalendarOffIcon,
   ClockIcon,
   ContactRoundIcon,
   FileSpreadsheetIcon,
@@ -10,6 +11,7 @@ import {
   HistoryIcon,
   NetworkIcon,
   ShieldIcon,
+  TimerIcon,
   UserRoundIcon,
   UsersIcon,
 } from "lucide-react"
@@ -117,6 +119,22 @@ export const ORGANIZATION_NAV: PortalNavItem[] = [
       "org.holiday.update",
       "org.holiday.delete",
     ],
+  },
+  {
+    to: "/leave",
+    labelKey: "nav.leave",
+    groupKey: "nav_groups.attendance",
+    icon: CalendarOffIcon,
+    matchPrefix: "/leave",
+    permissions: ["org.leave.read", "org.leave.approve", "org.leave.manage"],
+  },
+  {
+    to: "/overtime",
+    labelKey: "nav.overtime",
+    groupKey: "nav_groups.attendance",
+    icon: TimerIcon,
+    matchPrefix: "/overtime",
+    permissions: ["org.overtime.read", "org.overtime.approve", "org.overtime.manage"],
   },
   {
     to: "/users",
