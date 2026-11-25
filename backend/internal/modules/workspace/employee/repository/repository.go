@@ -11,7 +11,6 @@ import (
 
 	"hrgo/backend/internal/modules/workspace/employee/models"
 	"hrgo/backend/internal/modules/workspace/employee/request"
-	"hrgo/backend/internal/shared/security"
 )
 
 type Repository interface {
@@ -21,11 +20,15 @@ type Repository interface {
 	FindByCode(ctx context.Context, orgID, code string) (*models.Employee, error)
 	FindByEmail(ctx context.Context, orgID, email string) (*models.Employee, error)
 	List(ctx context.Context, orgID string, q request.ListEmployeesQuery) ([]models.Employee, int64, error)
-	Update(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile, roleID *string) error
+	Update(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile, roleID *string, fallbackPassHash string) error
 	SoftDelete(ctx context.Context, orgID, id string) error
 	GetProfile(ctx context.Context, orgID, employeeID string) (*models.EmployeeProfile, error)
 	AddPositionHistory(ctx context.Context, history *models.EmployeePositionHistory) error
 	ListPositionHistory(ctx context.Context, orgID, employeeID string) ([]models.EmployeePositionHistory, error)
+	ValidateBranch(ctx context.Context, orgID, branchID string) (bool, error)
+	ValidateDepartment(ctx context.Context, orgID, departmentID string) (bool, error)
+	ValidatePosition(ctx context.Context, orgID, positionID string) (bool, error)
+	ValidateRole(ctx context.Context, orgID, roleID string) (bool, error)
 }
 
 type repository struct {
@@ -70,7 +73,9 @@ func (r *repository) Create(ctx context.Context, emp *models.Employee, profile *
 			}
 
 			if assignedRoleID != "" {
-				_ = tx.Exec("INSERT INTO org_user_roles (account_id, role_id) VALUES (?, ?) ON CONFLICT DO NOTHING", account.ID, assignedRoleID).Error
+				if err := tx.Exec("INSERT INTO org_user_roles (account_id, role_id) VALUES (?, ?) ON CONFLICT DO NOTHING", account.ID, assignedRoleID).Error; err != nil {
+					return err
+				}
 			}
 		}
 		if emp.PositionID != nil && *emp.PositionID != "" {
@@ -83,7 +88,9 @@ func (r *repository) Create(ctx context.Context, emp *models.Employee, profile *
 			if emp.DateOfJoining != nil {
 				history.EffectiveDate = *emp.DateOfJoining
 			}
-			_ = tx.Create(&history).Error
+			if err := tx.Create(&history).Error; err != nil {
+				return err
+			}
 		}
 		return nil
 	})
@@ -122,7 +129,7 @@ func (r *repository) FindByID(ctx context.Context, orgID, id string) (*models.Em
 		Joins("LEFT JOIN branches b ON b.id = e.branch_id").
 		Joins("LEFT JOIN departments d ON d.id = e.department_id").
 		Joins("LEFT JOIN positions p ON p.id = e.position_id").
-		Joins("LEFT JOIN organization_accounts oa ON oa.employee_id = e.id AND oa.organization_id = e.organization_id").
+		Joins("LEFT JOIN LATERAL (SELECT id FROM organization_accounts WHERE employee_id = e.id AND organization_id = e.organization_id ORDER BY (status = 'ACTIVE') DESC, created_at DESC LIMIT 1) oa ON true").
 		Joins("LEFT JOIN LATERAL (SELECT our.role_id, r.name AS role_name, r.code AS role_code FROM org_user_roles our JOIN org_roles r ON r.id = our.role_id WHERE our.account_id = oa.id ORDER BY our.role_id ASC LIMIT 1) r ON true").
 		Where("e.id = ? AND e.organization_id = ? AND e.deleted_at IS NULL", id, orgID).
 		First(&emp).Error
@@ -169,7 +176,7 @@ func (r *repository) List(ctx context.Context, orgID string, q request.ListEmplo
 		Joins("LEFT JOIN branches b ON b.id = e.branch_id").
 		Joins("LEFT JOIN departments d ON d.id = e.department_id").
 		Joins("LEFT JOIN positions p ON p.id = e.position_id").
-		Joins("LEFT JOIN organization_accounts oa ON oa.employee_id = e.id AND oa.organization_id = e.organization_id").
+		Joins("LEFT JOIN LATERAL (SELECT id FROM organization_accounts WHERE employee_id = e.id AND organization_id = e.organization_id ORDER BY (status = 'ACTIVE') DESC, created_at DESC LIMIT 1) oa ON true").
 		Joins("LEFT JOIN LATERAL (SELECT our.role_id, r.name AS role_name, r.code AS role_code FROM org_user_roles our JOIN org_roles r ON r.id = our.role_id WHERE our.account_id = oa.id ORDER BY our.role_id ASC LIMIT 1) r ON true").
 		Where("e.organization_id = ? AND e.deleted_at IS NULL", orgID)
 
@@ -213,7 +220,7 @@ func (r *repository) List(ctx context.Context, orgID string, q request.ListEmplo
 	return items, total, nil
 }
 
-func (r *repository) Update(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile, roleID *string) error {
+func (r *repository) Update(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile, roleID *string, fallbackPassHash string) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Save(emp).Error; err != nil {
 			return err
@@ -241,20 +248,20 @@ func (r *repository) Update(ctx context.Context, emp *models.Employee, profile *
 		}
 		if roleID != nil && *roleID != "" {
 			var account models.OrganizationAccount
-			err := tx.Where("employee_id = ? AND organization_id = ?", emp.ID, emp.OrganizationID).First(&account).Error
+			err := tx.Where("employee_id = ? AND organization_id = ?", emp.ID, emp.OrganizationID).
+				Order("created_at DESC").
+				First(&account).Error
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					ident := strings.TrimSpace(emp.EmployeeCode)
 					if ident == "" {
 						ident = emp.ID
 					}
-					tempPass := "Temp@Pass123!"
-					hash, _ := security.HashPassword(tempPass)
 					account = models.OrganizationAccount{
 						OrganizationID:     emp.OrganizationID,
 						EmployeeID:         emp.ID,
 						Identifier:         ident,
-						PasswordHash:       hash,
+						PasswordHash:       fallbackPassHash,
 						Status:             "ACTIVE",
 						MustChangePassword: true,
 					}
@@ -265,8 +272,23 @@ func (r *repository) Update(ctx context.Context, emp *models.Employee, profile *
 					return err
 				}
 			}
-			_ = tx.Exec("DELETE FROM org_user_roles WHERE account_id = ?", account.ID).Error
-			_ = tx.Exec("INSERT INTO org_user_roles (account_id, role_id) VALUES (?, ?) ON CONFLICT DO NOTHING", account.ID, *roleID).Error
+			var existingRoleID string
+			_ = tx.Table("org_user_roles").
+				Select("role_id").
+				Where("account_id = ?", account.ID).
+				Order("role_id ASC").
+				Limit(1).
+				Scan(&existingRoleID).Error
+			if existingRoleID != *roleID {
+				if existingRoleID != "" {
+					if err := tx.Exec("DELETE FROM org_user_roles WHERE account_id = ? AND role_id = ?", account.ID, existingRoleID).Error; err != nil {
+						return err
+					}
+				}
+				if err := tx.Exec("INSERT INTO org_user_roles (account_id, role_id) VALUES (?, ?) ON CONFLICT DO NOTHING", account.ID, *roleID).Error; err != nil {
+					return err
+				}
+			}
 		}
 		return nil
 	})
@@ -274,13 +296,73 @@ func (r *repository) Update(ctx context.Context, emp *models.Employee, profile *
 
 func (r *repository) SoftDelete(ctx context.Context, orgID, id string) error {
 	now := time.Now().UTC()
-	return r.db.WithContext(ctx).Model(&models.Employee{}).
-		Where("id = ? AND organization_id = ? AND deleted_at IS NULL", id, orgID).
-		Updates(map[string]any{
-			"deleted_at":        now,
-			"employment_status": "TERMINATED",
-			"updated_at":        now,
-		}).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&models.Employee{}).
+			Where("id = ? AND organization_id = ? AND deleted_at IS NULL", id, orgID).
+			Updates(map[string]any{
+				"deleted_at":        now,
+				"employment_status": "TERMINATED",
+				"updated_at":        now,
+			}).Error; err != nil {
+			return err
+		}
+
+		var accountIDs []string
+		if err := tx.Table("organization_accounts").
+			Where("organization_id = ? AND employee_id = ?", orgID, id).
+			Pluck("id", &accountIDs).Error; err != nil {
+			return err
+		}
+		if len(accountIDs) > 0 {
+			if err := tx.Model(&models.OrganizationAccount{}).
+				Where("organization_id = ? AND id IN ?", orgID, accountIDs).
+				Updates(map[string]any{
+					"status":     "INACTIVE",
+					"updated_at": now,
+				}).Error; err != nil {
+				return err
+			}
+			if err := tx.Exec(
+				"UPDATE workspace_sessions SET revoked_at = ?, revoked_reason = ? WHERE organization_id = ? AND account_id IN ? AND revoked_at IS NULL",
+				now, "Employee deleted or terminated", orgID, accountIDs,
+			).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (r *repository) ValidateBranch(ctx context.Context, orgID, branchID string) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Table("branches").
+		Where("id = ? AND organization_id = ? AND status = 'ACTIVE'", branchID, orgID).
+		Count(&count).Error
+	return count > 0, err
+}
+
+func (r *repository) ValidateDepartment(ctx context.Context, orgID, departmentID string) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Table("departments").
+		Where("id = ? AND organization_id = ? AND status = 'ACTIVE'", departmentID, orgID).
+		Count(&count).Error
+	return count > 0, err
+}
+
+func (r *repository) ValidatePosition(ctx context.Context, orgID, positionID string) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Table("positions").
+		Where("id = ? AND organization_id = ? AND status = 'ACTIVE'", positionID, orgID).
+		Count(&count).Error
+	return count > 0, err
+}
+
+func (r *repository) ValidateRole(ctx context.Context, orgID, roleID string) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Table("org_roles").
+		Where("id = ? AND (organization_id = ? OR organization_id IS NULL)", roleID, orgID).
+		Count(&count).Error
+	return count > 0, err
 }
 
 func (r *repository) GetProfile(ctx context.Context, orgID, employeeID string) (*models.EmployeeProfile, error) {

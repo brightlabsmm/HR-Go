@@ -157,15 +157,16 @@ export function useReviewCorrectionMutation() {
       id: string
       input: ReviewCorrectionInput
     }) => reviewAttendanceCorrection(id, input),
-    onSuccess: (_, { id }) => {
+    onSuccess: (data, { id }) => {
+      queryClient.setQueryData(attendanceKeys.correctionDetail(id), data)
       void queryClient.invalidateQueries({
-        queryKey: attendanceKeys.correctionDetail(id),
-      })
-      void queryClient.invalidateQueries({
-        queryKey: attendanceKeys.corrections(),
+        queryKey: [...attendanceKeys.corrections(), "list"],
       })
       void queryClient.invalidateQueries({
         queryKey: attendanceKeys.records(),
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [...attendanceKeys.all, "summary"],
       })
     },
   })

@@ -20,61 +20,17 @@ export interface StoredOfflineEvent {
   notes?: string;
 }
 
-const DEFAULT_MOCK_EVENTS: StoredOfflineEvent[] = [
-  {
-    localEventId: 'mock-1',
-    eventType: 'CHECK_IN',
-    localEventTime: new Date(Date.now() - 3600000).toISOString(),
-    short: 'IN',
-    title: 'Check in',
-    timeFormatted: 'Tue 24 Nov · 08:52',
-    status: 'PENDING',
-    note: 'Waiting for connection',
-  },
-  {
-    localEventId: 'mock-2',
-    eventType: 'CHECK_OUT',
-    localEventTime: new Date(Date.now() - 86400000).toISOString(),
-    short: 'OUT',
-    title: 'Check out',
-    timeFormatted: 'Mon 22 Nov · 17:10',
-    status: 'CONFLICT',
-    note: 'A check-out already exists for this day',
-  },
-  {
-    localEventId: 'mock-3',
-    eventType: 'CHECK_IN',
-    localEventTime: new Date(Date.now() - 86400000 * 2).toISOString(),
-    short: 'IN',
-    title: 'Check in',
-    timeFormatted: 'Mon 22 Nov · 08:58',
-    status: 'ACCEPTED',
-    note: 'Synced 22 Nov, 12:04',
-  },
-  {
-    localEventId: 'mock-4',
-    eventType: 'CHECK_OUT',
-    localEventTime: new Date(Date.now() - 86400000 * 3).toISOString(),
-    short: 'OUT',
-    title: 'Check out',
-    timeFormatted: 'Sun 21 Nov · 16:40',
-    status: 'REJECTED',
-    note: 'Not a working day for your shift',
-  },
-];
-
 export const offlineQueue = {
   getEvents: async (): Promise<StoredOfflineEvent[]> => {
     try {
       const data = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
       if (!data) {
-        // Initialize with default events matching prototype
-        await AsyncStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(DEFAULT_MOCK_EVENTS));
-        return DEFAULT_MOCK_EVENTS;
+        return [];
       }
-      return JSON.parse(data) as StoredOfflineEvent[];
+      const parsed = JSON.parse(data);
+      return Array.isArray(parsed) ? (parsed as StoredOfflineEvent[]) : [];
     } catch {
-      return DEFAULT_MOCK_EVENTS;
+      return [];
     }
   },
 

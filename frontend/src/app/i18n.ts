@@ -20,37 +20,49 @@ import enShifts from "@/locales/en/shifts.json"
 import enHolidays from "@/locales/en/holidays.json"
 import enAttendance from "@/locales/en/attendance.json"
 import myAccount from "@/locales/my/account.json"
+import myAttendance from "@/locales/my/attendance.json"
 import myAuth from "@/locales/my/auth.json"
 import myBranches from "@/locales/my/branches.json"
 import myCommon from "@/locales/my/common.json"
 import myDepartments from "@/locales/my/departments.json"
+import myEmployees from "@/locales/my/employees.json"
+import myHolidays from "@/locales/my/holidays.json"
 import myHome from "@/locales/my/home.json"
 import myOrganizations from "@/locales/my/organizations.json"
 import myOrganizationSettings from "@/locales/my/organization-settings.json"
 import myPositions from "@/locales/my/positions.json"
 import myRoles from "@/locales/my/roles.json"
+import myShifts from "@/locales/my/shifts.json"
 import myUsers from "@/locales/my/users.json"
 import thAccount from "@/locales/th/account.json"
+import thAttendance from "@/locales/th/attendance.json"
 import thAuth from "@/locales/th/auth.json"
 import thBranches from "@/locales/th/branches.json"
 import thCommon from "@/locales/th/common.json"
 import thDepartments from "@/locales/th/departments.json"
+import thEmployees from "@/locales/th/employees.json"
+import thHolidays from "@/locales/th/holidays.json"
 import thHome from "@/locales/th/home.json"
 import thOrganizations from "@/locales/th/organizations.json"
 import thOrganizationSettings from "@/locales/th/organization-settings.json"
 import thPositions from "@/locales/th/positions.json"
 import thRoles from "@/locales/th/roles.json"
+import thShifts from "@/locales/th/shifts.json"
 import thUsers from "@/locales/th/users.json"
 import zhAccount from "@/locales/zh/account.json"
+import zhAttendance from "@/locales/zh/attendance.json"
 import zhAuth from "@/locales/zh/auth.json"
 import zhBranches from "@/locales/zh/branches.json"
 import zhCommon from "@/locales/zh/common.json"
 import zhDepartments from "@/locales/zh/departments.json"
+import zhEmployees from "@/locales/zh/employees.json"
+import zhHolidays from "@/locales/zh/holidays.json"
 import zhHome from "@/locales/zh/home.json"
 import zhOrganizations from "@/locales/zh/organizations.json"
 import zhOrganizationSettings from "@/locales/zh/organization-settings.json"
 import zhPositions from "@/locales/zh/positions.json"
 import zhRoles from "@/locales/zh/roles.json"
+import zhShifts from "@/locales/zh/shifts.json"
 import zhUsers from "@/locales/zh/users.json"
 
 const resources = {
@@ -83,10 +95,10 @@ const resources = {
     users: thUsers,
     roles: thRoles,
     account: thAccount,
-    employees: enEmployees,
-    shifts: enShifts,
-    holidays: enHolidays,
-    attendance: enAttendance,
+    employees: thEmployees,
+    shifts: thShifts,
+    holidays: thHolidays,
+    attendance: thAttendance,
   },
   zh: {
     common: zhCommon,
@@ -100,10 +112,10 @@ const resources = {
     users: zhUsers,
     roles: zhRoles,
     account: zhAccount,
-    employees: enEmployees,
-    shifts: enShifts,
-    holidays: enHolidays,
-    attendance: enAttendance,
+    employees: zhEmployees,
+    shifts: zhShifts,
+    holidays: zhHolidays,
+    attendance: zhAttendance,
   },
   my: {
     common: myCommon,
@@ -117,10 +129,10 @@ const resources = {
     users: myUsers,
     roles: myRoles,
     account: myAccount,
-    employees: enEmployees,
-    shifts: enShifts,
-    holidays: enHolidays,
-    attendance: enAttendance,
+    employees: myEmployees,
+    shifts: myShifts,
+    holidays: myHolidays,
+    attendance: myAttendance,
   },
 }
 

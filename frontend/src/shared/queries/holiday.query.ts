@@ -84,8 +84,8 @@ export function useUpdateHolidayMutation() {
       id: string
       input: UpdateHolidayInput
     }) => updateHoliday(id, input),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: holidayKeys.detail(id) })
+    onSuccess: (data, { id }) => {
+      queryClient.setQueryData(holidayKeys.detail(id), data)
       void queryClient.invalidateQueries({ queryKey: holidayKeys.lists() })
       void queryClient.invalidateQueries({ queryKey: [...holidayKeys.all, "calendar"] })
     },

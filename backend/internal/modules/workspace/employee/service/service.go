@@ -170,6 +170,10 @@ func (s *service) Create(ctx context.Context, orgID string, req request.CreateEm
 		return nil, apperrors.ValidationFailed(validationIssues)
 	}
 
+	if err := s.validateOrgReferences(ctx, orgID, req.BranchID, req.DepartmentID, req.PositionID, req.RoleID); err != nil {
+		return nil, err
+	}
+
 	// Check code uniqueness
 	existingCode, err := s.repo.FindByCode(ctx, orgID, code)
 	if err != nil {
@@ -454,7 +458,24 @@ func (s *service) Update(ctx context.Context, orgID, id string, req request.Upda
 		return nil, apperrors.ValidationFailed(validationIssues)
 	}
 
-	if err := s.repo.Update(ctx, emp, profile, req.RoleID); err != nil {
+	if err := s.validateOrgReferences(ctx, orgID, req.BranchID, req.DepartmentID, req.PositionID, req.RoleID); err != nil {
+		return nil, err
+	}
+
+	var fallbackHash string
+	if req.RoleID != nil && *req.RoleID != "" {
+		tempPass, passErr := generateTemporaryPassword()
+		if passErr != nil {
+			return nil, apperrors.Internal()
+		}
+		hash, hashErr := security.HashPassword(tempPass)
+		if hashErr != nil {
+			return nil, apperrors.Internal()
+		}
+		fallbackHash = hash
+	}
+
+	if err := s.repo.Update(ctx, emp, profile, req.RoleID, fallbackHash); err != nil {
 		return nil, apperrors.Internal()
 	}
 
@@ -516,6 +537,10 @@ func (s *service) ChangePosition(ctx context.Context, orgID, id string, req requ
 		})
 	}
 
+	if err := s.validateOrgReferences(ctx, orgID, nil, nil, &req.NewPositionID, nil); err != nil {
+		return nil, err
+	}
+
 	history := models.EmployeePositionHistory{
 		OrganizationID: orgID,
 		EmployeeID:     emp.ID,
@@ -530,7 +555,7 @@ func (s *service) ChangePosition(ctx context.Context, orgID, id string, req requ
 	}
 
 	emp.PositionID = &req.NewPositionID
-	if err := s.repo.Update(ctx, emp, nil, nil); err != nil {
+	if err := s.repo.Update(ctx, emp, nil, nil, ""); err != nil {
 		return nil, apperrors.Internal()
 	}
 
@@ -543,4 +568,48 @@ func (s *service) ChangePosition(ctx context.Context, orgID, id string, req requ
 	profile, _ := s.repo.GetProfile(ctx, orgID, id)
 	res := mapper.ToEmployeeResponse(updatedEmp, profile)
 	return &res, nil
+}
+
+func (s *service) validateOrgReferences(ctx context.Context, orgID string, branchID, departmentID, positionID, roleID *string) *apperrors.Error {
+	var issues []apperrors.FieldIssue
+	if branchID != nil && strings.TrimSpace(*branchID) != "" {
+		ok, err := s.repo.ValidateBranch(ctx, orgID, strings.TrimSpace(*branchID))
+		if err != nil {
+			return apperrors.Internal()
+		}
+		if !ok {
+			issues = append(issues, apperrors.FieldIssue{Field: "branchId", Message: "Selected branch was not found in this organization or is inactive."})
+		}
+	}
+	if departmentID != nil && strings.TrimSpace(*departmentID) != "" {
+		ok, err := s.repo.ValidateDepartment(ctx, orgID, strings.TrimSpace(*departmentID))
+		if err != nil {
+			return apperrors.Internal()
+		}
+		if !ok {
+			issues = append(issues, apperrors.FieldIssue{Field: "departmentId", Message: "Selected department was not found in this organization or is inactive."})
+		}
+	}
+	if positionID != nil && strings.TrimSpace(*positionID) != "" {
+		ok, err := s.repo.ValidatePosition(ctx, orgID, strings.TrimSpace(*positionID))
+		if err != nil {
+			return apperrors.Internal()
+		}
+		if !ok {
+			issues = append(issues, apperrors.FieldIssue{Field: "positionId", Message: "Selected position was not found in this organization or is inactive."})
+		}
+	}
+	if roleID != nil && strings.TrimSpace(*roleID) != "" {
+		ok, err := s.repo.ValidateRole(ctx, orgID, strings.TrimSpace(*roleID))
+		if err != nil {
+			return apperrors.Internal()
+		}
+		if !ok {
+			issues = append(issues, apperrors.FieldIssue{Field: "roleId", Message: "Selected role is not available in this organization."})
+		}
+	}
+	if len(issues) > 0 {
+		return apperrors.ValidationFailed(issues)
+	}
+	return nil
 }

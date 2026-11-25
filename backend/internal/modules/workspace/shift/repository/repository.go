@@ -19,6 +19,8 @@ type Repository interface {
 	UpdateShift(ctx context.Context, shift *models.Shift) error
 	SoftDeleteShift(ctx context.Context, orgID, id string) error
 	UnsetDefaultShift(ctx context.Context, orgID string) error
+	ValidateBranch(ctx context.Context, orgID, branchID string) (bool, error)
+	ValidateEmployee(ctx context.Context, orgID, employeeID string) (bool, error)
 
 	CreateAssignment(ctx context.Context, a *models.EmployeeShiftAssignment, history *models.EmployeeShiftAssignmentHistory) error
 	FindAssignmentByID(ctx context.Context, orgID, id string) (*models.EmployeeShiftAssignment, error)
@@ -117,16 +119,50 @@ func (r *repository) UnsetDefaultShift(ctx context.Context, orgID string) error 
 		Update("is_default", false).Error
 }
 
+func (r *repository) ValidateBranch(ctx context.Context, orgID, branchID string) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Table("branches").
+		Where("id = ? AND organization_id = ? AND status = 'ACTIVE'", branchID, orgID).
+		Count(&count).Error
+	return count > 0, err
+}
+
+func (r *repository) ValidateEmployee(ctx context.Context, orgID, employeeID string) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Table("employee_identities").
+		Where("id = ? AND organization_id = ? AND deleted_at IS NULL", employeeID, orgID).
+		Count(&count).Error
+	return count > 0, err
+}
+
 func (r *repository) CreateAssignment(ctx context.Context, a *models.EmployeeShiftAssignment, history *models.EmployeeShiftAssignmentHistory) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// Deactivate any currently active shift assignments for this employee
 		now := time.Now().UTC()
+		effFromStr := a.EffectiveFrom.Format("2006-01-02")
+
+		// Close open-ended active assignments that began strictly before the new assignment so current shifts stay active until new effectiveFrom - 1 day.
+		prevEnd := a.EffectiveFrom.AddDate(0, 0, -1).Format("2006-01-02")
 		if err := tx.Model(&models.EmployeeShiftAssignment{}).
 			Where("organization_id = ? AND employee_id = ? AND status = 'ACTIVE' AND deleted_at IS NULL", a.OrganizationID, a.EmployeeID).
+			Where("effective_from < ? AND (effective_to IS NULL OR effective_to >= ?)", effFromStr, effFromStr).
 			Updates(map[string]any{
-				"status":     "INACTIVE",
-				"updated_at": now,
+				"effective_to": prevEnd,
+				"updated_at":   now,
 			}).Error; err != nil {
+			return err
+		}
+
+		// Deactivate overlapping assignments starting on or after the new effectiveFrom.
+		overlapQuery := tx.Model(&models.EmployeeShiftAssignment{}).
+			Where("organization_id = ? AND employee_id = ? AND status = 'ACTIVE' AND deleted_at IS NULL", a.OrganizationID, a.EmployeeID).
+			Where("effective_from >= ?", effFromStr)
+		if a.EffectiveTo != nil {
+			overlapQuery = overlapQuery.Where("effective_from <= ?", a.EffectiveTo.Format("2006-01-02"))
+		}
+		if err := overlapQuery.Updates(map[string]any{
+			"status":     "INACTIVE",
+			"updated_at": now,
+		}).Error; err != nil {
 			return err
 		}
 

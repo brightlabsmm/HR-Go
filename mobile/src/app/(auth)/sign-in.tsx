@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -22,15 +22,21 @@ export default function SignInScreen() {
   const router = useRouter();
   const { login, savedOrgCode } = useAuth();
 
-  const [code, setCode] = useState('EMP-001');
-  const [password, setPassword] = useState('Password@123');
-  const [orgCode, setOrgCode] = useState(savedOrgCode || 'ORG-001');
+  const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
+  const [orgCode, setOrgCode] = useState(savedOrgCode || '');
   const [showOrgField, setShowOrgField] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [selectedLang, setSelectedLang] = useState<'en' | 'my' | 'th'>('en');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (savedOrgCode && !orgCode) {
+      setOrgCode(savedOrgCode);
+    }
+  }, [savedOrgCode]);
 
   const handleSignIn = async () => {
     if (!code.trim()) {
@@ -46,25 +52,15 @@ export default function SignInScreen() {
     setIsSubmitting(true);
 
     try {
-      await login(code, password, orgCode.trim() || undefined);
-      router.replace('/(tabs)');
+      const result = await login(code, password, orgCode.trim() || undefined);
+      if (result.mustChangePassword) {
+        router.replace('/change-password');
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (err: any) {
       const msg = err.message || 'Sign in failed. Please check your credentials or network.';
       setErrorMessage(msg);
-      // Give option to continue with demo mode if server is unreachable
-      if (err.code === 'NETWORK_ERROR' || err.code === 'TIMEOUT') {
-        Alert.alert(
-          'Backend Server Unreachable',
-          `${msg}\n\nWould you like to enter offline preview mode?`,
-          [
-            { text: 'Retry', style: 'cancel' },
-            {
-              text: 'Enter Offline Mode',
-              onPress: () => router.replace('/(tabs)'),
-            },
-          ]
-        );
-      }
     } finally {
       setIsSubmitting(false);
     }
@@ -176,7 +172,9 @@ export default function SignInScreen() {
                 style={styles.orgToggleBtn}
                 onPress={() => setShowOrgField(true)}
               >
-                <Text style={styles.orgToggleText}>+ Enter organization code ({orgCode})</Text>
+                <Text style={styles.orgToggleText}>
+                  {orgCode ? `+ Organization code (${orgCode})` : '+ Enter organization code (optional)'}
+                </Text>
               </TouchableOpacity>
             )}
 
@@ -198,7 +196,7 @@ export default function SignInScreen() {
                 onPress={() =>
                   Alert.alert(
                     'Need Help?',
-                    'Default demo credentials:\nEmployee: EMP-001\nPassword: Password@123\nOrg: ORG-001\n\nContact your HR administrator if you forgot your credentials.'
+                    'Sign in with the employee code or work email provided by your HR team. Contact your HR administrator if you forgot your credentials or need a password reset.'
                   )
                 }
               >

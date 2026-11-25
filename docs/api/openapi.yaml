@@ -1,9 +1,9 @@
 openapi: 3.0.3
 info:
-  title: HRGo API — Phase 0 & Phase 1
-  version: 1.2.0
+  title: HRGo API — Phase 0, Phase 1 & Phase 2
+  version: 2.0.0
   description: |
-    Complete OpenAPI 3.0 specification for **HRGo Phase 0 & Phase 1** (Platform Administration & Organization Workspace Foundation).
+    Complete OpenAPI 3.0 specification for **HRGo Phase 0, Phase 1 & Phase 2** (Platform Administration, Organization Workspace Foundation, Workforce & Employee Lifecycle, Shift/Holiday/Attendance, CSV Import/Export, Leave & Overtime, Audit Logs, and Mobile Self-Service).
 
     ### Quick Start / Testing Credentials (Dev DB)
     1. **Platform Admin (`/api/v1/control/...`)**:
@@ -49,6 +49,28 @@ tags:
     description: Organization-scoped position management
   - name: Workspace - Roles
     description: Organization role catalogue and account role assignment
+  - name: Workspace - Branch Operating Hours
+    description: Weekly branch opening and closing hours configuration
+  - name: Workspace - Employees
+    description: Workforce directory, personal profiles, and position history
+  - name: Workspace - Employee Lifecycle
+    description: Employment contracts, documents, service years, exit records, and history snapshots
+  - name: Workspace - Shifts
+    description: Shift schedules and employee shift assignments
+  - name: Workspace - Holidays
+    description: Public and company holidays and calendar endpoints
+  - name: Workspace - Attendance
+    description: Daily check-in/out, manual attendance logs, summaries, and correction approvals
+  - name: Workspace - Attendance Import & Export
+    description: CSV bulk attendance import batches and attendance CSV export
+  - name: Workspace - Leave Management
+    description: Leave types, rules, balances, adjustments, requests, and approvals
+  - name: Workspace - Overtime Management
+    description: Overtime categories, rules, requests, approvals, and generated entries
+  - name: Workspace - Audit Logs
+    description: Organization-scoped audit trail events
+  - name: Workspace - Mobile Self-Service
+    description: Employee mobile app authentication, punches, offline sync, calendar, leave, and overtime
 
 components:
   securitySchemes:
@@ -2452,3 +2474,824 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+
+  # =========================================================================
+  # PHASE 2: BRANCH OPERATING HOURS
+  # =========================================================================
+  /api/v1/workspace/branches/{branchId}/operating-hours:
+    get:
+      tags: [Workspace - Branch Operating Hours]
+      summary: List branch operating hours
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: branchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Operating hours schedule by day of week
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Workspace - Branch Operating Hours]
+      summary: Replace branch operating hours
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: branchId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [hours]
+              properties:
+                hours:
+                  type: array
+                  items:
+                    type: object
+                    required: [dayOfWeek, isClosed]
+                    properties:
+                      dayOfWeek:
+                        type: string
+                        enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+                      openingTime:
+                        type: string
+                        nullable: true
+                        example: "09:00"
+                      closingTime:
+                        type: string
+                        nullable: true
+                        example: "18:00"
+                      isClosed:
+                        type: boolean
+      responses:
+        "200":
+          description: Updated weekly operating hours
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # =========================================================================
+  # PHASE 2: EMPLOYEES & LIFECYCLE
+  # =========================================================================
+  /api/v1/workspace/employees:
+    get:
+      tags: [Workspace - Employees]
+      summary: List employees
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+        - name: branchId
+          in: query
+          schema: { type: string }
+        - name: departmentId
+          in: query
+          schema: { type: string }
+        - name: status
+          in: query
+          schema: { type: string }
+        - $ref: "#/components/parameters/QuerySearchParam"
+      responses:
+        "200":
+          description: Paginated employee directory
+    post:
+      tags: [Workspace - Employees]
+      summary: Create employee and organization account
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [firstName, lastName, branchId, departmentId, positionId, roleId, email, dateOfBirth, gender, nationality, emergencyContact]
+      responses:
+        "201":
+          description: Created employee with one-time generated temporary password
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/workspace/employees/{id}:
+    get:
+      tags: [Workspace - Employees]
+      summary: Get employee details
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Employee profile record
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Workspace - Employees]
+      summary: Update employee profile and role
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Updated employee record
+    delete:
+      tags: [Workspace - Employees]
+      summary: Soft-delete employee and deactivate account
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204":
+          description: Employee soft-deleted and linked workspace sessions revoked
+
+  /api/v1/workspace/employees/{id}/position-history:
+    get:
+      tags: [Workspace - Employees]
+      summary: List employee position history
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Chronological position changes
+    post:
+      tags: [Workspace - Employees]
+      summary: Promote or change employee position
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Recorded position change
+
+  /api/v1/workspace/employees/{id}/contracts:
+    get:
+      tags: [Workspace - Employee Lifecycle]
+      summary: List employment contracts
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Employment contracts list }
+    post:
+      tags: [Workspace - Employee Lifecycle]
+      summary: Create employment contract
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "201": { description: Created employment contract }
+
+  /api/v1/workspace/employees/{id}/contracts/{contractId}:
+    put:
+      tags: [Workspace - Employee Lifecycle]
+      summary: Update employment contract
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: contractId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Updated employment contract }
+    delete:
+      tags: [Workspace - Employee Lifecycle]
+      summary: Soft-delete employment contract
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: contractId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted contract }
+
+  /api/v1/workspace/employees/{id}/documents:
+    get:
+      tags: [Workspace - Employee Lifecycle]
+      summary: List employee documents
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Employee documents list }
+    post:
+      tags: [Workspace - Employee Lifecycle]
+      summary: Add employee document metadata
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "201": { description: Document metadata created }
+
+  /api/v1/workspace/employees/{id}/documents/{documentId}:
+    delete:
+      tags: [Workspace - Employee Lifecycle]
+      summary: Soft-delete employee document
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: documentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Document removed }
+
+  /api/v1/workspace/employees/{id}/service-years:
+    get:
+      tags: [Workspace - Employee Lifecycle]
+      summary: List calculated service year snapshots
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Service year records }
+
+  /api/v1/workspace/employees/{id}/service-years/recalculate:
+    post:
+      tags: [Workspace - Employee Lifecycle]
+      summary: Recalculate employee service years from dateOfJoining
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Recalculated service year snapshot }
+
+  /api/v1/workspace/employees/{id}/exits:
+    get:
+      tags: [Workspace - Employee Lifecycle]
+      summary: List employee exit records
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Exit records list }
+    post:
+      tags: [Workspace - Employee Lifecycle]
+      summary: Record employee exit with snapshot and session revocation
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "201": { description: Exit record and immutable history snapshot recorded }
+
+  /api/v1/workspace/employees/{id}/histories:
+    get:
+      tags: [Workspace - Employee Lifecycle]
+      summary: List immutable employee history snapshots
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Employee history snapshots }
+
+  # =========================================================================
+  # PHASE 2: SHIFTS & HOLIDAYS
+  # =========================================================================
+  /api/v1/workspace/shifts:
+    get:
+      tags: [Workspace - Shifts]
+      summary: List shifts
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Paginated shifts }
+    post:
+      tags: [Workspace - Shifts]
+      summary: Create shift
+      security: [{ BearerAuth: [] }]
+      responses:
+        "201": { description: Created shift }
+
+  /api/v1/workspace/shifts/{id}:
+    get:
+      tags: [Workspace - Shifts]
+      summary: Get shift by ID
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Shift details }
+    put:
+      tags: [Workspace - Shifts]
+      summary: Update shift
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Updated shift }
+    delete:
+      tags: [Workspace - Shifts]
+      summary: Delete shift
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted shift }
+
+  /api/v1/workspace/shift-assignments:
+    get:
+      tags: [Workspace - Shifts]
+      summary: List shift assignments
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Shift assignments }
+    post:
+      tags: [Workspace - Shifts]
+      summary: Assign shift to employee
+      security: [{ BearerAuth: [] }]
+      responses:
+        "201": { description: Shift assigned }
+
+  /api/v1/workspace/shift-assignments/{id}:
+    get:
+      tags: [Workspace - Shifts]
+      summary: Get shift assignment by ID
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Shift assignment details }
+
+  /api/v1/workspace/employees/{id}/shift-assignments:
+    get:
+      tags: [Workspace - Shifts]
+      summary: List employee shift assignments
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Employee shift assignments }
+
+  /api/v1/workspace/employees/{id}/shift-assignments/history:
+    get:
+      tags: [Workspace - Shifts]
+      summary: List employee shift assignment history
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Shift assignment change history }
+
+  /api/v1/workspace/holidays:
+    get:
+      tags: [Workspace - Holidays]
+      summary: List holidays
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Paginated holidays }
+    post:
+      tags: [Workspace - Holidays]
+      summary: Create holiday
+      security: [{ BearerAuth: [] }]
+      responses:
+        "201": { description: Created holiday }
+
+  /api/v1/workspace/holidays/calendar:
+    get:
+      tags: [Workspace - Holidays]
+      summary: Get holiday calendar view
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Holidays within requested year/month }
+
+  /api/v1/workspace/holidays/{id}:
+    get:
+      tags: [Workspace - Holidays]
+      summary: Get holiday by ID
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Holiday details }
+    put:
+      tags: [Workspace - Holidays]
+      summary: Update holiday
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Updated holiday }
+    delete:
+      tags: [Workspace - Holidays]
+      summary: Delete holiday
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "204": { description: Deleted holiday }
+
+  # =========================================================================
+  # PHASE 2: ATTENDANCE, CSV IMPORT/EXPORT & AUDIT LOGS
+  # =========================================================================
+  /api/v1/workspace/attendance/check-in:
+    post:
+      tags: [Workspace - Attendance]
+      summary: Record employee check-in
+      security: [{ BearerAuth: [] }]
+      responses:
+        "201": { description: Check-in recorded }
+
+  /api/v1/workspace/attendance/check-out:
+    post:
+      tags: [Workspace - Attendance]
+      summary: Record employee check-out
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Check-out recorded }
+
+  /api/v1/workspace/attendance/manual:
+    post:
+      tags: [Workspace - Attendance]
+      summary: Manual attendance log entry
+      security: [{ BearerAuth: [] }]
+      responses:
+        "201": { description: Manual attendance recorded }
+
+  /api/v1/workspace/attendance/records:
+    get:
+      tags: [Workspace - Attendance]
+      summary: List attendance records
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Paginated attendance records }
+
+  /api/v1/workspace/attendance/records/{id}:
+    get:
+      tags: [Workspace - Attendance]
+      summary: Get attendance record by ID
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Attendance record details }
+
+  /api/v1/workspace/attendance/summary:
+    get:
+      tags: [Workspace - Attendance]
+      summary: Get attendance summary aggregates
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Aggregated present/late/absent/worked metrics }
+
+  /api/v1/workspace/attendance/corrections:
+    get:
+      tags: [Workspace - Attendance]
+      summary: List attendance correction requests
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Paginated correction requests }
+    post:
+      tags: [Workspace - Attendance]
+      summary: Submit attendance correction request
+      security: [{ BearerAuth: [] }]
+      responses:
+        "201": { description: Correction request submitted }
+
+  /api/v1/workspace/attendance/corrections/{id}:
+    get:
+      tags: [Workspace - Attendance]
+      summary: Get correction request by ID
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Correction request details }
+
+  /api/v1/workspace/attendance/corrections/{id}/review:
+    post:
+      tags: [Workspace - Attendance]
+      summary: Approve or reject attendance correction request
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Reviewed correction request }
+
+  /api/v1/workspace/attendance/imports:
+    get:
+      tags: [Workspace - Attendance Import & Export]
+      summary: List CSV attendance import batches
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Paginated import batches }
+    post:
+      tags: [Workspace - Attendance Import & Export]
+      summary: Import attendance records from CSV
+      security: [{ BearerAuth: [] }]
+      responses:
+        "201": { description: Import batch summary with row counts and error report }
+
+  /api/v1/workspace/attendance/export:
+    get:
+      tags: [Workspace - Attendance Import & Export]
+      summary: Export attendance records as CSV
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200":
+          description: CSV export stream
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /api/v1/workspace/audit-logs:
+    get:
+      tags: [Workspace - Audit Logs]
+      summary: List workspace audit trail logs
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Paginated audit log entries }
+
+  # =========================================================================
+  # PHASE 2: LEAVE & OVERTIME MANAGEMENT
+  # =========================================================================
+  /api/v1/workspace/leave/types:
+    get:
+      tags: [Workspace - Leave Management]
+      summary: List leave types
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Leave types list }
+    post:
+      tags: [Workspace - Leave Management]
+      summary: Create leave type with rule
+      security: [{ BearerAuth: [] }]
+      responses:
+        "201": { description: Created leave type }
+
+  /api/v1/workspace/leave/types/{id}:
+    put:
+      tags: [Workspace - Leave Management]
+      summary: Update leave type
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Updated leave type }
+
+  /api/v1/workspace/leave/balances:
+    get:
+      tags: [Workspace - Leave Management]
+      summary: List leave balances
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Employee leave balances }
+
+  /api/v1/workspace/leave/adjustments:
+    post:
+      tags: [Workspace - Leave Management]
+      summary: Adjust employee leave balance
+      security: [{ BearerAuth: [] }]
+      responses:
+        "201": { description: Updated leave balance }
+
+  /api/v1/workspace/leave/requests:
+    get:
+      tags: [Workspace - Leave Management]
+      summary: List leave requests
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Paginated leave requests }
+    post:
+      tags: [Workspace - Leave Management]
+      summary: Submit leave request
+      security: [{ BearerAuth: [] }]
+      responses:
+        "201": { description: Leave request created }
+
+  /api/v1/workspace/leave/requests/{id}/review:
+    post:
+      tags: [Workspace - Leave Management]
+      summary: Approve or reject leave request
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Updated leave request and finalized balance }
+
+  /api/v1/workspace/overtime/categories:
+    get:
+      tags: [Workspace - Overtime Management]
+      summary: List overtime categories
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Overtime categories }
+    post:
+      tags: [Workspace - Overtime Management]
+      summary: Create overtime category and rule
+      security: [{ BearerAuth: [] }]
+      responses:
+        "201": { description: Created overtime category }
+
+  /api/v1/workspace/overtime/requests:
+    get:
+      tags: [Workspace - Overtime Management]
+      summary: List overtime requests
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Paginated overtime requests }
+    post:
+      tags: [Workspace - Overtime Management]
+      summary: Submit overtime request
+      security: [{ BearerAuth: [] }]
+      responses:
+        "201": { description: Overtime request created }
+
+  /api/v1/workspace/overtime/requests/{id}/review:
+    post:
+      tags: [Workspace - Overtime Management]
+      summary: Approve or reject overtime request
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Updated overtime request (and generated overtime entry when approved) }
+
+  /api/v1/workspace/overtime/entries:
+    get:
+      tags: [Workspace - Overtime Management]
+      summary: List approved overtime entries
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Approved overtime entries }
+
+  # =========================================================================
+  # PHASE 2: MOBILE SELF-SERVICE
+  # =========================================================================
+  /api/v1/workspace/mobile/auth/login:
+    post:
+      tags: [Workspace - Mobile Self-Service]
+      summary: Employee mobile login and device registration
+      responses:
+        "200": { description: 30-day workspace JWT, user profile, and device registration }
+
+  /api/v1/workspace/mobile/change-password:
+    post:
+      tags: [Workspace - Mobile Self-Service]
+      summary: Change mobile user password
+      security: [{ BearerAuth: [] }]
+      responses:
+        "204": { description: Password updated }
+
+  /api/v1/workspace/mobile/profile:
+    get:
+      tags: [Workspace - Mobile Self-Service]
+      summary: Get mobile user profile, personal profile, and position history
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Full mobile employee profile }
+
+  /api/v1/workspace/mobile/shift:
+    get:
+      tags: [Workspace - Mobile Self-Service]
+      summary: Get active assigned shift
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Assigned or default workspace shift }
+
+  /api/v1/workspace/mobile/attendance/today:
+    get:
+      tags: [Workspace - Mobile Self-Service]
+      summary: Get today's attendance state
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Today's punch summary and holiday status }
+
+  /api/v1/workspace/mobile/attendance/check-in:
+    post:
+      tags: [Workspace - Mobile Self-Service]
+      summary: Mobile check-in
+      security: [{ BearerAuth: [] }]
+      responses:
+        "201": { description: Check-in recorded }
+
+  /api/v1/workspace/mobile/attendance/check-out:
+    post:
+      tags: [Workspace - Mobile Self-Service]
+      summary: Mobile check-out
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Check-out recorded }
+
+  /api/v1/workspace/mobile/attendance/history:
+    get:
+      tags: [Workspace - Mobile Self-Service]
+      summary: Get mobile attendance history
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Flat paginated mobile attendance records }
+
+  /api/v1/workspace/mobile/attendance/corrections:
+    get:
+      tags: [Workspace - Mobile Self-Service]
+      summary: List mobile employee correction requests
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Flat paginated correction requests }
+    post:
+      tags: [Workspace - Mobile Self-Service]
+      summary: Submit mobile attendance correction request
+      security: [{ BearerAuth: [] }]
+      responses:
+        "201": { description: Submitted correction request }
+
+  /api/v1/workspace/mobile/attendance/sync:
+    post:
+      tags: [Workspace - Mobile Self-Service]
+      summary: Batch sync offline attendance punches
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Per-event sync results (ACCEPTED, CONFLICT, REJECTED) }
+
+  /api/v1/workspace/mobile/calendar:
+    get:
+      tags: [Workspace - Mobile Self-Service]
+      summary: Get mobile monthly attendance and holiday calendar
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Daily attendance/holiday statuses for requested year/month }
+
+  /api/v1/workspace/mobile/leave/balances:
+    get:
+      tags: [Workspace - Mobile Self-Service]
+      summary: Get self leave balances
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Current year leave balances }
+
+  /api/v1/workspace/mobile/leave/requests:
+    get:
+      tags: [Workspace - Mobile Self-Service]
+      summary: List self leave requests
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Employee leave requests }
+    post:
+      tags: [Workspace - Mobile Self-Service]
+      summary: Submit self leave request
+      security: [{ BearerAuth: [] }]
+      responses:
+        "201": { description: Created leave request }
+
+  /api/v1/workspace/mobile/leave/requests/{id}/cancel:
+    post:
+      tags: [Workspace - Mobile Self-Service]
+      summary: Cancel pending self leave request
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: Cancelled leave request and restored balance }
+
+  /api/v1/workspace/mobile/overtime/categories:
+    get:
+      tags: [Workspace - Mobile Self-Service]
+      summary: List active overtime categories
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Active overtime categories }
+
+  /api/v1/workspace/mobile/overtime/requests:
+    get:
+      tags: [Workspace - Mobile Self-Service]
+      summary: List self overtime requests
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200": { description: Employee overtime requests }
+    post:
+      tags: [Workspace - Mobile Self-Service]
+      summary: Submit self overtime request
+      security: [{ BearerAuth: [] }]
+      responses:
+        "201": { description: Created overtime request }

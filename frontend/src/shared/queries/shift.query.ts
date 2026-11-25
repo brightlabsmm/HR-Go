@@ -86,8 +86,8 @@ export function useUpdateShiftMutation() {
       id: string
       input: UpdateShiftInput
     }) => updateShift(id, input),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: shiftKeys.detail(id) })
+    onSuccess: (data, { id }) => {
+      queryClient.setQueryData(shiftKeys.detail(id), data)
       void queryClient.invalidateQueries({ queryKey: shiftKeys.lists() })
     },
   })
@@ -152,7 +152,7 @@ export function useAssignShiftMutation() {
     mutationFn: (input: AssignShiftInput) => assignShift(input),
     onSuccess: (_, { employeeId }) => {
       void queryClient.invalidateQueries({
-        queryKey: shiftKeys.assignments,
+        queryKey: shiftKeys.assignmentLists(),
       })
       void queryClient.invalidateQueries({
         queryKey: shiftKeys.employeeAssignments(employeeId),
