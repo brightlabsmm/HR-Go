@@ -64,7 +64,7 @@ func (r *repository) Create(ctx context.Context, emp *models.Employee, profile *
 func (r *repository) FindByID(ctx context.Context, orgID, id string) (*models.Employee, error) {
 	var emp models.Employee
 	err := r.db.WithContext(ctx).Table("employee_identities e").
-		Select("e.*, b.name as branch_name, d.name as department_name, p.title as position_title").
+		Select("e.*, b.name as branch_name, d.name as department_name, p.name as position_title").
 		Joins("LEFT JOIN branches b ON b.id = e.branch_id").
 		Joins("LEFT JOIN departments d ON d.id = e.department_id").
 		Joins("LEFT JOIN positions p ON p.id = e.position_id").
@@ -109,7 +109,7 @@ func (r *repository) FindByEmail(ctx context.Context, orgID, email string) (*mod
 
 func (r *repository) List(ctx context.Context, orgID string, q request.ListEmployeesQuery) ([]models.Employee, int64, error) {
 	query := r.db.WithContext(ctx).Table("employee_identities e").
-		Select("e.*, b.name as branch_name, d.name as department_name, p.title as position_title").
+		Select("e.*, b.name as branch_name, d.name as department_name, p.name as position_title").
 		Joins("LEFT JOIN branches b ON b.id = e.branch_id").
 		Joins("LEFT JOIN departments d ON d.id = e.department_id").
 		Joins("LEFT JOIN positions p ON p.id = e.position_id").
@@ -217,7 +217,7 @@ func (r *repository) AddPositionHistory(ctx context.Context, history *models.Emp
 func (r *repository) ListPositionHistory(ctx context.Context, orgID, employeeID string) ([]models.EmployeePositionHistory, error) {
 	var items []models.EmployeePositionHistory
 	err := r.db.WithContext(ctx).Table("employee_position_histories h").
-		Select("h.*, p_old.title as old_position_title, p_new.title as new_position_title").
+		Select("h.*, p_old.name as old_position_title, p_new.name as new_position_title").
 		Joins("LEFT JOIN positions p_old ON p_old.id = h.old_position_id").
 		Joins("LEFT JOIN positions p_new ON p_new.id = h.new_position_id").
 		Where("h.organization_id = ? AND h.employee_id = ?", orgID, employeeID).

@@ -106,7 +106,7 @@ func (r *repository) FindEmployeeByID(ctx context.Context, employeeID string) (*
 func (r *repository) GetEmployeeFullDetails(ctx context.Context, orgID, employeeID string) (*employeemodels.Employee, *employeemodels.EmployeeProfile, error) {
 	var emp employeemodels.Employee
 	err := r.db.WithContext(ctx).Table("employee_identities e").
-		Select("e.*, b.name as branch_name, d.name as department_name, p.title as position_title").
+		Select("e.*, b.name as branch_name, d.name as department_name, p.name as position_title").
 		Joins("LEFT JOIN branches b ON b.id = e.branch_id").
 		Joins("LEFT JOIN departments d ON d.id = e.department_id").
 		Joins("LEFT JOIN positions p ON p.id = e.position_id").
