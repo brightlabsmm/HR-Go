@@ -19,8 +19,8 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Feather name="home" size={22} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Feather name="home" size={22} color={color as string} />
           ),
         }}
       />
@@ -28,8 +28,8 @@ export default function TabsLayout() {
         name="calendar"
         options={{
           title: 'Calendar',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Feather name="calendar" size={22} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Feather name="calendar" size={22} color={color as string} />
           ),
         }}
       />
@@ -37,8 +37,8 @@ export default function TabsLayout() {
         name="attendance"
         options={{
           title: 'Attendance',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Feather name="check-square" size={22} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Feather name="check-square" size={22} color={color as string} />
           ),
         }}
       />
@@ -46,8 +46,8 @@ export default function TabsLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size, focused }) => (
-            <Feather name="user" size={22} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Feather name="user" size={22} color={color as string} />
           ),
         }}
       />
