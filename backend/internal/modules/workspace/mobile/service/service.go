@@ -8,9 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	attendancemapper "hrgo/backend/internal/modules/workspace/attendance/mapper"
 	attendancemodels "hrgo/backend/internal/modules/workspace/attendance/models"
-	attendanceresponse "hrgo/backend/internal/modules/workspace/attendance/response"
 	authmodels "hrgo/backend/internal/modules/workspace/auth/models"
 	"hrgo/backend/internal/modules/workspace/mobile/mapper"
 	"hrgo/backend/internal/modules/workspace/mobile/models"
@@ -22,6 +20,8 @@ import (
 	"hrgo/backend/internal/shared/security"
 )
 
+const mobileSessionDuration = 30 * 24 * time.Hour
+
 type SessionMetadata struct {
 	IPAddress *string
 	UserAgent *string
@@ -30,14 +30,14 @@ type SessionMetadata struct {
 type Service interface {
 	Login(ctx context.Context, req request.MobileLoginRequest, meta ...SessionMetadata) (*response.MobileLoginResponse, *apperrors.Error)
 	ChangePassword(ctx context.Context, accountID string, req request.MobileChangePasswordRequest) *apperrors.Error
-	GetProfile(ctx context.Context, orgID, employeeID string) (*response.MobileUserProfile, *apperrors.Error)
+	GetProfile(ctx context.Context, accountID, orgID, employeeID string) (*response.MobileUserProfile, *apperrors.Error)
 	GetShift(ctx context.Context, orgID, employeeID string) (*response.MobileShiftResponse, *apperrors.Error)
 	GetTodayAttendance(ctx context.Context, orgID, employeeID string) (*response.MobileTodayResponse, *apperrors.Error)
-	CheckIn(ctx context.Context, orgID, employeeID string, req request.MobilePunchRequest) (*attendanceresponse.AttendanceResponse, *apperrors.Error)
-	CheckOut(ctx context.Context, orgID, employeeID string, req request.MobilePunchRequest) (*attendanceresponse.AttendanceResponse, *apperrors.Error)
-	ListAttendanceHistory(ctx context.Context, orgID, employeeID string, q request.MobileAttendanceHistoryQuery) (*attendanceresponse.AttendanceListResponse, *apperrors.Error)
+	CheckIn(ctx context.Context, orgID, employeeID string, req request.MobilePunchRequest) (*response.MobileAttendanceRecordResponse, *apperrors.Error)
+	CheckOut(ctx context.Context, orgID, employeeID string, req request.MobilePunchRequest) (*response.MobileAttendanceRecordResponse, *apperrors.Error)
+	ListAttendanceHistory(ctx context.Context, orgID, employeeID string, q request.MobileAttendanceHistoryQuery) (*response.MobileAttendanceListResponse, *apperrors.Error)
 	GetCalendar(ctx context.Context, orgID, employeeID string, q request.MobileCalendarQuery) (*response.MobileCalendarResponse, *apperrors.Error)
-	SubmitCorrection(ctx context.Context, orgID, employeeID string, req request.MobileCorrectionRequest) (*attendanceresponse.CorrectionResponse, *apperrors.Error)
+	SubmitCorrection(ctx context.Context, orgID, employeeID string, req request.MobileCorrectionRequest) (*response.MobileCorrectionResponse, *apperrors.Error)
 	ListCorrections(ctx context.Context, orgID, employeeID string, q request.ListMobileCorrectionsQuery) (*response.MobileCorrectionListResponse, *apperrors.Error)
 	SyncOfflinePunches(ctx context.Context, orgID, employeeID string, req request.MobileSyncRequest) (*response.MobileSyncResponse, *apperrors.Error)
 }
@@ -92,13 +92,13 @@ func (s *service) Login(ctx context.Context, req request.MobileLoginRequest, met
 		return nil, apperrors.Forbidden("Organization has been suspended. Mobile access is disabled.")
 	}
 	if acc.Status != "ACTIVE" {
-		return nil, apperrors.Forbidden("Employee account is " + strings.ToLower(acc.Status))
+		return nil, apperrors.Forbidden("Employee account is " + strings.ToLower(acc.Status) + ".")
 	}
 
 	perms := extractUserPermissions(acc.UserRoles)
 	hasMobileAccess := false
 	for _, p := range perms {
-		if p == "org.mobile.access" {
+		if p == "org.mobile.access" || p == "org.all" {
 			hasMobileAccess = true
 			break
 		}
@@ -107,8 +107,18 @@ func (s *service) Login(ctx context.Context, req request.MobileLoginRequest, met
 		return nil, apperrors.Forbidden("Mobile self-service access is not granted for your role.")
 	}
 
+	emp, profile, _ := s.repo.GetEmployeeFullDetails(ctx, acc.OrganizationID, acc.EmployeeID)
+	posHistory, _ := s.repo.ListPositionHistory(ctx, acc.OrganizationID, acc.EmployeeID)
+
 	var branchID, deptID string
-	if len(acc.UserRoles) > 0 {
+	if emp != nil {
+		if emp.BranchID != nil {
+			branchID = *emp.BranchID
+		}
+		if emp.DepartmentID != nil {
+			deptID = *emp.DepartmentID
+		}
+	} else if len(acc.UserRoles) > 0 {
 		if acc.UserRoles[0].BranchID != nil {
 			branchID = *acc.UserRoles[0].BranchID
 		}
@@ -118,8 +128,7 @@ func (s *service) Login(ctx context.Context, req request.MobileLoginRequest, met
 	}
 
 	sessionID := uuid.NewString()
-	expSeconds := int64(30 * 24 * 3600) // Mobile sessions last 30 days
-	token, exp, err := s.tokens.GenerateWorkspaceTokenWithSession(
+	token, expSeconds, err := s.tokens.GenerateWorkspaceTokenWithExpiry(
 		sessionID,
 		acc.ID,
 		acc.OrganizationID,
@@ -128,12 +137,10 @@ func (s *service) Login(ctx context.Context, req request.MobileLoginRequest, met
 		branchID,
 		deptID,
 		perms,
+		mobileSessionDuration,
 	)
 	if err != nil {
 		return nil, apperrors.Internal()
-	}
-	if exp > 0 {
-		expSeconds = exp
 	}
 
 	var ipAddr, userAgent *string
@@ -174,7 +181,7 @@ func (s *service) Login(ctx context.Context, req request.MobileLoginRequest, met
 		return nil, apperrors.Internal()
 	}
 
-	userProfile := mapper.ToMobileUserProfile(acc, perms)
+	userProfile := mapper.ToMobileUserProfile(acc, emp, profile, posHistory, perms)
 	deviceResp := mapper.ToMobileDeviceResponse(device)
 
 	return &response.MobileLoginResponse{
@@ -193,7 +200,7 @@ func (s *service) ChangePassword(ctx context.Context, accountID string, req requ
 		return apperrors.Internal()
 	}
 	if acc == nil {
-		return apperrors.NotFound("Account not found")
+		return apperrors.NotFound("Account not found.")
 	}
 
 	if !security.CheckPassword(acc.PasswordHash, req.OldPassword) {
@@ -219,51 +226,52 @@ func (s *service) ChangePassword(ctx context.Context, accountID string, req requ
 	return nil
 }
 
-func (s *service) GetProfile(ctx context.Context, orgID, employeeID string) (*response.MobileUserProfile, *apperrors.Error) {
-	emp, _, err := s.repo.GetEmployeeFullDetails(ctx, orgID, employeeID)
+func (s *service) GetProfile(ctx context.Context, accountID, orgID, employeeID string) (*response.MobileUserProfile, *apperrors.Error) {
+	acc, err := s.repo.FindAccountByID(ctx, accountID)
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+	if acc == nil || acc.OrganizationID != orgID {
+		return nil, apperrors.NotFound("Account not found.")
+	}
+
+	emp, profile, err := s.repo.GetEmployeeFullDetails(ctx, orgID, employeeID)
 	if err != nil {
 		return nil, apperrors.Internal()
 	}
 	if emp == nil {
-		return nil, apperrors.NotFound("Employee profile not found")
+		return nil, apperrors.NotFound("Employee profile not found.")
 	}
 
-	var joinDate *string
-	if emp.DateOfJoining != nil {
-		formatted := emp.DateOfJoining.Format("2006-01-02")
-		joinDate = &formatted
-	}
-
-	return &response.MobileUserProfile{
-		EmployeeID:       emp.ID,
-		EmployeeCode:     emp.EmployeeCode,
-		FirstName:        emp.FirstName,
-		LastName:         emp.LastName,
-		Email:            emp.Email,
-		Phone:            emp.Phone,
-		BranchID:         emp.BranchID,
-		BranchName:       emp.BranchName,
-		DepartmentID:     emp.DepartmentID,
-		DepartmentName:   emp.DepartmentName,
-		PositionID:       emp.PositionID,
-		PositionTitle:    emp.PositionTitle,
-		DateOfJoining:    joinDate,
-		EmploymentStatus: emp.EmploymentStatus,
-	}, nil
-}
-
-func (s *service) GetShift(ctx context.Context, orgID, employeeID string) (*response.MobileShiftResponse, *apperrors.Error) {
-	now := time.Now().UTC()
-	shift, err := s.repo.GetAssignedShift(ctx, orgID, employeeID, now)
+	posHistory, err := s.repo.ListPositionHistory(ctx, orgID, employeeID)
 	if err != nil {
 		return nil, apperrors.Internal()
 	}
-	return mapper.ToMobileShiftResponse(shift), nil
+
+	perms := extractUserPermissions(acc.UserRoles)
+	res := mapper.ToMobileUserProfile(acc, emp, profile, posHistory, perms)
+	return &res, nil
+}
+
+func (s *service) GetShift(ctx context.Context, orgID, employeeID string) (*response.MobileShiftResponse, *apperrors.Error) {
+	loc := s.resolveOrgLocation(ctx, orgID)
+	nowLocal := time.Now().In(loc)
+	today := time.Date(nowLocal.Year(), nowLocal.Month(), nowLocal.Day(), 0, 0, 0, 0, time.UTC)
+
+	shift, err := s.repo.GetAssignedShift(ctx, orgID, employeeID, today)
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+
+	grace, _ := s.repo.GetGracePeriodMinutes(ctx, orgID)
+	workDays, _ := s.repo.GetWorkDays(ctx, orgID)
+	return mapper.ToMobileShiftResponse(shift, grace, workDays), nil
 }
 
 func (s *service) GetTodayAttendance(ctx context.Context, orgID, employeeID string) (*response.MobileTodayResponse, *apperrors.Error) {
-	now := time.Now().UTC()
-	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	loc := s.resolveOrgLocation(ctx, orgID)
+	nowLocal := time.Now().In(loc)
+	today := time.Date(nowLocal.Year(), nowLocal.Month(), nowLocal.Day(), 0, 0, 0, 0, time.UTC)
 	todayStr := today.Format("2006-01-02")
 
 	record, err := s.repo.GetTodayAttendance(ctx, orgID, employeeID, today)
@@ -272,7 +280,9 @@ func (s *service) GetTodayAttendance(ctx context.Context, orgID, employeeID stri
 	}
 
 	shift, _ := s.repo.GetAssignedShift(ctx, orgID, employeeID, today)
-	shiftResp := mapper.ToMobileShiftResponse(shift)
+	grace, _ := s.repo.GetGracePeriodMinutes(ctx, orgID)
+	workDays, _ := s.repo.GetWorkDays(ctx, orgID)
+	shiftResp := mapper.ToMobileShiftResponse(shift, grace, workDays)
 
 	emp, _ := s.repo.FindEmployeeByID(ctx, employeeID)
 	var branchID *string
@@ -286,7 +296,7 @@ func (s *service) GetTodayAttendance(ctx context.Context, orgID, employeeID stri
 		holidayName = &holidays[0].HolidayName
 	}
 
-	if record == nil {
+	if record == nil || record.CheckIn == nil {
 		status := "NOT_CHECKED_IN"
 		if isHoliday {
 			status = "HOLIDAY"
@@ -301,26 +311,19 @@ func (s *service) GetTodayAttendance(ctx context.Context, orgID, employeeID stri
 		}, nil
 	}
 
-	var checkInStr, checkOutStr *string
-	if record.CheckIn != nil {
-		s := record.CheckIn.UTC().Format(time.RFC3339)
-		checkInStr = &s
-	}
+	status := "WORKING"
 	if record.CheckOut != nil {
-		s := record.CheckOut.UTC().Format(time.RFC3339)
-		checkOutStr = &s
-	}
-
-	status := "CHECKED_IN"
-	if record.CheckOut != nil {
-		status = "CHECKED_OUT"
+		status = record.AttendanceStatus
+		if status == "" {
+			status = "PRESENT"
+		}
 	}
 
 	return &response.MobileTodayResponse{
 		AttendanceDate: todayStr,
 		Status:         status,
-		CheckInTime:    checkInStr,
-		CheckOutTime:   checkOutStr,
+		CheckInTime:    mapper.FormatTime(record.CheckIn),
+		CheckOutTime:   mapper.FormatTime(record.CheckOut),
 		WorkMinutes:    record.WorkedMinutes,
 		Shift:          shiftResp,
 		IsHoliday:      isHoliday,
@@ -328,9 +331,11 @@ func (s *service) GetTodayAttendance(ctx context.Context, orgID, employeeID stri
 	}, nil
 }
 
-func (s *service) CheckIn(ctx context.Context, orgID, employeeID string, req request.MobilePunchRequest) (*attendanceresponse.AttendanceResponse, *apperrors.Error) {
-	now := time.Now().UTC()
-	attendanceDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+func (s *service) CheckIn(ctx context.Context, orgID, employeeID string, req request.MobilePunchRequest) (*response.MobileAttendanceRecordResponse, *apperrors.Error) {
+	loc := s.resolveOrgLocation(ctx, orgID)
+	nowUTC := time.Now().UTC()
+	nowLocal := nowUTC.In(loc)
+	attendanceDate := time.Date(nowLocal.Year(), nowLocal.Month(), nowLocal.Day(), 0, 0, 0, 0, time.UTC)
 
 	record, err := s.repo.GetTodayAttendance(ctx, orgID, employeeID, attendanceDate)
 	if err != nil {
@@ -341,13 +346,17 @@ func (s *service) CheckIn(ctx context.Context, orgID, employeeID string, req req
 	}
 
 	shift, _ := s.repo.GetAssignedShift(ctx, orgID, employeeID, attendanceDate)
+	grace, _ := s.repo.GetGracePeriodMinutes(ctx, orgID)
+
 	var shiftID *string
+	var shiftName string
 	lateMinutes := 0
 	status := "PRESENT"
 
 	if shift != nil {
 		shiftID = &shift.ID
-		lateMinutes = calculateLateMinutes(now, shift)
+		shiftName = shift.ShiftName
+		lateMinutes = calculateLateMinutes(nowUTC, shift, loc, grace)
 		if lateMinutes > 0 {
 			status = "LATE"
 		}
@@ -361,36 +370,40 @@ func (s *service) CheckIn(ctx context.Context, orgID, employeeID string, req req
 			OrganizationID:   orgID,
 			EmployeeID:       employeeID,
 			ShiftID:          shiftID,
+			ShiftName:        shiftName,
 			AttendanceDate:   attendanceDate,
-			CheckIn:          &now,
+			CheckIn:          &nowUTC,
 			AttendanceStatus: status,
 			LateMinutes:      lateMinutes,
 			Source:           "MOBILE",
 			Remarks:          remarks,
-			CreatedAt:        now,
-			UpdatedAt:        now,
+			CreatedAt:        nowUTC,
+			UpdatedAt:        nowUTC,
 		}
 	} else {
-		record.CheckIn = &now
+		record.CheckIn = &nowUTC
 		record.ShiftID = shiftID
+		record.ShiftName = shiftName
 		record.AttendanceStatus = status
 		record.LateMinutes = lateMinutes
 		record.Source = "MOBILE"
 		record.Remarks = remarks
-		record.UpdatedAt = now
+		record.UpdatedAt = nowUTC
 	}
 
 	if err := s.repo.SaveAttendance(ctx, record); err != nil {
 		return nil, apperrors.Internal()
 	}
 
-	res := attendancemapper.ToAttendanceResponse(record)
+	res := mapper.ToMobileAttendanceRecordResponse(record)
 	return &res, nil
 }
 
-func (s *service) CheckOut(ctx context.Context, orgID, employeeID string, req request.MobilePunchRequest) (*attendanceresponse.AttendanceResponse, *apperrors.Error) {
-	now := time.Now().UTC()
-	attendanceDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+func (s *service) CheckOut(ctx context.Context, orgID, employeeID string, req request.MobilePunchRequest) (*response.MobileAttendanceRecordResponse, *apperrors.Error) {
+	loc := s.resolveOrgLocation(ctx, orgID)
+	nowUTC := time.Now().UTC()
+	nowLocal := nowUTC.In(loc)
+	attendanceDate := time.Date(nowLocal.Year(), nowLocal.Month(), nowLocal.Day(), 0, 0, 0, 0, time.UTC)
 
 	record, err := s.repo.GetTodayAttendance(ctx, orgID, employeeID, attendanceDate)
 	if err != nil {
@@ -403,8 +416,8 @@ func (s *service) CheckOut(ctx context.Context, orgID, employeeID string, req re
 		return nil, apperrors.Conflict("Already checked out for today.")
 	}
 
-	record.CheckOut = &now
-	diff := now.Sub(*record.CheckIn)
+	record.CheckOut = &nowUTC
+	diff := nowUTC.Sub(*record.CheckIn)
 	worked := int(diff.Minutes())
 	if worked < 0 {
 		worked = 0
@@ -417,7 +430,7 @@ func (s *service) CheckOut(ctx context.Context, orgID, employeeID string, req re
 	record.WorkedMinutes = worked
 
 	if shift != nil {
-		earlyLeave := calculateEarlyLeaveMinutes(now, shift)
+		earlyLeave := calculateEarlyLeaveMinutes(nowUTC, shift, loc)
 		record.EarlyLeaveMinutes = earlyLeave
 		if earlyLeave > 0 && record.AttendanceStatus == "PRESENT" {
 			record.AttendanceStatus = "EARLY_LEAVE"
@@ -433,16 +446,16 @@ func (s *service) CheckOut(ctx context.Context, orgID, employeeID string, req re
 		record.Remarks = &combined
 	}
 
-	record.UpdatedAt = now
+	record.UpdatedAt = nowUTC
 	if err := s.repo.SaveAttendance(ctx, record); err != nil {
 		return nil, apperrors.Internal()
 	}
 
-	res := attendancemapper.ToAttendanceResponse(record)
+	res := mapper.ToMobileAttendanceRecordResponse(record)
 	return &res, nil
 }
 
-func (s *service) ListAttendanceHistory(ctx context.Context, orgID, employeeID string, q request.MobileAttendanceHistoryQuery) (*attendanceresponse.AttendanceListResponse, *apperrors.Error) {
+func (s *service) ListAttendanceHistory(ctx context.Context, orgID, employeeID string, q request.MobileAttendanceHistoryQuery) (*response.MobileAttendanceListResponse, *apperrors.Error) {
 	records, total, err := s.repo.ListAttendanceHistory(ctx, orgID, employeeID, q)
 	if err != nil {
 		return nil, apperrors.Internal()
@@ -453,34 +466,40 @@ func (s *service) ListAttendanceHistory(ctx context.Context, orgID, employeeID s
 		page = 1
 	}
 	pageSize := q.PageSize
-	if pageSize < 1 {
+	if pageSize < 1 || pageSize > 100 {
 		pageSize = 20
 	}
 	totalPages := int((total + int64(pageSize) - 1) / int64(pageSize))
+	if totalPages < 1 {
+		totalPages = 1
+	}
 
-	items := attendancemapper.ToAttendanceResponses(records)
-	return &attendanceresponse.AttendanceListResponse{
-		Items: items,
-		Pagination: attendanceresponse.PaginationMeta{
-			Total:       total,
-			Page:        page,
-			PageSize:    pageSize,
-			TotalPages:  totalPages,
-			HasNextPage: page < totalPages,
-			HasPrevPage: page > 1,
-		},
+	items := make([]response.MobileAttendanceRecordResponse, len(records))
+	for i := range records {
+		items[i] = mapper.ToMobileAttendanceRecordResponse(&records[i])
+	}
+
+	return &response.MobileAttendanceListResponse{
+		Items:      items,
+		TotalItems: total,
+		Page:       page,
+		PageSize:   pageSize,
+		TotalPages: totalPages,
 	}, nil
 }
 
 func (s *service) GetCalendar(ctx context.Context, orgID, employeeID string, q request.MobileCalendarQuery) (*response.MobileCalendarResponse, *apperrors.Error) {
-	now := time.Now().UTC()
+	loc := s.resolveOrgLocation(ctx, orgID)
+	nowLocal := time.Now().In(loc)
+	todayLocal := time.Date(nowLocal.Year(), nowLocal.Month(), nowLocal.Day(), 0, 0, 0, 0, time.UTC)
+
 	year := q.Year
 	if year < 2000 || year > 2100 {
-		year = now.Year()
+		year = nowLocal.Year()
 	}
 	month := q.Month
 	if month < 1 || month > 12 {
-		month = int(now.Month())
+		month = int(nowLocal.Month())
 	}
 
 	startDate := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
@@ -499,6 +518,12 @@ func (s *service) GetCalendar(ctx context.Context, orgID, employeeID string, q r
 	holidays, err := s.repo.GetMonthlyHolidays(ctx, orgID, branchID, startDate, endDate)
 	if err != nil {
 		return nil, apperrors.Internal()
+	}
+
+	workDays, _ := s.repo.GetWorkDays(ctx, orgID)
+	workDaySet := make(map[string]bool, len(workDays))
+	for _, wd := range workDays {
+		workDaySet[wd] = true
 	}
 
 	recordMap := make(map[string]attendancemodels.AttendanceRecord)
@@ -530,19 +555,13 @@ func (s *service) GetCalendar(ctx context.Context, orgID, employeeID string, q r
 
 		if hasRec {
 			status = rec.AttendanceStatus
-			if rec.CheckIn != nil {
-				s := rec.CheckIn.UTC().Format(time.RFC3339)
-				checkInStr = &s
-			}
-			if rec.CheckOut != nil {
-				s := rec.CheckOut.UTC().Format(time.RFC3339)
-				checkOutStr = &s
-			}
+			checkInStr = mapper.FormatTime(rec.CheckIn)
+			checkOutStr = mapper.FormatTime(rec.CheckOut)
 		} else if isHol {
 			status = "HOLIDAY"
-		} else if date.Weekday() == time.Saturday || date.Weekday() == time.Sunday {
+		} else if !workDaySet[strings.ToUpper(date.Weekday().String())] {
 			status = "WEEKEND"
-		} else if date.Before(now) {
+		} else if date.Before(todayLocal) {
 			status = "ABSENT"
 		} else {
 			status = "UPCOMING"
@@ -570,13 +589,24 @@ func (s *service) GetCalendar(ctx context.Context, orgID, employeeID string, q r
 	}, nil
 }
 
-func (s *service) SubmitCorrection(ctx context.Context, orgID, employeeID string, req request.MobileCorrectionRequest) (*attendanceresponse.CorrectionResponse, *apperrors.Error) {
+func (s *service) SubmitCorrection(ctx context.Context, orgID, employeeID string, req request.MobileCorrectionRequest) (*response.MobileCorrectionResponse, *apperrors.Error) {
+	if req.RequestedCheckInTime == nil && req.RequestedCheckOutTime == nil {
+		return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "requestedCheckInTime", Message: "At least one requested check-in or check-out time is required."},
+		})
+	}
+	if req.RequestedCheckInTime != nil && req.RequestedCheckOutTime != nil && req.RequestedCheckOutTime.Before(*req.RequestedCheckInTime) {
+		return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "requestedCheckOutTime", Message: "Requested check-out time cannot be before check-in time."},
+		})
+	}
+
 	record, err := s.repo.FindRecordByID(ctx, orgID, req.AttendanceRecordID)
 	if err != nil {
 		return nil, apperrors.Internal()
 	}
 	if record == nil {
-		return nil, apperrors.NotFound("Attendance record not found")
+		return nil, apperrors.NotFound("Attendance record not found.")
 	}
 	if record.EmployeeID != employeeID {
 		return nil, apperrors.Forbidden("You can only request corrections for your own attendance records.")
@@ -601,7 +631,26 @@ func (s *service) SubmitCorrection(ctx context.Context, orgID, employeeID string
 		return nil, apperrors.Internal()
 	}
 
-	res := attendancemapper.ToCorrectionResponse(corr)
+	if created, findErr := s.repo.FindCorrectionByID(ctx, orgID, employeeID, corr.ID); findErr == nil && created != nil {
+		res := mapper.ToMobileCorrectionResponse(created)
+		return &res, nil
+	}
+
+	res := mapper.ToMobileCorrectionResponse(&models.MobileCorrectionRow{
+		ID:                corr.ID,
+		OrganizationID:    corr.OrganizationID,
+		AttendanceID:      corr.AttendanceID,
+		EmployeeID:        corr.EmployeeID,
+		AttendanceDate:    corr.AttendanceDate,
+		RequestedCheckIn:  corr.RequestedCheckIn,
+		RequestedCheckOut: corr.RequestedCheckOut,
+		OriginalCheckIn:   record.CheckIn,
+		OriginalCheckOut:  record.CheckOut,
+		Reason:            corr.Reason,
+		RequestStatus:     corr.RequestStatus,
+		CreatedAt:         corr.CreatedAt,
+		UpdatedAt:         corr.UpdatedAt,
+	})
 	return &res, nil
 }
 
@@ -616,14 +665,17 @@ func (s *service) ListCorrections(ctx context.Context, orgID, employeeID string,
 		page = 1
 	}
 	pageSize := q.PageSize
-	if pageSize < 1 {
+	if pageSize < 1 || pageSize > 100 {
 		pageSize = 20
 	}
 	totalPages := int((total + int64(pageSize) - 1) / int64(pageSize))
+	if totalPages < 1 {
+		totalPages = 1
+	}
 
-	respItems := make([]attendanceresponse.CorrectionResponse, len(items))
+	respItems := make([]response.MobileCorrectionResponse, len(items))
 	for i := range items {
-		respItems[i] = attendancemapper.ToCorrectionResponse(&items[i])
+		respItems[i] = mapper.ToMobileCorrectionResponse(&items[i])
 	}
 
 	return &response.MobileCorrectionListResponse{
@@ -636,7 +688,10 @@ func (s *service) ListCorrections(ctx context.Context, orgID, employeeID string,
 }
 
 func (s *service) SyncOfflinePunches(ctx context.Context, orgID, employeeID string, req request.MobileSyncRequest) (*response.MobileSyncResponse, *apperrors.Error) {
+	loc := s.resolveOrgLocation(ctx, orgID)
 	now := time.Now().UTC()
+	grace, _ := s.repo.GetGracePeriodMinutes(ctx, orgID)
+
 	results := make([]response.SyncResultItem, 0, len(req.Events))
 	successCount := 0
 	failedCount := 0
@@ -656,32 +711,34 @@ func (s *service) SyncOfflinePunches(ctx context.Context, orgID, employeeID stri
 
 		if err := s.repo.RecordOfflineEvent(ctx, eventModel); err != nil {
 			failedCount++
-			errMsg := "Failed to record event: " + err.Error()
+			errMsg := "Failed to record offline event."
 			results = append(results, response.SyncResultItem{
 				LocalEventID: localID,
-				ResultStatus: "FAILED",
+				ResultStatus: "REJECTED",
 				ErrorMessage: &errMsg,
 			})
 			continue
 		}
 
 		if eventModel.SyncStatus == "SYNCED" {
+			errMsg := "Event has already been synchronized."
 			results = append(results, response.SyncResultItem{
 				LocalEventID: localID,
-				ResultStatus: "DUPLICATE",
+				ResultStatus: "CONFLICT",
+				ErrorMessage: &errMsg,
 			})
 			continue
 		}
 
-		// Process event
-		eventDate := time.Date(ev.LocalEventTime.Year(), ev.LocalEventTime.Month(), ev.LocalEventTime.Day(), 0, 0, 0, 0, time.UTC)
+		punchLocal := ev.LocalEventTime.In(loc)
+		eventDate := time.Date(punchLocal.Year(), punchLocal.Month(), punchLocal.Day(), 0, 0, 0, 0, time.UTC)
 		record, err := s.repo.GetTodayAttendance(ctx, orgID, employeeID, eventDate)
 		if err != nil {
 			failedCount++
-			errMsg := "Database error"
+			errMsg := "Unable to inspect existing attendance record."
 			results = append(results, response.SyncResultItem{
 				LocalEventID: localID,
-				ResultStatus: "FAILED",
+				ResultStatus: "REJECTED",
 				ErrorMessage: &errMsg,
 			})
 			continue
@@ -692,18 +749,18 @@ func (s *service) SyncOfflinePunches(ctx context.Context, orgID, employeeID stri
 
 		if ev.EventType == "CHECK_IN" {
 			if record != nil && record.CheckIn != nil {
-				// Already checked in
-				errMsg := "Already checked in for date " + eventDate.Format("2006-01-02")
-				res := &models.SynchronizationResult{
+				failedCount++
+				errMsg := "Already checked in for date " + eventDate.Format("2006-01-02") + "."
+				_ = s.repo.RecordSyncResult(ctx, &models.SynchronizationResult{
 					OfflineEventID: eventModel.ID,
-					ResultStatus:   "DUPLICATE",
+					ResultStatus:   "CONFLICT",
 					ErrorMessage:   &errMsg,
 					ProcessedAt:    now,
-				}
-				_ = s.repo.RecordSyncResult(ctx, res)
+				})
+				_ = s.repo.MarkOfflineEventSynced(ctx, eventModel.ID, now)
 				results = append(results, response.SyncResultItem{
 					LocalEventID: localID,
-					ResultStatus: "DUPLICATE",
+					ResultStatus: "CONFLICT",
 					ErrorMessage: &errMsg,
 				})
 				continue
@@ -715,7 +772,7 @@ func (s *service) SyncOfflinePunches(ctx context.Context, orgID, employeeID stri
 			status := "PRESENT"
 			if shift != nil {
 				shiftID = &shift.ID
-				lateMin = calculateLateMinutes(punchTime, shift)
+				lateMin = calculateLateMinutes(punchTime, shift, loc, grace)
 				if lateMin > 0 {
 					status = "LATE"
 				}
@@ -749,18 +806,50 @@ func (s *service) SyncOfflinePunches(ctx context.Context, orgID, employeeID stri
 			processErr = s.repo.SaveAttendance(ctx, record)
 		} else { // CHECK_OUT
 			if record == nil || record.CheckIn == nil {
-				errMsg := "Missing check-in record for check-out on " + eventDate.Format("2006-01-02")
-				res := &models.SynchronizationResult{
+				failedCount++
+				errMsg := "Missing check-in record for check-out on " + eventDate.Format("2006-01-02") + "."
+				_ = s.repo.RecordSyncResult(ctx, &models.SynchronizationResult{
 					OfflineEventID: eventModel.ID,
-					ResultStatus:   "FAILED",
+					ResultStatus:   "REJECTED",
 					ErrorMessage:   &errMsg,
 					ProcessedAt:    now,
-				}
-				_ = s.repo.RecordSyncResult(ctx, res)
-				failedCount++
+				})
 				results = append(results, response.SyncResultItem{
 					LocalEventID: localID,
-					ResultStatus: "FAILED",
+					ResultStatus: "REJECTED",
+					ErrorMessage: &errMsg,
+				})
+				continue
+			}
+			if record.CheckOut != nil {
+				failedCount++
+				errMsg := "A check-out already exists for date " + eventDate.Format("2006-01-02") + "."
+				_ = s.repo.RecordSyncResult(ctx, &models.SynchronizationResult{
+					OfflineEventID: eventModel.ID,
+					ResultStatus:   "CONFLICT",
+					ErrorMessage:   &errMsg,
+					ProcessedAt:    now,
+				})
+				_ = s.repo.MarkOfflineEventSynced(ctx, eventModel.ID, now)
+				results = append(results, response.SyncResultItem{
+					LocalEventID: localID,
+					ResultStatus: "CONFLICT",
+					ErrorMessage: &errMsg,
+				})
+				continue
+			}
+			if punchTime.Before(*record.CheckIn) {
+				failedCount++
+				errMsg := "Offline check-out time cannot be before check-in time."
+				_ = s.repo.RecordSyncResult(ctx, &models.SynchronizationResult{
+					OfflineEventID: eventModel.ID,
+					ResultStatus:   "REJECTED",
+					ErrorMessage:   &errMsg,
+					ProcessedAt:    now,
+				})
+				results = append(results, response.SyncResultItem{
+					LocalEventID: localID,
+					ResultStatus: "REJECTED",
 					ErrorMessage: &errMsg,
 				})
 				continue
@@ -780,7 +869,7 @@ func (s *service) SyncOfflinePunches(ctx context.Context, orgID, employeeID stri
 			record.WorkedMinutes = worked
 
 			if shift != nil {
-				earlyLeave := calculateEarlyLeaveMinutes(punchTime, shift)
+				earlyLeave := calculateEarlyLeaveMinutes(punchTime, shift, loc)
 				record.EarlyLeaveMinutes = earlyLeave
 				if earlyLeave > 0 && record.AttendanceStatus == "PRESENT" {
 					record.AttendanceStatus = "EARLY_LEAVE"
@@ -792,34 +881,29 @@ func (s *service) SyncOfflinePunches(ctx context.Context, orgID, employeeID stri
 
 		if processErr != nil {
 			failedCount++
-			errMsg := "Failed to save punch: " + processErr.Error()
-			res := &models.SynchronizationResult{
+			errMsg := "Failed to persist offline punch."
+			_ = s.repo.RecordSyncResult(ctx, &models.SynchronizationResult{
 				OfflineEventID: eventModel.ID,
-				ResultStatus:   "FAILED",
+				ResultStatus:   "REJECTED",
 				ErrorMessage:   &errMsg,
 				ProcessedAt:    now,
-			}
-			_ = s.repo.RecordSyncResult(ctx, res)
+			})
 			results = append(results, response.SyncResultItem{
 				LocalEventID: localID,
-				ResultStatus: "FAILED",
+				ResultStatus: "REJECTED",
 				ErrorMessage: &errMsg,
 			})
 		} else {
 			successCount++
-			eventModel.SyncStatus = "SYNCED"
-			eventModel.SyncedAt = &now
-			_ = s.repo.RecordOfflineEvent(ctx, eventModel)
-
-			res := &models.SynchronizationResult{
+			_ = s.repo.MarkOfflineEventSynced(ctx, eventModel.ID, now)
+			_ = s.repo.RecordSyncResult(ctx, &models.SynchronizationResult{
 				OfflineEventID: eventModel.ID,
-				ResultStatus:   "SUCCESS",
+				ResultStatus:   "ACCEPTED",
 				ProcessedAt:    now,
-			}
-			_ = s.repo.RecordSyncResult(ctx, res)
+			})
 			results = append(results, response.SyncResultItem{
 				LocalEventID: localID,
-				ResultStatus: "SUCCESS",
+				ResultStatus: "ACCEPTED",
 			})
 		}
 	}
@@ -830,6 +914,18 @@ func (s *service) SyncOfflinePunches(ctx context.Context, orgID, employeeID stri
 		FailedCount:    failedCount,
 		Results:        results,
 	}, nil
+}
+
+func (s *service) resolveOrgLocation(ctx context.Context, orgID string) *time.Location {
+	tz, err := s.repo.GetOrgTimezone(ctx, orgID)
+	if err != nil || strings.TrimSpace(tz) == "" {
+		return time.UTC
+	}
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		return time.UTC
+	}
+	return loc
 }
 
 func extractUserPermissions(roles []authmodels.OrgUserRole) []string {
@@ -846,30 +942,35 @@ func extractUserPermissions(roles []authmodels.OrgUserRole) []string {
 	return res
 }
 
-func calculateLateMinutes(punch time.Time, shift *shiftmodels.Shift) int {
+func calculateLateMinutes(punchUTC time.Time, shift *shiftmodels.Shift, loc *time.Location, graceMinutes int) int {
 	parts := strings.Split(shift.StartTime, ":")
 	if len(parts) < 2 {
 		return 0
 	}
 	var sh, sm int
 	_, _ = fmt.Sscanf(shift.StartTime, "%d:%d", &sh, &sm)
-	shiftStart := time.Date(punch.Year(), punch.Month(), punch.Day(), sh, sm, 0, 0, time.UTC)
-	grace := 15 // 15 mins default
-	allowedTime := shiftStart.Add(time.Duration(grace) * time.Minute)
+	punchLocal := punchUTC.In(loc)
+	shiftStart := time.Date(punchLocal.Year(), punchLocal.Month(), punchLocal.Day(), sh, sm, 0, 0, loc)
+	allowedTime := shiftStart.Add(time.Duration(graceMinutes) * time.Minute)
 
-	if punch.After(allowedTime) {
-		return int(punch.Sub(shiftStart).Minutes())
+	if punchLocal.After(allowedTime) {
+		return int(punchLocal.Sub(shiftStart).Minutes())
 	}
 	return 0
 }
 
-func calculateEarlyLeaveMinutes(punch time.Time, shift *shiftmodels.Shift) int {
+func calculateEarlyLeaveMinutes(punchUTC time.Time, shift *shiftmodels.Shift, loc *time.Location) int {
+	parts := strings.Split(shift.EndTime, ":")
+	if len(parts) < 2 {
+		return 0
+	}
 	var eh, em int
 	_, _ = fmt.Sscanf(shift.EndTime, "%d:%d", &eh, &em)
-	shiftEnd := time.Date(punch.Year(), punch.Month(), punch.Day(), eh, em, 0, 0, time.UTC)
+	punchLocal := punchUTC.In(loc)
+	shiftEnd := time.Date(punchLocal.Year(), punchLocal.Month(), punchLocal.Day(), eh, em, 0, 0, loc)
 
-	if punch.Before(shiftEnd) {
-		return int(shiftEnd.Sub(punch).Minutes())
+	if punchLocal.Before(shiftEnd) {
+		return int(shiftEnd.Sub(punchLocal).Minutes())
 	}
 	return 0
 }
