@@ -14,6 +14,8 @@
     "shifts": "班次",
     "holidays": "节假日",
     "attendance": "考勤",
+    "attendance_imports": "考勤导入与导出",
+    "audit_logs": "审计日志",
     "organization_settings": "组织设置",
     "account": "我的账户"
   },
