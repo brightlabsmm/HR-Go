@@ -11,77 +11,65 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
-import { CORRECTION_REQUESTS, CorrectionRequestItem } from '../constants/mockData';
 import { Badge, StatusType } from '../components/Badge';
 import { attendanceApi } from '../services/api/attendanceApi';
+import { formatFullDate, formatTime } from '../utils/dateTime';
 
 type TabType = 'All' | 'Pending' | 'Approved' | 'Rejected';
 
-function formatSimpleDate(iso?: string): string {
-  if (!iso) return 'Recent';
-  try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString('en-GB', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
-}
-
-function formatSimpleTime(iso?: string): string {
-  if (!iso) return '--:--';
-  try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return iso;
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-  } catch {
-    return iso;
-  }
+interface CorrectionItemView {
+  id: string;
+  attendanceRecordId: string;
+  rawDate: string;
+  date: string;
+  type: string;
+  sent: string;
+  was: string;
+  req: string;
+  status: string;
+  note: string;
 }
 
 export default function MyRequestsScreen() {
   const router = useRouter();
   const [tab, setTab] = useState<TabType>('All');
-  const [requests, setRequests] = useState<CorrectionRequestItem[]>(CORRECTION_REQUESTS);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [requests, setRequests] = useState<CorrectionItemView[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchCorrections = useCallback(async () => {
+    setErrorMessage(null);
     try {
       const res = await attendanceApi.listCorrections({ pageSize: 50 });
-      if (res && res.items && res.items.length > 0) {
-        const mapped: CorrectionRequestItem[] = res.items.map((item) => {
-          const wasIn = formatSimpleTime(item.originalCheckInTime);
-          const wasOut = formatSimpleTime(item.originalCheckOutTime);
-          const reqIn = formatSimpleTime(item.requestedCheckInTime);
-          const reqOut = formatSimpleTime(item.requestedCheckOutTime);
+      const mapped: CorrectionItemView[] = (res?.items ?? []).map((item) => {
+        const wasIn = formatTime(item.originalCheckInTime);
+        const wasOut = formatTime(item.originalCheckOutTime);
+        const reqIn = formatTime(item.requestedCheckInTime);
+        const reqOut = formatTime(item.requestedCheckOutTime);
 
-          const reviewerNote = item.reviewerNotes
-            ? `${item.status === 'REJECTED' ? 'Rejected' : 'Approved'}: "${item.reviewerNotes}"`
-            : item.status === 'PENDING'
-            ? 'Waiting for HR Manager review.'
-            : `Reviewed and ${item.status.toLowerCase()}`;
+        const reviewerNote = item.reviewerNotes
+          ? `${item.status === 'REJECTED' ? 'Rejected' : 'Approved'}: "${item.reviewerNotes}"`
+          : item.status === 'PENDING'
+          ? 'Waiting for HR Manager review.'
+          : `Reviewed and ${item.status.toLowerCase()}`;
 
-          return {
-            id: item.id,
-            date: formatSimpleDate(item.createdAt),
-            type: 'Correct times',
-            sent: formatSimpleDate(item.createdAt),
-            was: `In ${wasIn} · Out ${wasOut}`,
-            req: `In ${reqIn} · Out ${reqOut}`,
-            status: item.status,
-            note: reviewerNote,
-          };
-        });
-        setRequests(mapped);
-      }
-    } catch {
-      // Retain fallback data if offline
+        return {
+          id: item.id,
+          attendanceRecordId: item.attendanceRecordId,
+          rawDate: item.attendanceDate || item.createdAt.slice(0, 10),
+          date: formatFullDate(item.attendanceDate || item.createdAt),
+          type: 'Correct times',
+          sent: formatFullDate(item.createdAt),
+          was: `In ${wasIn} · Out ${wasOut}`,
+          req: `In ${reqIn} · Out ${reqOut}`,
+          status: item.status,
+          note: reviewerNote,
+        };
+      });
+      setRequests(mapped);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Unable to load correction requests.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -153,6 +141,22 @@ export default function MyRequestsScreen() {
         </View>
 
         {/* Requests List */}
+        {loading ? (
+          <ActivityIndicator style={{ marginTop: 32 }} color={colors.primary} />
+        ) : errorMessage ? (
+          <View style={styles.card}>
+            <Text style={[styles.noteText, { color: colors.status.absentText }]}>
+              {errorMessage}
+            </Text>
+          </View>
+        ) : filteredRequests.length === 0 ? (
+          <View style={styles.card}>
+            <Text style={styles.cardDate}>No correction requests</Text>
+            <Text style={styles.noteText}>
+              Submitted attendance correction requests will appear here.
+            </Text>
+          </View>
+        ) : (
         <View style={styles.list}>
           {filteredRequests.map((req) => {
             const isRejected = req.status === 'REJECTED';
@@ -198,7 +202,12 @@ export default function MyRequestsScreen() {
                     onPress={() =>
                       router.push({
                         pathname: '/correction-request',
-                        params: { type: 'corr', date: req.date, attendanceRecordId: req.id },
+                        params: {
+                          type: 'corr',
+                          date: req.rawDate,
+                          attendanceRecordId: req.attendanceRecordId,
+                          recordedTimes: req.was,
+                        },
                       })
                     }
                   >
@@ -209,6 +218,7 @@ export default function MyRequestsScreen() {
             );
           })}
         </View>
+        )}
       </ScrollView>
     </View>
   );

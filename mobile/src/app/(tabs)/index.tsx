@@ -14,30 +14,93 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/theme';
 import { HrGoLogo } from '../../components/HrGoLogo';
-import { initialWeekDays } from '../../constants/mockData';
 import { useAuth } from '../../context/AuthContext';
 import { attendanceApi } from '../../services/api/attendanceApi';
+import { profileApi } from '../../services/api/profileApi';
 import { offlineQueue } from '../../services/offline/offlineQueue';
-import { MobileTodayResponse } from '../../services/api/types';
+import { MobileShiftResponse, MobileTodayResponse } from '../../services/api/types';
+import { formatTime, toLocalDateString } from '../../utils/dateTime';
 
-function formatTime(isoString?: string): string {
-  if (!isoString) return '--:--';
-  try {
-    const d = new Date(isoString);
-    if (isNaN(d.getTime())) return isoString;
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-  } catch {
-    return isoString;
+interface WeekDaySummary {
+  dayName: string;
+  dateNum: number;
+  label: string;
+  isToday: boolean;
+  statusColor?: string;
+}
+
+function buildCurrentWeekDays(
+  calendarDays: { date: string; status: string; isHoliday: boolean }[]
+): WeekDaySummary[] {
+  const now = new Date();
+  const monday = new Date(now);
+  const diffToMonday = (now.getDay() + 6) % 7;
+  monday.setDate(now.getDate() - diffToMonday);
+  const todayStr = toLocalDateString(now);
+
+  const byDate = new Map(calendarDays.map((d) => [d.date.slice(0, 10), d]));
+  const items: WeekDaySummary[] = [];
+
+  for (let i = 0; i < 5; i++) {
+    const dt = new Date(monday);
+    dt.setDate(monday.getDate() + i);
+    const iso = toLocalDateString(dt);
+    const match = byDate.get(iso);
+    const isToday = iso === todayStr;
+
+    let label = isToday ? 'Today' : '—';
+    let statusColor: string | undefined;
+    if (match) {
+      if (match.isHoliday || match.status === 'HOLIDAY') {
+        label = 'Holiday';
+        statusColor = '#7C3AED';
+      } else if (match.status === 'PRESENT' || match.status === 'WORKING') {
+        label = isToday ? 'Today' : 'On time';
+        statusColor = isToday ? undefined : '#12805C';
+      } else if (match.status === 'LATE') {
+        label = 'Late';
+        statusColor = '#D97706';
+      } else if (match.status === 'ABSENT') {
+        label = 'Absent';
+        statusColor = '#C2261C';
+      }
+    }
+
+    items.push({
+      dayName: dt.toLocaleDateString('en-GB', { weekday: 'short' }),
+      dateNum: dt.getDate(),
+      label,
+      isToday,
+      statusColor,
+    });
   }
+  return items;
 }
 
 export default function HomeScreen() {
   const router = useRouter();
   const { user, deviceIdentifier } = useAuth();
 
-  const [currentTime, setCurrentTime] = useState<string>('08:52');
-  const [currentDateLabel, setCurrentDateLabel] = useState<string>('Tuesday, 24 Nov 2026');
+  const [currentTime, setCurrentTime] = useState<string>(() =>
+    formatTime(new Date().toISOString())
+  );
+  const [currentDateLabel, setCurrentDateLabel] = useState<string>(() =>
+    new Date().toLocaleDateString('en-GB', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+  );
   const [todayData, setTodayData] = useState<MobileTodayResponse | null>(null);
+  const [shiftData, setShiftData] = useState<MobileShiftResponse | null>(null);
+  const [weekDays, setWeekDays] = useState<WeekDaySummary[]>(() =>
+    buildCurrentWeekDays([])
+  );
+  const [pendingCorrectionsCount, setPendingCorrectionsCount] = useState<number>(0);
+  const [pendingOfflineCount, setPendingOfflineCount] = useState<number>(0);
+  const [isOffline, setIsOffline] = useState<boolean>(false);
+  const [offlineTimes, setOfflineTimes] = useState<{ in?: string; out?: string }>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [punching, setPunching] = useState<boolean>(false);
@@ -65,21 +128,51 @@ export default function HomeScreen() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch today's attendance state from API
+  // Fetch today's attendance, week calendar, pending corrections, and offline queue
   const fetchTodayData = useCallback(async () => {
+    const now = new Date();
     try {
-      const res = await attendanceApi.getToday();
-      setTodayData(res);
-
-      if (res.checkOutTime) {
-        setStep(2); // Complete
-      } else if (res.checkInTime) {
-        setStep(1); // Working
-      } else {
-        setStep(0); // Not checked in
-      }
+      const queued = await offlineQueue.getEvents();
+      setPendingOfflineCount(queued.filter((e) => e.status === 'PENDING').length);
     } catch {
-      // In offline / fallback mode, retain default UI state
+      setPendingOfflineCount(0);
+    }
+
+    try {
+      const [todayRes, calRes, corrRes, shiftRes] = await Promise.all([
+        attendanceApi.getToday(),
+        attendanceApi
+          .getCalendar(now.getFullYear(), now.getMonth() + 1)
+          .catch(() => null),
+        attendanceApi
+          .listCorrections({ status: 'PENDING', pageSize: 1 })
+          .catch(() => null),
+        profileApi.getShift().catch(() => null),
+      ]);
+
+      setIsOffline(false);
+      setTodayData(todayRes);
+      if (shiftRes) {
+        setShiftData(shiftRes);
+      } else if (todayRes.shift) {
+        setShiftData(todayRes.shift);
+      }
+      if (calRes?.days) {
+        setWeekDays(buildCurrentWeekDays(calRes.days));
+      }
+      setPendingCorrectionsCount(corrRes?.totalItems ?? 0);
+
+      if (todayRes.checkOutTime) {
+        setStep(2);
+      } else if (todayRes.checkInTime) {
+        setStep(1);
+      } else {
+        setStep(0);
+      }
+    } catch (err: any) {
+      if (err?.code === 'NETWORK_ERROR' || err?.code === 'TIMEOUT') {
+        setIsOffline(true);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -87,12 +180,12 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    fetchTodayData();
+    void fetchTodayData();
   }, [fetchTodayData]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchTodayData();
+    void fetchTodayData();
   }, [fetchTodayData]);
 
   const handlePunchAction = async () => {
@@ -101,7 +194,6 @@ export default function HomeScreen() {
 
     try {
       if (step === 0) {
-        // Check in
         try {
           await attendanceApi.checkIn({
             deviceId: deviceIdentifier,
@@ -111,18 +203,26 @@ export default function HomeScreen() {
           await fetchTodayData();
           Alert.alert('Checked In', 'Your check-in has been successfully recorded.');
         } catch (apiErr: any) {
-          // If offline or network error, save to offline sync queue!
-          await offlineQueue.addPunch('CHECK_IN', {
-            notes: 'Stored offline on device',
-          });
-          setStep(1);
-          Alert.alert(
-            'Offline Check-in Saved',
-            'Network is unavailable. Your check-in was saved offline and will sync when reconnected.'
-          );
+          if (apiErr?.code === 'NETWORK_ERROR' || apiErr?.code === 'TIMEOUT') {
+            const ev = await offlineQueue.addPunch('CHECK_IN', {
+              notes: 'Stored offline on device',
+            });
+            setOfflineTimes((prev) => ({ ...prev, in: ev.localEventTime }));
+            setPendingOfflineCount((c) => c + 1);
+            setIsOffline(true);
+            setStep(1);
+            Alert.alert(
+              'Offline Check-in Saved',
+              'Network is unavailable. Your check-in was saved offline and will sync when reconnected.'
+            );
+          } else {
+            Alert.alert(
+              'Check-in Failed',
+              apiErr?.message || 'Unable to record check-in.'
+            );
+          }
         }
       } else if (step === 1) {
-        // Check out
         try {
           await attendanceApi.checkOut({
             deviceId: deviceIdentifier,
@@ -132,15 +232,24 @@ export default function HomeScreen() {
           await fetchTodayData();
           Alert.alert('Checked Out', 'Your check-out has been successfully recorded.');
         } catch (apiErr: any) {
-          // If offline or network error, save to offline sync queue!
-          await offlineQueue.addPunch('CHECK_OUT', {
-            notes: 'Stored offline on device',
-          });
-          setStep(2);
-          Alert.alert(
-            'Offline Check-out Saved',
-            'Network is unavailable. Your check-out was saved offline and will sync when reconnected.'
-          );
+          if (apiErr?.code === 'NETWORK_ERROR' || apiErr?.code === 'TIMEOUT') {
+            const ev = await offlineQueue.addPunch('CHECK_OUT', {
+              notes: 'Stored offline on device',
+            });
+            setOfflineTimes((prev) => ({ ...prev, out: ev.localEventTime }));
+            setPendingOfflineCount((c) => c + 1);
+            setIsOffline(true);
+            setStep(2);
+            Alert.alert(
+              'Offline Check-out Saved',
+              'Network is unavailable. Your check-out was saved offline and will sync when reconnected.'
+            );
+          } else {
+            Alert.alert(
+              'Check-out Failed',
+              apiErr?.message || 'Unable to record check-out.'
+            );
+          }
         }
       }
     } finally {
@@ -160,13 +269,13 @@ export default function HomeScreen() {
 
   const inTime = todayData?.checkInTime
     ? formatTime(todayData.checkInTime)
-    : step >= 1
-    ? '08:52'
+    : offlineTimes.in
+    ? formatTime(offlineTimes.in)
     : '--:--';
   const outTime = todayData?.checkOutTime
     ? formatTime(todayData.checkOutTime)
-    : step === 2
-    ? '17:06'
+    : offlineTimes.out
+    ? formatTime(offlineTimes.out)
     : '--:--';
 
   let worked = '--';
@@ -175,23 +284,24 @@ export default function HomeScreen() {
     const mins = todayData.workMinutes % 60;
     worked = `${hrs}h ${mins}m`;
   } else if (step === 2) {
-    worked = '7h 14m';
+    worked = 'Synced pending';
   } else if (step === 1) {
     worked = 'In progress';
   } else {
     worked = '0h';
   }
 
-  const displayName = user
-    ? `${user.firstName} ${user.lastName}`
-    : 'Aung Ko Ko';
+  const displayName = user ? `${user.firstName} ${user.lastName}` : 'Employee';
   const initials = user
-    ? `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase()
-    : 'AK';
+    ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'E'
+    : 'E';
 
-  const shiftInfoText = todayData?.shift
-    ? `${todayData.shift.shiftName} · ${todayData.shift.startTime} – ${todayData.shift.endTime}`
-    : 'Morning Shift · 09:00 – 17:00 · 60 min break';
+  const activeShift = todayData?.shift || shiftData;
+  const shiftInfoText = activeShift
+    ? `${activeShift.shiftName} · ${activeShift.startTime} – ${activeShift.endTime}`
+    : loading
+    ? 'Loading shift...'
+    : 'Default workspace schedule';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -217,8 +327,19 @@ export default function HomeScreen() {
               onPress={() => router.push('/offline-sync')}
               activeOpacity={0.7}
             >
-              <View style={styles.onlineDot} />
-              <Text style={styles.onlineText}>Online</Text>
+              <View
+                style={[
+                  styles.onlineDot,
+                  isOffline && { backgroundColor: '#D97706' },
+                ]}
+              />
+              <Text style={styles.onlineText}>
+                {isOffline
+                  ? 'Offline'
+                  : pendingOfflineCount > 0
+                  ? `${pendingOfflineCount} pending`
+                  : 'Online'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -348,7 +469,7 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.weekStrip}>
-            {initialWeekDays.map((item, idx) => (
+            {weekDays.map((item, idx) => (
               <View
                 key={idx}
                 style={[
@@ -387,24 +508,26 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Pending Correction Alert Banner */}
-        <View style={styles.alertBanner}>
-          <View style={styles.alertIconCol}>
-            <Ionicons name="information-circle" size={22} color="#8A4B00" />
+        {/* Pending Correction Alert Banner (only shown when server has pending requests) */}
+        {pendingCorrectionsCount > 0 && (
+          <View style={styles.alertBanner}>
+            <View style={styles.alertIconCol}>
+              <Ionicons name="information-circle" size={22} color="#8A4B00" />
+            </View>
+            <View style={styles.alertContent}>
+              <Text style={styles.alertTitle}>Attendance correction pending</Text>
+              <Text style={styles.alertDesc}>
+                You have {pendingCorrectionsCount} pending request{pendingCorrectionsCount === 1 ? '' : 's'} waiting for HR approval.
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.push('/my-requests')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.alertAction}>View status →</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-          <View style={styles.alertContent}>
-            <Text style={styles.alertTitle}>Attendance correction pending</Text>
-            <Text style={styles.alertDesc}>
-              Your request for 20 Nov is waiting for HR approval.
-            </Text>
-            <TouchableOpacity
-              onPress={() => router.push('/my-requests')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.alertAction}>View status →</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

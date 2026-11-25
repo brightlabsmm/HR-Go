@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,11 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
 import { attendanceApi } from '../services/api/attendanceApi';
+import {
+  formatTime,
+  localDateTimeToISO,
+  toLocalDateString,
+} from '../utils/dateTime';
 
 export default function CorrectionRequestScreen() {
   const router = useRouter();
@@ -26,49 +31,91 @@ export default function CorrectionRequestScreen() {
   const [requestType, setRequestType] = useState<'corr' | 'late'>(
     params.type === 'late' ? 'late' : 'corr'
   );
-  const [date, setDate] = useState(params.date || '2026-11-20');
-  const [checkIn, setCheckIn] = useState('08:56');
-  const [checkOut, setCheckOut] = useState('17:00');
-  const [reason, setReason] = useState(
-    'I arrived at 08:56 but the app could not reach the server until 09:21.'
+  const [recordId, setRecordId] = useState(params.attendanceRecordId || '');
+  const [recordedTimesLabel, setRecordedTimesLabel] = useState(
+    params.recordedTimes || ''
   );
+  const [date, setDate] = useState(params.date || toLocalDateString(new Date()));
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
 
+  // When opened directly without an explicit attendanceRecordId, resolve a real record for the selected date.
+  useEffect(() => {
+    if (params.attendanceRecordId) return;
+    let active = true;
+    void (async () => {
+      try {
+        const res = await attendanceApi.getHistory({
+          startDate: date,
+          endDate: date,
+          pageSize: 1,
+        });
+        const match = res?.items?.[0];
+        if (!active) return;
+        if (match) {
+          setRecordId(match.id);
+          setRecordedTimesLabel(
+            `In ${formatTime(match.checkInTime)} · Out ${formatTime(match.checkOutTime)}`
+          );
+        } else {
+          setRecordId('');
+          setRecordedTimesLabel('');
+        }
+      } catch {
+        if (!active) return;
+        setRecordId('');
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [date, params.attendanceRecordId]);
+
   const handleSubmit = async () => {
+    if (!recordId) {
+      Alert.alert(
+        'No Attendance Record',
+        'Select an attendance date with an existing attendance record to submit a correction.'
+      );
+      return;
+    }
     if (!reason.trim()) {
       Alert.alert('Required Field', 'Please provide a reason for your correction request.');
       return;
     }
 
+    const checkInISO = checkIn.trim() ? localDateTimeToISO(date, checkIn) : undefined;
+    const checkOutISO = checkOut.trim() ? localDateTimeToISO(date, checkOut) : undefined;
+    if (checkIn.trim() && !checkInISO) {
+      Alert.alert('Invalid Check-in Time', 'Please use YYYY-MM-DD for date and HH:MM for check-in time.');
+      return;
+    }
+    if (checkOut.trim() && !checkOutISO) {
+      Alert.alert('Invalid Check-out Time', 'Please use YYYY-MM-DD for date and HH:MM for check-out time.');
+      return;
+    }
+    if (!checkInISO && !checkOutISO) {
+      Alert.alert('Requested Time Required', 'Enter at least a requested check-in or check-out time.');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const recordId =
-        params.attendanceRecordId || 'a0000000-0000-0000-0000-000000000001';
-
-      // Parse dates into ISO strings if needed
-      const checkInISO = `${date}T${checkIn}:00Z`;
-      const checkOutISO = `${date}T${checkOut}:00Z`;
-
       await attendanceApi.submitCorrection({
         attendanceRecordId: recordId,
-        requestedCheckInTime: checkInISO,
-        requestedCheckOutTime: checkOutISO,
+        requestedCheckInTime: checkInISO || undefined,
+        requestedCheckOutTime: checkOutISO || undefined,
         reason: reason.trim(),
       });
 
       setSent(true);
     } catch (err: any) {
-      // If backend reports an error or record not found, still give feedback
       Alert.alert(
-        'Submission Note',
-        err.message || 'Unable to submit to server. Saved locally as demo request.',
-        [
-          {
-            text: 'OK',
-            onPress: () => setSent(true),
-          },
-        ]
+        'Submission Failed',
+        err.message || 'Unable to submit correction request. Please try again.'
       );
     } finally {
       setSubmitting(false);
@@ -150,7 +197,7 @@ export default function CorrectionRequestScreen() {
           <View style={styles.recordedStrip}>
             <Text style={styles.recordedLabel}>Recorded</Text>
             <Text style={styles.recordedValue}>
-              {params.recordedTimes || 'In 09:21 · Out 17:00'}
+              {recordedTimesLabel || 'No attendance record found for this date'}
             </Text>
           </View>
 
