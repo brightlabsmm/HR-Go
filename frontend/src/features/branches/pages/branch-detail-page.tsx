@@ -12,6 +12,7 @@ import { NotFoundState } from "@/components/common/not-found-state"
 import { PageHeader } from "@/components/common/page-header"
 import { ProfileSummaryCard } from "@/components/common/profile-summary-card"
 import { StatusBadge } from "@/components/common/status-badge"
+import { BranchOperatingHoursSection } from "@/features/branches/components/branch-operating-hours-section"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import {
   useBranchQuery,
@@ -114,6 +115,7 @@ export function BranchDetailPage() {
               <DetailList columns={2} items={identityItems} />
             </section>
           )}
+          {branch && <BranchOperatingHoursSection branchId={branch.id} />}
         </div>
       </div>
       <ConfirmDialog

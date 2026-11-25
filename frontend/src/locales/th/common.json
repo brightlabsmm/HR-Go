@@ -10,6 +10,8 @@
     "roles": "บทบาท",
     "permissions": "สิทธิ์",
     "positions": "ตำแหน่ง",
+    "attendance_imports": "นำเข้า/ส่งออกเวลาทำงาน",
+    "audit_logs": "บันทึกการตรวจสอบ",
     "organization_settings": "การตั้งค่าองค์กร",
     "account": "บัญชีของฉัน"
   },

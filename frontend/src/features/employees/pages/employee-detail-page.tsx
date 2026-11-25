@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { usePermissions } from "@/shared/hooks/use-permissions"
+import { EmployeeLifecycleSections } from "@/features/employees/components/employee-lifecycle-sections"
 import {
   useChangePositionMutation,
   useDeleteEmployeeMutation,
@@ -334,6 +335,7 @@ export function EmployeeDetailPage() {
               </section>
             </>
           )}
+          {employee && <EmployeeLifecycleSections employeeId={employee.id} />}
         </div>
       </div>
 

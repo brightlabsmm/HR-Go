@@ -10,6 +10,8 @@
     "roles": "Role များ",
     "permissions": "Permission များ",
     "positions": "ရာထူးများ",
+    "attendance_imports": "ရုံးတက်ချိန် CSV သွင်း/ထုတ်",
+    "audit_logs": "Audit မှတ်တမ်းများ",
     "organization_settings": "အဖွဲ့အစည်း ဆက်တင်များ",
     "account": "ကျွန်ုပ်၏ account"
   },

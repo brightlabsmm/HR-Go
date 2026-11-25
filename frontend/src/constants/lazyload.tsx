@@ -168,3 +168,13 @@ export const AttendanceListPage = pageLoader(
   () => import("@/features/attendance/pages/attendance-list-page"),
   "AttendanceListPage"
 )
+
+export const AttendanceImportPage = pageLoader(
+  () => import("@/features/attendance-imports/pages/attendance-import-page"),
+  "AttendanceImportPage"
+)
+
+export const AuditLogListPage = pageLoader(
+  () => import("@/features/audit-logs/pages/audit-log-list-page"),
+  "AuditLogListPage"
+)
