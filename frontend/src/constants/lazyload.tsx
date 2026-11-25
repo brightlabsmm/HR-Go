@@ -120,3 +120,51 @@ export const UserEditPage = pageLoader(
   () => import("@/features/users/pages/user-edit-page"),
   "UserEditPage"
 )
+
+export const EmployeeListPage = pageLoader(
+  () => import("@/features/employees/pages/employee-list-page"),
+  "EmployeeListPage"
+)
+export const EmployeeCreatePage = pageLoader(
+  () => import("@/features/employees/pages/employee-form-page"),
+  "EmployeeFormPage"
+)
+export const EmployeeDetailPage = pageLoader(
+  () => import("@/features/employees/pages/employee-detail-page"),
+  "EmployeeDetailPage"
+)
+export const EmployeeEditPage = pageLoader(
+  () => import("@/features/employees/pages/employee-form-page"),
+  "EmployeeFormPage"
+)
+
+export const ShiftListPage = pageLoader(
+  () => import("@/features/shifts/pages/shift-list-page"),
+  "ShiftListPage"
+)
+export const ShiftCreatePage = pageLoader(
+  () => import("@/features/shifts/pages/shift-form-page"),
+  "ShiftFormPage"
+)
+export const ShiftEditPage = pageLoader(
+  () => import("@/features/shifts/pages/shift-form-page"),
+  "ShiftFormPage"
+)
+
+export const HolidayListPage = pageLoader(
+  () => import("@/features/holidays/pages/holiday-list-page"),
+  "HolidayListPage"
+)
+export const HolidayCreatePage = pageLoader(
+  () => import("@/features/holidays/pages/holiday-form-page"),
+  "HolidayFormPage"
+)
+export const HolidayEditPage = pageLoader(
+  () => import("@/features/holidays/pages/holiday-form-page"),
+  "HolidayFormPage"
+)
+
+export const AttendanceListPage = pageLoader(
+  () => import("@/features/attendance/pages/attendance-list-page"),
+  "AttendanceListPage"
+)

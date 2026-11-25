@@ -1,0 +1,53 @@
+{
+  "title": "Holidays",
+  "subtitle": "Manage company holidays, public observances, and calendar schedules",
+  "add": "Add Holiday",
+  "all_types": "All types",
+  "all_branches": "All branches",
+  "tab_table": "List View",
+  "tab_calendar": "Calendar View",
+  "columns": {
+    "name": "Holiday Name",
+    "dates": "Dates",
+    "type": "Type",
+    "paid": "Paid Holiday",
+    "branch": "Branch",
+    "actions": "Actions"
+  },
+  "sections": {
+    "details": "Holiday Details"
+  },
+  "form": {
+    "create_title": "Add Holiday",
+    "edit_title": "Edit Holiday",
+    "name": "Holiday Name",
+    "start_date": "Start Date",
+    "end_date": "End Date",
+    "branch": "Branch (Optional)",
+    "type": "Holiday Type",
+    "is_paid": "Paid Holiday",
+    "cancel": "Cancel",
+    "save": "Save Changes",
+    "create": "Save Holiday",
+    "errors": {
+      "name": "Holiday name is required",
+      "start_date": "Start date is required",
+      "end_date": "End date is required"
+    }
+  },
+  "types": {
+    "PUBLIC": "Public Holiday",
+    "COMPANY": "Company Holiday",
+    "OPTIONAL": "Optional Holiday"
+  },
+  "empty": {
+    "title": "No holidays scheduled",
+    "description": "Add holidays to display on the company attendance calendar."
+  },
+  "delete": {
+    "title": "Delete Holiday",
+    "description": "Are you sure you want to delete {{name}}?",
+    "confirm": "Delete Holiday",
+    "success": "Holiday deleted successfully"
+  }
+}

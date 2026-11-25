@@ -1,0 +1,75 @@
+{
+  "title": "Attendance",
+  "subtitle": "Track daily attendance, shift clock-ins, work hours, and correction requests",
+  "check_in": "Check In",
+  "check_out": "Check Out",
+  "manual_entry": "Manual Attendance Entry",
+  "tab_records": "Attendance Records",
+  "tab_corrections": "Correction Requests",
+  "metrics": {
+    "present": "Present",
+    "late": "Late",
+    "absent": "Absent",
+    "half_day": "Half Day",
+    "total_worked": "Total Hours Worked",
+    "total_late": "Total Late Minutes"
+  },
+  "columns": {
+    "employee": "Employee",
+    "date": "Date",
+    "shift": "Shift",
+    "check_in": "Check In",
+    "check_out": "Check Out",
+    "worked": "Worked Time",
+    "status": "Status",
+    "source": "Source",
+    "actions": "Actions"
+  },
+  "corrections": {
+    "title": "Attendance Corrections",
+    "subtitle": "Review and approve employee time adjustment requests",
+    "submit": "Submit Correction",
+    "review": "Review Request",
+    "approve": "Approve Request",
+    "reject": "Reject Request",
+    "decision": "Decision",
+    "rejection_reason": "Reason for Rejection",
+    "columns": {
+      "employee": "Employee",
+      "date": "Date",
+      "requested_in": "Requested Check-in",
+      "requested_out": "Requested Check-out",
+      "reason": "Employee Reason",
+      "status": "Status",
+      "reviewer": "Reviewer"
+    }
+  },
+  "status": {
+    "PRESENT": "Present",
+    "ABSENT": "Absent",
+    "LATE": "Late",
+    "HALF_DAY": "Half Day",
+    "ON_LEAVE": "On Leave",
+    "HOLIDAY": "Holiday"
+  },
+  "correction_status": {
+    "PENDING": "Pending Review",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected"
+  },
+  "form": {
+    "employee": "Employee",
+    "date": "Attendance Date",
+    "shift": "Shift (Optional)",
+    "check_in": "Check In Time",
+    "check_out": "Check Out Time",
+    "status": "Status",
+    "remarks": "Remarks / Notes",
+    "cancel": "Cancel",
+    "save": "Record Attendance"
+  },
+  "empty": {
+    "title": "No attendance records found",
+    "description": "Daily attendance punch-ins and manual records will appear here."
+  }
+}

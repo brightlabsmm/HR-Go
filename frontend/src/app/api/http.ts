@@ -29,14 +29,15 @@ export async function unwrapPage<T>(
 ): Promise<Paginated<T>> {
   const response = await request
   const body = response.data
+  const p = body.pagination
 
   return {
     items: body.items ?? [],
     meta: {
-      page: body.page ?? EMPTY_META.page,
-      pageSize: body.pageSize ?? EMPTY_META.pageSize,
-      totalItems: body.totalItems ?? EMPTY_META.totalItems,
-      totalPages: body.totalPages ?? EMPTY_META.totalPages,
+      page: body.page ?? p?.page ?? EMPTY_META.page,
+      pageSize: body.pageSize ?? p?.pageSize ?? EMPTY_META.pageSize,
+      totalItems: body.totalItems ?? p?.total ?? EMPTY_META.totalItems,
+      totalPages: body.totalPages ?? p?.totalPages ?? EMPTY_META.totalPages,
     },
   }
 }
