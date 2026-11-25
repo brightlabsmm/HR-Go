@@ -10,20 +10,41 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
 import { Badge, StatusType } from '../components/Badge';
+import { formatFullDate, toLocalDateString } from '../utils/dateTime';
 
 export default function AttendanceDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     id?: string;
+    rawDate?: string;
     day?: string;
     dow?: string;
     date?: string;
     status?: string;
     times?: string;
+    shiftLabel?: string;
+    workedLabel?: string;
+    checkInTime?: string;
+    checkOutTime?: string;
+    lateMinutes?: string;
+    earlyMinutes?: string;
+    source?: string;
+    branchName?: string;
+    notes?: string;
   }>();
 
-  const titleDate = params.date || 'Friday, 20 Nov 2026';
-  const status = (params.status || 'LATE') as StatusType;
+  const titleDate = params.date || formatFullDate(params.rawDate);
+  const status = (params.status || 'PRESENT') as StatusType;
+  const shiftLabel = params.shiftLabel || 'Workspace Default Shift';
+  const workedLabel = params.workedLabel || '—';
+  const inTime = params.checkInTime || '--:--';
+  const outTime = params.checkOutTime || '--:--';
+  const lateMins = Number(params.lateMinutes || '0');
+  const earlyMins = Number(params.earlyMinutes || '0');
+  const sourceLabel = params.source || 'Mobile';
+  const branchLabel = params.branchName || '—';
+  const notesText = params.notes || 'No remarks recorded for this day.';
+  const rawDate = params.rawDate || toLocalDateString(new Date());
 
   return (
     <View style={styles.container}>
@@ -47,9 +68,9 @@ export default function AttendanceDetailScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View>
-              <Text style={styles.shiftLabel}>Morning Shift · 09:00 – 17:00</Text>
-              <Text style={styles.workedHours}>6h 39m</Text>
-              <Text style={styles.workedSubtitle}>worked after 60 min break</Text>
+              <Text style={styles.shiftLabel}>{shiftLabel}</Text>
+              <Text style={styles.workedHours}>{workedLabel}</Text>
+              <Text style={styles.workedSubtitle}>Recorded daily attendance</Text>
             </View>
             <Badge status={status} />
           </View>
@@ -63,9 +84,9 @@ export default function AttendanceDetailScreen() {
                 <View style={styles.timelineLine} />
               </View>
               <View style={styles.timelineEventContent}>
-                <Text style={styles.eventTitle}>Checked in · 09:21</Text>
+                <Text style={styles.eventTitle}>Checked in · {inTime}</Text>
                 <Text style={styles.eventSubtitle}>
-                  Mobile app · this device · 21 min after shift start
+                  {lateMins > 0 ? `${sourceLabel} · ${lateMins} min late` : `${sourceLabel} · on time`}
                 </Text>
               </View>
             </View>
@@ -76,8 +97,14 @@ export default function AttendanceDetailScreen() {
                 <View style={[styles.timelineDot, { backgroundColor: '#12805C' }]} />
               </View>
               <View style={styles.timelineEventContent}>
-                <Text style={styles.eventTitle}>Checked out · 17:00</Text>
-                <Text style={styles.eventSubtitle}>Mobile app · on time</Text>
+                <Text style={styles.eventTitle}>Checked out · {outTime}</Text>
+                <Text style={styles.eventSubtitle}>
+                  {outTime === '--:--'
+                    ? 'Not yet recorded'
+                    : earlyMins > 0
+                    ? `${sourceLabel} · ${earlyMins} min early`
+                    : `${sourceLabel} · on time`}
+                </Text>
               </View>
             </View>
           </View>
@@ -86,19 +113,21 @@ export default function AttendanceDetailScreen() {
           <View style={styles.grid}>
             <View style={styles.gridCell}>
               <Text style={styles.gridLabel}>Late</Text>
-              <Text style={[styles.gridValue, { color: colors.status.lateText }]}>21 min</Text>
+              <Text style={[styles.gridValue, lateMins > 0 && { color: colors.status.lateText }]}>
+                {lateMins} min
+              </Text>
             </View>
             <View style={styles.gridCell}>
               <Text style={styles.gridLabel}>Early leave</Text>
-              <Text style={styles.gridValue}>0 min</Text>
+              <Text style={styles.gridValue}>{earlyMins} min</Text>
             </View>
             <View style={styles.gridCell}>
               <Text style={styles.gridLabel}>Source</Text>
-              <Text style={styles.gridValue}>Mobile</Text>
+              <Text style={styles.gridValue}>{sourceLabel}</Text>
             </View>
             <View style={styles.gridCell}>
               <Text style={styles.gridLabel}>Branch</Text>
-              <Text style={styles.gridValue}>Yangon</Text>
+              <Text style={styles.gridValue}>{branchLabel}</Text>
             </View>
           </View>
         </View>
@@ -106,7 +135,7 @@ export default function AttendanceDetailScreen() {
         {/* Remarks Section */}
         <View style={styles.remarksCard}>
           <Text style={styles.remarksTitle}>Remarks</Text>
-          <Text style={styles.remarksText}>No remarks recorded for this day.</Text>
+          <Text style={styles.remarksText}>{notesText}</Text>
         </View>
 
         {/* Action Buttons */}
@@ -122,7 +151,7 @@ export default function AttendanceDetailScreen() {
               pathname: '/correction-request',
               params: {
                 type: 'corr',
-                date: params.day ? `2026-11-${String(params.day).padStart(2, '0')}` : '2026-11-20',
+                date: rawDate,
                 attendanceRecordId: params.id,
                 recordedTimes: params.times,
               },
@@ -139,7 +168,7 @@ export default function AttendanceDetailScreen() {
               pathname: '/correction-request',
               params: {
                 type: 'late',
-                date: params.day ? `2026-11-${String(params.day).padStart(2, '0')}` : '2026-11-20',
+                date: rawDate,
                 attendanceRecordId: params.id,
                 recordedTimes: params.times,
               },

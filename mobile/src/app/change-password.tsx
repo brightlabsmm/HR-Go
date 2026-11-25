@@ -13,13 +13,15 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
 import { authApi } from '../services/api/authApi';
+import { useAuth } from '../context/AuthContext';
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
+  const { mustChangePassword, clearMustChangePassword, logout } = useAuth();
 
-  const [currentPw, setCurrentPw] = useState('Password@123');
-  const [newPw, setNewPw] = useState('Yangon@2026');
-  const [confirmPw, setConfirmPw] = useState('Yangon@2026');
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
 
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
@@ -66,8 +68,22 @@ export default function ChangePasswordScreen() {
         newPassword: newPw,
       });
 
+      const wasMandatory = mustChangePassword;
+      if (wasMandatory) {
+        await clearMustChangePassword();
+      }
+
       Alert.alert('Success', 'Your password has been updated successfully.', [
-        { text: 'OK', onPress: () => router.back() },
+        {
+          text: 'OK',
+          onPress: () => {
+            if (wasMandatory) {
+              router.replace('/(tabs)');
+            } else {
+              router.back();
+            }
+          },
+        },
       ]);
     } catch (err: any) {
       const msg = err.message || 'Failed to update password. Please check your current password.';
@@ -82,13 +98,25 @@ export default function ChangePasswordScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.primary} />
-        </TouchableOpacity>
+        {!mustChangePassword ? (
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back" size={22} color={colors.primary} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => {
+              void logout().then(() => router.replace('/(auth)/sign-in'));
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="log-out-outline" size={22} color={colors.primary} />
+          </TouchableOpacity>
+        )}
         <Text style={styles.headerTitle}>Change password</Text>
       </View>
 

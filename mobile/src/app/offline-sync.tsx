@@ -13,12 +13,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
 import { Badge, StatusType } from '../components/Badge';
 import { offlineQueue, StoredOfflineEvent } from '../services/offline/offlineQueue';
+import { formatFullDate } from '../utils/dateTime';
 
 export default function OfflineSyncScreen() {
   const router = useRouter();
   const [events, setEvents] = useState<StoredOfflineEvent[]>([]);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
-  const [checkedOutOffline, setCheckedOutOffline] = useState<boolean>(false);
 
   const loadEvents = useCallback(async () => {
     const list = await offlineQueue.getEvents();
@@ -26,19 +26,18 @@ export default function OfflineSyncScreen() {
   }, []);
 
   useEffect(() => {
-    loadEvents();
+    void loadEvents();
   }, [loadEvents]);
 
-  const handleCheckOutOffline = async () => {
+  const handleQueueOffline = async (type: 'CHECK_IN' | 'CHECK_OUT') => {
     try {
-      await offlineQueue.addPunch('CHECK_OUT', {
-        notes: 'Offline check-out on this device',
+      await offlineQueue.addPunch(type, {
+        notes: `Offline ${type === 'CHECK_IN' ? 'check-in' : 'check-out'} on this device`,
       });
-      setCheckedOutOffline(true);
       await loadEvents();
       Alert.alert(
         'Offline Action Stored',
-        'Check-out has been securely timestamped and stored offline on this device.'
+        `${type === 'CHECK_IN' ? 'Check-in' : 'Check-out'} has been timestamped and stored offline on this device.`
       );
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to save offline punch.');
@@ -130,11 +129,11 @@ export default function OfflineSyncScreen() {
         <View style={styles.card}>
           <View style={styles.cardTopRow}>
             <View>
-              <Text style={styles.shiftMeta}>Today · Morning Shift</Text>
+              <Text style={styles.shiftMeta}>{formatFullDate(new Date().toISOString())}</Text>
               <Text style={styles.punchStatus}>
-                {checkedOutOffline
-                  ? 'Checked out offline'
-                  : 'Checked in 08:52 (offline)'}
+                {pendingCount > 0
+                  ? `${pendingCount} offline punch${pendingCount === 1 ? '' : 'es'} waiting to sync`
+                  : 'No pending offline punches'}
               </Text>
             </View>
             <View style={styles.onDeviceBadge}>
@@ -142,22 +141,25 @@ export default function OfflineSyncScreen() {
             </View>
           </View>
 
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              checkedOutOffline && { backgroundColor: '#8A94AD' },
-            ]}
-            activeOpacity={0.8}
-            onPress={handleCheckOutOffline}
-            disabled={checkedOutOffline}
-          >
-            <Text style={styles.actionButtonText}>
-              {checkedOutOffline ? 'Offline Check-out Complete' : 'Check out offline'}
-            </Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity
+              style={[styles.actionButton, { flex: 1 }]}
+              activeOpacity={0.8}
+              onPress={() => void handleQueueOffline('CHECK_IN')}
+            >
+              <Text style={styles.actionButtonText}>Queue Check-in</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, { flex: 1 }]}
+              activeOpacity={0.8}
+              onPress={() => void handleQueueOffline('CHECK_OUT')}
+            >
+              <Text style={styles.actionButtonText}>Queue Check-out</Text>
+            </TouchableOpacity>
+          </View>
 
           <Text style={styles.actionCardFootnote}>
-            Actions are time-stamped and stored securely on this phone until they reach HRGo.
+            Actions are time-stamped and stored on this device until synced with HRGo.
           </Text>
         </View>
 
@@ -189,6 +191,14 @@ export default function OfflineSyncScreen() {
         </View>
 
         {/* Sync Queue List */}
+        {events.length === 0 ? (
+          <View style={styles.card}>
+            <Text style={styles.eventTitle}>No queued offline punches</Text>
+            <Text style={styles.eventNote}>
+              Offline check-ins and check-outs will appear here until synced.
+            </Text>
+          </View>
+        ) : (
         <View style={styles.eventList}>
           {events.map((ev) => {
             const isConflict = ev.status === 'CONFLICT';
@@ -233,6 +243,7 @@ export default function OfflineSyncScreen() {
             );
           })}
         </View>
+        )}
 
         {/* Conflict Correction CTA */}
         <TouchableOpacity

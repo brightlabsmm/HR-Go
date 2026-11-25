@@ -1,0 +1,61 @@
+{
+  "title": "节假日",
+  "subtitle": "管理公司假期、法定节假日和日历安排",
+  "add": "新增节假日",
+  "search_placeholder": "搜索节假日...",
+  "all_types": "全部类型",
+  "all_branches": "全部机构",
+  "all_branches_label": "全部机构",
+  "all_branches_option": "全部机构（工作区通用）",
+  "tab_table": "列表视图",
+  "tab_calendar": "日历视图",
+  "today": "今天",
+  "paid_yes": "带薪",
+  "paid_no": "无薪",
+  "columns": {
+    "name": "节假日名称",
+    "dates": "日期",
+    "type": "类型",
+    "paid": "带薪假期",
+    "branch": "所属分支",
+    "actions": "操作"
+  },
+  "sections": {
+    "details": "节假日详情"
+  },
+  "form": {
+    "create_title": "新增节假日",
+    "edit_title": "编辑节假日",
+    "name": "节假日名称",
+    "start_date": "开始日期",
+    "end_date": "结束日期",
+    "branch": "所属分支（可选）",
+    "type": "假期类型",
+    "is_paid": "带薪假期",
+    "cancel": "取消",
+    "save": "保存更改",
+    "create": "保存节假日",
+    "errors": {
+      "name": "请输入节假日名称。",
+      "name_max": "节假日名称不能超过 150 个字符。",
+      "start_date": "请选择开始日期。",
+      "end_date": "请选择结束日期。",
+      "end_before_start": "结束日期不能早于开始日期。"
+    }
+  },
+  "types": {
+    "PUBLIC": "法定节假日",
+    "COMPANY": "公司假期",
+    "OPTIONAL": "可选假期"
+  },
+  "empty": {
+    "title": "暂无节假日",
+    "description": "添加节假日以显示在公司考勤日历中。"
+  },
+  "delete": {
+    "title": "删除节假日",
+    "description": "确定要删除 {{name}} 吗？",
+    "confirm": "删除节假日",
+    "success": "节假日已删除。"
+  }
+}

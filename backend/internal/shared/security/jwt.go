@@ -90,7 +90,16 @@ func (m *TokenManager) GenerateWorkspaceToken(accountID, orgID, empID, empCode, 
 
 // GenerateWorkspaceTokenWithSession creates a JWT for an organization account with a session ID.
 func (m *TokenManager) GenerateWorkspaceTokenWithSession(sessionID, accountID, orgID, empID, empCode, branchID, deptID string, perms []string) (string, int64, error) {
-	exp := time.Now().Add(m.expiry)
+	return m.GenerateWorkspaceTokenWithExpiry(sessionID, accountID, orgID, empID, empCode, branchID, deptID, perms, m.expiry)
+}
+
+// GenerateWorkspaceTokenWithExpiry creates a JWT for an organization account with a custom expiry duration.
+func (m *TokenManager) GenerateWorkspaceTokenWithExpiry(sessionID, accountID, orgID, empID, empCode, branchID, deptID string, perms []string, expiry time.Duration) (string, int64, error) {
+	if expiry <= 0 {
+		expiry = m.expiry
+	}
+	now := time.Now()
+	exp := now.Add(expiry)
 	claims := Claims{
 		UserID:         accountID,
 		AuthContext:    ContextWorkspace,
@@ -105,7 +114,7 @@ func (m *TokenManager) GenerateWorkspaceTokenWithSession(sessionID, accountID, o
 			ID:        sessionID,
 			Subject:   accountID,
 			ExpiresAt: jwt.NewNumericDate(exp),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			IssuedAt:  jwt.NewNumericDate(now),
 		},
 	}
 
@@ -114,7 +123,7 @@ func (m *TokenManager) GenerateWorkspaceTokenWithSession(sessionID, accountID, o
 	if err != nil {
 		return "", 0, fmt.Errorf("sign workspace token: %w", err)
 	}
-	return signed, int64(m.expiry.Seconds()), nil
+	return signed, int64(expiry.Seconds()), nil
 }
 
 // ValidateToken parses and validates a JWT token.

@@ -14,10 +14,28 @@ import (
 
 type mockEmployeeRepo struct {
 	repository.Repository
-	employees []models.Employee
-	profiles  map[string]models.EmployeeProfile
-	accounts  []models.OrganizationAccount
-	err       error
+	employees    []models.Employee
+	profiles     map[string]models.EmployeeProfile
+	accounts     []models.OrganizationAccount
+	rejectBranch bool
+	rejectRole   bool
+	err          error
+}
+
+func (m *mockEmployeeRepo) ValidateBranch(ctx context.Context, orgID, branchID string) (bool, error) {
+	return !m.rejectBranch, nil
+}
+
+func (m *mockEmployeeRepo) ValidateDepartment(ctx context.Context, orgID, departmentID string) (bool, error) {
+	return true, nil
+}
+
+func (m *mockEmployeeRepo) ValidatePosition(ctx context.Context, orgID, positionID string) (bool, error) {
+	return true, nil
+}
+
+func (m *mockEmployeeRepo) ValidateRole(ctx context.Context, orgID, roleID string) (bool, error) {
+	return !m.rejectRole, nil
 }
 
 func (m *mockEmployeeRepo) GetNextEmployeeCode(ctx context.Context, orgID string) (string, error) {
@@ -84,12 +102,50 @@ func (m *mockEmployeeRepo) List(ctx context.Context, orgID string, q request.Lis
 	return m.employees, int64(len(m.employees)), nil
 }
 
-func (m *mockEmployeeRepo) Update(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile, roleID *string) error {
+func (m *mockEmployeeRepo) Update(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile, roleID *string, fallbackPassHash string) error {
 	return nil
 }
 
 func (m *mockEmployeeRepo) SoftDelete(ctx context.Context, orgID, id string) error {
 	return nil
+}
+
+func TestEmployeeService_RejectsCrossTenantReferences(t *testing.T) {
+	email := "cross@example.com"
+	branchID := "00000000-0000-0000-0000-000000000001"
+	deptID := "00000000-0000-0000-0000-000000000002"
+	posID := "00000000-0000-0000-0000-000000000003"
+	roleID := "00000000-0000-0000-0000-000000000004"
+	dob := "1995-05-05"
+	gender := "FEMALE"
+	nationality := "MM"
+	emergency := "09123456"
+
+	req := request.CreateEmployeeRequest{
+		FirstName:        "Hla",
+		LastName:         "Myint",
+		Email:            &email,
+		BranchID:         &branchID,
+		DepartmentID:     &deptID,
+		PositionID:       &posID,
+		RoleID:           &roleID,
+		DateOfBirth:      &dob,
+		Gender:           &gender,
+		Nationality:      &nationality,
+		EmergencyContact: &emergency,
+	}
+
+	repo := &mockEmployeeRepo{rejectBranch: true}
+	svc := service.New(repo)
+	if _, err := svc.Create(context.Background(), "org-1", req); err == nil {
+		t.Fatalf("expected validation error for cross-tenant branchId")
+	}
+
+	repo2 := &mockEmployeeRepo{rejectRole: true}
+	svc2 := service.New(repo2)
+	if _, err := svc2.Create(context.Background(), "org-1", req); err == nil {
+		t.Fatalf("expected validation error for cross-tenant roleId")
+	}
 }
 
 func TestEmployeeService_CreateAndList(t *testing.T) {

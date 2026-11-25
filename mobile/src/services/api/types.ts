@@ -42,6 +42,23 @@ export interface MobileDeviceResponse {
   status: string;
 }
 
+export interface MobileEmployeePersonalProfile {
+  dateOfBirth?: string;
+  gender?: string;
+  nationality?: string;
+  maritalStatus?: string;
+  address?: string;
+  emergencyContact?: string;
+}
+
+export interface MobilePositionHistoryItem {
+  id: string;
+  oldPositionTitle?: string;
+  newPositionTitle: string;
+  effectiveDate: string;
+  remarks?: string;
+}
+
 export interface MobileUserProfile {
   accountId: string;
   employeeId: string;
@@ -61,6 +78,8 @@ export interface MobileUserProfile {
   organization: MobileOrgInfo;
   roles: string[];
   permissions: string[];
+  profile?: MobileEmployeePersonalProfile;
+  positionHistory?: MobilePositionHistoryItem[];
 }
 
 export interface MobileLoginResponse {
@@ -84,6 +103,7 @@ export interface MobileShiftResponse {
   shiftName: string;
   startTime: string;
   endTime: string;
+  breakMinutes: number;
   gracePeriodMinutes: number;
   workDays: string[];
 }
@@ -116,6 +136,7 @@ export interface AttendanceRecordResponse {
   organizationId: string;
   employeeId: string;
   shiftId?: string;
+  shiftName?: string;
   attendanceDate: string;
   status: string;
   checkInTime?: string;
@@ -178,7 +199,10 @@ export interface CorrectionResponse {
   id: string;
   organizationId: string;
   employeeId: string;
+  employeeCode?: string;
+  employeeName?: string;
   attendanceRecordId: string;
+  attendanceDate?: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   requestedCheckInTime?: string;
   requestedCheckOutTime?: string;
@@ -186,6 +210,7 @@ export interface CorrectionResponse {
   originalCheckOutTime?: string;
   reason: string;
   reviewerId?: string;
+  reviewerName?: string;
   reviewedAt?: string;
   reviewerNotes?: string;
   createdAt: string;

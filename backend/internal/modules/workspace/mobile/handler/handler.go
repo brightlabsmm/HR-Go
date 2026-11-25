@@ -21,9 +21,7 @@ func New(svc service.Service) *Handler {
 func (h *Handler) Login(c *gin.Context) {
 	var req request.MobileLoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		responses.Fail(c, apperrors.ValidationFailed([]apperrors.FieldIssue{
-			{Field: "credentials", Message: "Identifier, password, and deviceIdentifier are required."},
-		}))
+		responses.Fail(c, apperrors.BindError(err))
 		return
 	}
 
@@ -64,12 +62,12 @@ func (h *Handler) ChangePassword(c *gin.Context) {
 
 func (h *Handler) GetProfile(c *gin.Context) {
 	claims := security.GetClaims(c)
-	if claims == nil || claims.OrganizationID == "" || claims.EmployeeID == "" {
+	if claims == nil || claims.UserID == "" || claims.OrganizationID == "" || claims.EmployeeID == "" {
 		responses.Fail(c, apperrors.Unauthorized("Unauthorized"))
 		return
 	}
 
-	res, appErr := h.svc.GetProfile(c.Request.Context(), claims.OrganizationID, claims.EmployeeID)
+	res, appErr := h.svc.GetProfile(c.Request.Context(), claims.UserID, claims.OrganizationID, claims.EmployeeID)
 	if appErr != nil {
 		responses.Fail(c, appErr)
 		return

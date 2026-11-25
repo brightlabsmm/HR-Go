@@ -2,8 +2,17 @@
   "title": "Shifts",
   "subtitle": "Configure working hours, break durations, and shift assignments",
   "add": "Add Shift",
+  "search_placeholder": "Search shifts...",
   "all_status": "All status",
   "all_branches": "All branches",
+  "all_branches_label": "All Branches",
+  "all_branches_option": "All branches (Workspace-wide)",
+  "default_badge": "Default",
+  "mins_unit": "{{count}} mins",
+  "status": {
+    "ACTIVE": "Active",
+    "INACTIVE": "Inactive"
+  },
   "columns": {
     "name": "Shift Name",
     "timing": "Hours",
@@ -31,9 +40,11 @@
     "save": "Save Changes",
     "create": "Create Shift",
     "errors": {
-      "name": "Shift name is required",
-      "start_time": "Start time is required",
-      "end_time": "End time is required"
+      "name": "Shift name is required.",
+      "name_max": "Shift name must not exceed 100 characters.",
+      "start_time": "Start time is required in HH:MM format.",
+      "end_time": "End time is required in HH:MM format.",
+      "break_minutes": "Break minutes must be between 0 and 480."
     }
   },
   "assignments": {
@@ -54,6 +65,6 @@
     "title": "Delete Shift",
     "description": "Are you sure you want to delete {{name}}?",
     "confirm": "Delete Shift",
-    "success": "Shift deleted successfully"
+    "success": "Shift deleted successfully."
   }
 }

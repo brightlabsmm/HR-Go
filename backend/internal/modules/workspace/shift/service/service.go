@@ -73,6 +73,18 @@ func (s *service) CreateShift(ctx context.Context, orgID string, req request.Cre
 		return nil, apperrors.ValidationFailed(validationIssues)
 	}
 
+	if req.BranchID != nil && strings.TrimSpace(*req.BranchID) != "" {
+		ok, err := s.repo.ValidateBranch(ctx, orgID, strings.TrimSpace(*req.BranchID))
+		if err != nil {
+			return nil, apperrors.Internal()
+		}
+		if !ok {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "branchId", Message: "Selected branch was not found in this organization or is inactive."},
+			})
+		}
+	}
+
 	isDefault := false
 	if req.IsDefault != nil && *req.IsDefault {
 		isDefault = true
@@ -199,7 +211,19 @@ func (s *service) UpdateShift(ctx context.Context, orgID, id string, req request
 	}
 
 	if req.BranchID != nil {
-		shift.BranchID = req.BranchID
+		if strings.TrimSpace(*req.BranchID) != "" {
+			ok, err := s.repo.ValidateBranch(ctx, orgID, strings.TrimSpace(*req.BranchID))
+			if err != nil {
+				return nil, apperrors.Internal()
+			}
+			if !ok {
+				validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "branchId", Message: "Selected branch was not found in this organization or is inactive."})
+			} else {
+				shift.BranchID = req.BranchID
+			}
+		} else {
+			shift.BranchID = nil
+		}
 	}
 
 	if req.Status != nil && *req.Status != "" {
@@ -251,6 +275,16 @@ func (s *service) DeleteShift(ctx context.Context, orgID, id string) *apperrors.
 }
 
 func (s *service) AssignShift(ctx context.Context, orgID, accountID string, req request.AssignShiftRequest) (*response.AssignmentResponse, *apperrors.Error) {
+	empOK, err := s.repo.ValidateEmployee(ctx, orgID, req.EmployeeID)
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+	if !empOK {
+		return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+			{Field: "employeeId", Message: "Employee was not found in this organization."},
+		})
+	}
+
 	shift, err := s.repo.FindShiftByID(ctx, orgID, req.ShiftID)
 	if err != nil {
 		return nil, apperrors.Internal()

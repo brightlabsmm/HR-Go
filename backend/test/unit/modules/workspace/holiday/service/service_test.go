@@ -13,7 +13,12 @@ import (
 
 type mockHolidayRepo struct {
 	repository.Repository
-	holidays []models.Holiday
+	holidays     []models.Holiday
+	rejectBranch bool
+}
+
+func (m *mockHolidayRepo) ValidateBranch(ctx context.Context, orgID, branchID string) (bool, error) {
+	return !m.rejectBranch, nil
 }
 
 func (m *mockHolidayRepo) Create(ctx context.Context, h *models.Holiday) error {

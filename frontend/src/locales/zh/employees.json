@@ -1,0 +1,170 @@
+{
+  "title": "员工管理",
+  "subtitle": "管理员工档案、个人信息及职位变更记录",
+  "add": "新增员工",
+  "all_status": "全部状态",
+  "all_branches": "全部机构",
+  "all_departments": "全部部门",
+  "search_placeholder": "按姓名、工号或邮箱搜索...",
+  "not_found": "未找到该员工。",
+  "select_all": "全选",
+  "select_row": "选择 {{name}}",
+  "selected_one": "已选择 {{count}} 名员工",
+  "selected_other": "已选择 {{count}} 名员工",
+  "clear_selection": "取消选择",
+  "status": {
+    "ACTIVE": "在职",
+    "PROBATION": "试用期",
+    "SUSPENDED": "停职",
+    "TERMINATED": "已离职/辞退",
+    "RESIGNED": "已辞职"
+  },
+  "gender": {
+    "MALE": "男",
+    "FEMALE": "女",
+    "OTHER": "其他"
+  },
+  "marital_status": {
+    "SINGLE": "未婚",
+    "MARRIED": "已婚",
+    "DIVORCED": "离异",
+    "WIDOWED": "丧偶",
+    "OTHER": "其他"
+  },
+  "columns": {
+    "name": "员工",
+    "code": "员工工号",
+    "branch": "所属分支",
+    "department": "部门",
+    "position": "职位",
+    "role": "角色",
+    "status": "状态",
+    "joined": "入职日期",
+    "actions": "操作"
+  },
+  "sections": {
+    "basic": "雇佣信息",
+    "personal": "个人资料",
+    "access": "访问权限",
+    "position_history": "职位变更记录",
+    "shift_assignments": "排班记录"
+  },
+  "history": {
+    "empty": "暂无职位变更记录。",
+    "old_position": "原职位",
+    "new_position": "新职位",
+    "effective_date": "生效日期",
+    "remarks": "备注",
+    "initial": "初始职位"
+  },
+  "shifts": {
+    "empty": "暂无自定义班次，当前使用工作区默认班次。",
+    "shift": "班次",
+    "working_hours": "工作时间",
+    "effective_from": "开始日期",
+    "effective_to": "结束日期",
+    "status": "状态",
+    "ongoing": "长期有效"
+  },
+  "form": {
+    "create_title": "新增员工",
+    "edit_title": "编辑员工",
+    "code": "员工工号",
+    "first_name": "名",
+    "last_name": "姓",
+    "email": "工作邮箱",
+    "phone": "联系电话",
+    "branch": "所属分支",
+    "department": "部门",
+    "position": "职位",
+    "role": "角色",
+    "permissions": "权限列表",
+    "date_of_joining": "入职日期",
+    "employment_status": "在职状态",
+    "date_of_birth": "出生日期",
+    "gender": "性别",
+    "nationality": "国籍",
+    "marital_status": "婚姻状况",
+    "address": "居住地址",
+    "emergency_contact": "紧急联系人",
+    "none": "无",
+    "cancel": "取消",
+    "save": "保存更改",
+    "create": "创建员工",
+    "errors": {
+      "code": "请输入员工工号。",
+      "first_name": "请输入名字。",
+      "first_name_max": "名字不能超过 100 个字符。",
+      "last_name": "请输入姓氏。",
+      "last_name_max": "姓氏不能超过 100 个字符。",
+      "email": "请输入有效的工作邮箱。",
+      "email_required": "请输入工作邮箱。",
+      "branch": "请选择所属分支。",
+      "department": "请选择部门。",
+      "position": "请选择职位。",
+      "role": "请选择角色。",
+      "date_of_birth": "请选择出生日期。",
+      "gender": "请选择性别。",
+      "nationality": "请输入国籍。",
+      "emergency_contact": "请输入紧急联系人。"
+    }
+  },
+  "credentials": {
+    "title": "员工创建成功",
+    "description": "已为 {{name}} 创建账户，请将这些登录凭据分享给该员工。",
+    "employee_code": "员工工号",
+    "temporary_password": "临时密码",
+    "copy": "复制",
+    "copied": "已复制",
+    "copy_all": "复制全部凭据",
+    "copied_all": "全部已复制",
+    "show_password": "显示密码",
+    "hide_password": "隐藏密码",
+    "hint": "员工首次登录时需要修改此临时密码。",
+    "done": "完成"
+  },
+  "change_position": {
+    "button": "晋升 / 调岗",
+    "title": "变更员工职位",
+    "description": "为该员工分配新职位并记录生效日期。",
+    "new_position": "新职位",
+    "position_placeholder": "选择职位",
+    "effective_date": "生效日期",
+    "remarks": "备注 / 说明",
+    "remarks_placeholder": "职位变更原因或说明...",
+    "submit": "更新职位",
+    "success": "职位更新成功。",
+    "errors": {
+      "position": "请选择新职位。",
+      "effective_date": "请选择生效日期。"
+    }
+  },
+  "assign_shift": {
+    "button": "分配班次",
+    "title": "分配班次计划",
+    "description": "为该员工分配排班计划。",
+    "shift": "班次",
+    "shift_placeholder": "选择班次",
+    "effective_from": "开始生效日期",
+    "effective_to": "结束日期（可选）",
+    "reason": "原因",
+    "reason_placeholder": "可选备注或原因...",
+    "submit": "分配班次",
+    "success": "班次分配成功。",
+    "errors": {
+      "shift": "请选择班次。",
+      "effective_from": "请选择开始日期。",
+      "effective_to_order": "结束日期不能早于开始日期。"
+    }
+  },
+  "empty": {
+    "title": "暂无员工",
+    "description": "立即向工作区添加第一位员工。"
+  },
+  "delete": {
+    "title": "删除员工",
+    "description": "确定要移除 {{name}} 吗？此操作将停用其账号并删除员工记录。",
+    "confirm": "确认删除",
+    "success": "员工已删除。"
+  }
+}

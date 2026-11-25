@@ -46,7 +46,8 @@ import {
   useShiftsQuery,
 } from "@/shared/queries/shift.query"
 import { toast } from "@/shared/stores/toast.store"
-import { formatDate } from "@/util/format-date"
+import { notifyApiError } from "@/app/api/feedback"
+import { formatDate, formatLocalDateInput } from "@/util/format-date"
 import { getInitials } from "@/util/initials"
 
 export function EmployeeDetailPage() {
@@ -86,13 +87,16 @@ export function EmployeeDetailPage() {
   const [shiftEffectiveFrom, setShiftEffectiveFrom] = useState("")
   const [shiftEffectiveTo, setShiftEffectiveTo] = useState("")
   const [shiftReason, setShiftReason] = useState("")
+  const shiftDateOrderError = Boolean(
+    shiftEffectiveTo && shiftEffectiveFrom && shiftEffectiveTo < shiftEffectiveFrom
+  )
 
   if (!employee && employeeQuery.isFetched) {
     return (
       <NotFoundState
         backTo="/employees"
         backLabel={t("title")}
-        description="Employee not found."
+        description={t("not_found")}
       />
     )
   }
@@ -126,14 +130,14 @@ export function EmployeeDetailPage() {
         ? formatDate(employee.profile.dateOfBirth, i18n.language)
         : "—",
     },
-    { label: t("form.gender"), value: employee?.profile?.gender || "—" },
+    { label: t("form.gender"), value: employee?.profile?.gender ? t(`gender.${employee.profile.gender}`, { defaultValue: employee.profile.gender }) : "—" },
     {
       label: t("form.nationality"),
       value: employee?.profile?.nationality || "—",
     },
     {
       label: t("form.marital_status"),
-      value: employee?.profile?.maritalStatus || "—",
+      value: employee?.profile?.maritalStatus ? t(`marital_status.${employee.profile.maritalStatus}`, { defaultValue: employee.profile.maritalStatus }) : "—",
     },
     {
       label: t("form.emergency_contact"),
@@ -154,7 +158,7 @@ export function EmployeeDetailPage() {
             size="sm"
             onClick={() => {
               setNewPositionId(employee.positionId ?? "")
-              setEffectiveDate(new Date().toISOString().split("T")[0])
+              setEffectiveDate(formatLocalDateInput(new Date()))
               setPositionRemarks("")
               setShowPositionDialog(true)
             }}
@@ -174,7 +178,7 @@ export function EmployeeDetailPage() {
           size="sm"
           onClick={() => {
             setNewShiftId("")
-            setShiftEffectiveFrom(new Date().toISOString().split("T")[0])
+            setShiftEffectiveFrom(formatLocalDateInput(new Date()))
             setShiftEffectiveTo("")
             setShiftReason("")
             setShowShiftDialog(true)
@@ -248,24 +252,24 @@ export function EmployeeDetailPage() {
                 </div>
                 {positionHistoryList.length === 0 ? (
                   <p className="text-small-2 text-muted-foreground">
-                    No position changes recorded yet.
+                    {t("history.empty")}
                   </p>
                 ) : (
                   <div className="overflow-hidden rounded-md border border-hair">
                     <table className="w-full text-small-2">
                       <thead className="bg-subtle border-b border-hair text-left font-medium text-muted-foreground">
                         <tr>
-                          <th className="p-3">Previous Position</th>
-                          <th className="p-3">New Position</th>
-                          <th className="p-3">Effective Date</th>
-                          <th className="p-3">Remarks</th>
+                          <th className="p-3">{t("history.old_position")}</th>
+                          <th className="p-3">{t("history.new_position")}</th>
+                          <th className="p-3">{t("history.effective_date")}</th>
+                          <th className="p-3">{t("history.remarks")}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-hair">
                         {positionHistoryList.map((hist) => (
                           <tr key={hist.id} className="hover:bg-subtle/50">
                             <td className="p-3 text-muted-foreground">
-                              {hist.oldPositionTitle || "Initial Position"}
+                              {hist.oldPositionTitle || t("history.initial")}
                             </td>
                             <td className="p-3 font-medium text-foreground">
                               {hist.newPositionTitle}
@@ -292,18 +296,18 @@ export function EmployeeDetailPage() {
                 </div>
                 {shiftAssignmentsList.length === 0 ? (
                   <p className="text-small-2 text-muted-foreground">
-                    No custom shift assignments. Following default workspace shift schedule.
+                    {t("shifts.empty")}
                   </p>
                 ) : (
                   <div className="overflow-hidden rounded-md border border-hair">
                     <table className="w-full text-small-2">
                       <thead className="bg-subtle border-b border-hair text-left font-medium text-muted-foreground">
                         <tr>
-                          <th className="p-3">Shift</th>
-                          <th className="p-3">Working Hours</th>
-                          <th className="p-3">Effective From</th>
-                          <th className="p-3">Effective To</th>
-                          <th className="p-3">Status</th>
+                          <th className="p-3">{t("shifts.shift")}</th>
+                          <th className="p-3">{t("shifts.working_hours")}</th>
+                          <th className="p-3">{t("shifts.effective_from")}</th>
+                          <th className="p-3">{t("shifts.effective_to")}</th>
+                          <th className="p-3">{t("shifts.status")}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-hair">
@@ -321,7 +325,7 @@ export function EmployeeDetailPage() {
                             <td className="p-3 text-muted-foreground">
                               {sa.effectiveTo
                                 ? formatDate(sa.effectiveTo, i18n.language)
-                                : "Ongoing"}
+                                : t("shifts.ongoing")}
                             </td>
                             <td className="p-3">
                               <StatusBadge status={sa.status} />
@@ -360,7 +364,7 @@ export function EmployeeDetailPage() {
                 onValueChange={(val) => setNewPositionId(val ?? "")}
               >
                 <SelectTrigger id="pos-select" className="mt-1 w-full">
-                  <SelectValue placeholder="Select position">
+                  <SelectValue placeholder={t("change_position.position_placeholder")}>
                     {positionsQuery.data?.items?.find((p) => p.id === newPositionId)
                       ? `${positionsQuery.data.items.find((p) => p.id === newPositionId)!.positionName} (${positionsQuery.data.items.find((p) => p.id === newPositionId)!.positionCode})`
                       : undefined}
@@ -390,7 +394,7 @@ export function EmployeeDetailPage() {
               <Textarea
                 id="pos-remarks"
                 className="mt-1"
-                placeholder="Reason or notes regarding position change..."
+                placeholder={t("change_position.remarks_placeholder")}
                 value={positionRemarks}
                 onChange={(e) => setPositionRemarks(e.target.value)}
               />
@@ -421,6 +425,7 @@ export function EmployeeDetailPage() {
                       setShowPositionDialog(false)
                       toast.success(t("change_position.success"))
                     },
+                    onError: (err) => notifyApiError(err),
                   }
                 )
               }}
@@ -452,7 +457,7 @@ export function EmployeeDetailPage() {
                 onValueChange={(val) => setNewShiftId(val ?? "")}
               >
                 <SelectTrigger id="shift-select" className="mt-1 w-full">
-                  <SelectValue placeholder="Select shift schedule">
+                  <SelectValue placeholder={t("assign_shift.shift_placeholder")}>
                     {shiftsQuery.data?.items?.find((s) => s.id === newShiftId)
                       ? `${shiftsQuery.data.items.find((s) => s.id === newShiftId)!.shiftName} (${shiftsQuery.data.items.find((s) => s.id === newShiftId)!.startTime} - ${shiftsQuery.data.items.find((s) => s.id === newShiftId)!.endTime})`
                       : undefined}
@@ -486,13 +491,18 @@ export function EmployeeDetailPage() {
                 value={shiftEffectiveTo}
                 onChange={(e) => setShiftEffectiveTo(e.target.value)}
               />
+              {shiftDateOrderError && (
+                <p className="mt-1 text-xs text-destructive">
+                  {t("assign_shift.errors.effective_to_order")}
+                </p>
+              )}
             </div>
             <div>
               <Label htmlFor="shift-reason">{t("assign_shift.reason")}</Label>
               <Input
                 id="shift-reason"
                 className="mt-1"
-                placeholder="Optional notes or reason..."
+                placeholder={t("assign_shift.reason_placeholder")}
                 value={shiftReason}
                 onChange={(e) => setShiftReason(e.target.value)}
               />
@@ -507,8 +517,9 @@ export function EmployeeDetailPage() {
             </Button>
             <Button
               loading={assignShiftMutation.isPending}
-              disabled={!newShiftId || !shiftEffectiveFrom}
+              disabled={!newShiftId || !shiftEffectiveFrom || shiftDateOrderError}
               onClick={() => {
+                if (shiftDateOrderError) return
                 assignShiftMutation.mutate(
                   {
                     employeeId: id,
@@ -522,6 +533,7 @@ export function EmployeeDetailPage() {
                       setShowShiftDialog(false)
                       toast.success(t("assign_shift.success"))
                     },
+                    onError: (err) => notifyApiError(err),
                   }
                 )
               }}
@@ -551,7 +563,10 @@ export function EmployeeDetailPage() {
               toast.success(t("delete.success"))
               void navigate("/employees")
             },
-            onError: () => setShowDeleteDialog(false),
+            onError: (err) => {
+              setShowDeleteDialog(false)
+              notifyApiError(err)
+            },
           })
         }}
       />

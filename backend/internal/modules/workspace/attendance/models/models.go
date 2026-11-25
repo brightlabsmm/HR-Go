@@ -48,7 +48,7 @@ type AttendanceCorrectionRequest struct {
 
 	EmployeeCode string `gorm:"->;column:employee_code"`
 	EmployeeName string `gorm:"->;column:employee_name"`
-	ReviewerName string `gorm:"-"`
+	ReviewerName string `gorm:"->;column:reviewer_name"`
 }
 
 func (AttendanceCorrectionRequest) TableName() string {

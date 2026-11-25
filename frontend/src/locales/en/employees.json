@@ -6,6 +6,31 @@
   "all_branches": "All branches",
   "all_departments": "All departments",
   "search_placeholder": "Search by name, code, email...",
+  "not_found": "Employee not found.",
+  "select_all": "Select all",
+  "select_row": "Select {{name}}",
+  "selected_one": "{{count}} employee selected",
+  "selected_other": "{{count}} employees selected",
+  "clear_selection": "Clear selection",
+  "status": {
+    "ACTIVE": "Active",
+    "PROBATION": "Probation",
+    "SUSPENDED": "Suspended",
+    "TERMINATED": "Terminated",
+    "RESIGNED": "Resigned"
+  },
+  "gender": {
+    "MALE": "Male",
+    "FEMALE": "Female",
+    "OTHER": "Other"
+  },
+  "marital_status": {
+    "SINGLE": "Single",
+    "MARRIED": "Married",
+    "DIVORCED": "Divorced",
+    "WIDOWED": "Widowed",
+    "OTHER": "Other"
+  },
   "columns": {
     "name": "Employee",
     "code": "Employee ID",
@@ -23,6 +48,23 @@
     "access": "Access",
     "position_history": "Position History",
     "shift_assignments": "Shift Assignments"
+  },
+  "history": {
+    "empty": "No position changes recorded yet.",
+    "old_position": "Previous Position",
+    "new_position": "New Position",
+    "effective_date": "Effective Date",
+    "remarks": "Remarks",
+    "initial": "Initial Position"
+  },
+  "shifts": {
+    "empty": "No custom shift assignments. Following default workspace shift schedule.",
+    "shift": "Shift",
+    "working_hours": "Working Hours",
+    "effective_from": "Effective From",
+    "effective_to": "Effective To",
+    "status": "Status",
+    "ongoing": "Ongoing"
   },
   "form": {
     "create_title": "Add New Employee",
@@ -50,41 +92,70 @@
     "save": "Save Changes",
     "create": "Create Employee",
     "errors": {
-      "code": "Employee code is required",
-      "first_name": "First name is required",
-      "last_name": "Last name is required",
-      "email": "Invalid email address",
-      "email_required": "Work email is required",
-      "branch": "Branch is required",
-      "department": "Department is required",
-      "position": "Position is required",
-      "role": "Role is required",
-      "date_of_birth": "Date of birth is required",
-      "gender": "Gender is required",
-      "nationality": "Nationality is required",
-      "emergency_contact": "Emergency contact is required"
+      "code": "Employee code is required.",
+      "first_name": "First name is required.",
+      "first_name_max": "First name must not exceed 100 characters.",
+      "last_name": "Last name is required.",
+      "last_name_max": "Last name must not exceed 100 characters.",
+      "email": "Please enter a valid work email address.",
+      "email_required": "Work email is required.",
+      "branch": "Branch is required.",
+      "department": "Department is required.",
+      "position": "Position is required.",
+      "role": "Role is required.",
+      "date_of_birth": "Date of birth is required.",
+      "gender": "Gender is required.",
+      "nationality": "Nationality is required.",
+      "emergency_contact": "Emergency contact is required."
     }
+  },
+  "credentials": {
+    "title": "Employee Created Successfully",
+    "description": "Account created for {{name}}. Please share these login credentials with the employee.",
+    "employee_code": "Employee Code",
+    "temporary_password": "Temporary Password",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copy_all": "Copy All Credentials",
+    "copied_all": "Credentials Copied",
+    "show_password": "Show password",
+    "hide_password": "Hide password",
+    "hint": "The employee will be required to change this temporary password upon their first login.",
+    "done": "Done"
   },
   "change_position": {
     "button": "Promote / Change Position",
     "title": "Change Employee Position",
     "description": "Assign a new position to this employee and record effective date.",
     "new_position": "New Position",
+    "position_placeholder": "Select position",
     "effective_date": "Effective Date",
     "remarks": "Remarks / Justification",
+    "remarks_placeholder": "Reason or notes regarding position change...",
     "submit": "Update Position",
-    "success": "Position updated successfully"
+    "success": "Position updated successfully.",
+    "errors": {
+      "position": "Please select a new position.",
+      "effective_date": "Effective date is required."
+    }
   },
   "assign_shift": {
     "button": "Assign Shift",
     "title": "Assign Shift Schedule",
     "description": "Assign a shift schedule to this employee.",
     "shift": "Shift",
+    "shift_placeholder": "Select shift schedule",
     "effective_from": "Effective From",
     "effective_to": "Effective To (Optional)",
     "reason": "Reason",
+    "reason_placeholder": "Optional notes or reason...",
     "submit": "Assign Shift",
-    "success": "Shift assigned successfully"
+    "success": "Shift assigned successfully.",
+    "errors": {
+      "shift": "Please select a shift schedule.",
+      "effective_from": "Effective start date is required.",
+      "effective_to_order": "Effective end date cannot be earlier than start date."
+    }
   },
   "empty": {
     "title": "No employees found",
@@ -92,8 +163,8 @@
   },
   "delete": {
     "title": "Delete Employee",
-    "description": "Are you sure you want to remove {{name}}? This will permanently delete their employee record.",
+    "description": "Are you sure you want to remove {{name}}? This will deactivate their account and delete their employee record.",
     "confirm": "Delete Employee",
-    "success": "Employee deleted successfully"
+    "success": "Employee deleted successfully."
   }
 }
