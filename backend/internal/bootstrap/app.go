@@ -88,6 +88,17 @@ import (
 	mobileroutes "hrgo/backend/internal/modules/workspace/mobile/routes"
 	mobilesvc "hrgo/backend/internal/modules/workspace/mobile/service"
 
+	// Phase 2: Leave & Overtime
+	leavehandler "hrgo/backend/internal/modules/workspace/leave/handler"
+	leaverepo "hrgo/backend/internal/modules/workspace/leave/repository"
+	leaveroutes "hrgo/backend/internal/modules/workspace/leave/routes"
+	leavesvc "hrgo/backend/internal/modules/workspace/leave/service"
+
+	overtimehandler "hrgo/backend/internal/modules/workspace/overtime/handler"
+	overtimerepo "hrgo/backend/internal/modules/workspace/overtime/repository"
+	overtimeroutes "hrgo/backend/internal/modules/workspace/overtime/routes"
+	overtimesvc "hrgo/backend/internal/modules/workspace/overtime/service"
+
 	apperrors "hrgo/backend/internal/shared/errors"
 	"hrgo/backend/internal/shared/responses"
 	"hrgo/backend/internal/shared/security"
@@ -262,6 +273,15 @@ func NewEngine(deps Dependencies) *gin.Engine {
 		mobileRepo := mobilerepo.New(deps.DB)
 		mobileService := mobilesvc.New(mobileRepo, tokenManager)
 		mobileroutes.Register(v1, mobilehandler.New(mobileService), secMiddleware)
+
+		// Phase 2: Leave & Overtime (Web + Mobile)
+		leaveRepo := leaverepo.New(deps.DB)
+		leaveService := leavesvc.New(leaveRepo)
+		leaveroutes.Register(v1, leavehandler.New(leaveService), secMiddleware)
+
+		overtimeRepo := overtimerepo.New(deps.DB)
+		overtimeService := overtimesvc.New(overtimeRepo)
+		overtimeroutes.Register(v1, overtimehandler.New(overtimeService), secMiddleware)
 	}
 
 	engine.GET("/ping", func(c *gin.Context) {

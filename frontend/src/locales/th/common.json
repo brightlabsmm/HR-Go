@@ -10,6 +10,8 @@
     "roles": "บทบาท",
     "permissions": "สิทธิ์",
     "positions": "ตำแหน่ง",
+    "leave": "การลางาน",
+    "overtime": "ทำงานล่วงเวลา",
     "organization_settings": "การตั้งค่าองค์กร",
     "account": "บัญชีของฉัน"
   },

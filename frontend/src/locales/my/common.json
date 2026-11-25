@@ -10,6 +10,8 @@
     "roles": "Role များ",
     "permissions": "Permission များ",
     "positions": "ရာထူးများ",
+    "leave": "ခွင့်ရက်စီမံခန့်ခွဲမှု",
+    "overtime": "အချိန်ပိုစီမံခန့်ခွဲမှု",
     "organization_settings": "အဖွဲ့အစည်း ဆက်တင်များ",
     "account": "ကျွန်ုပ်၏ account"
   },

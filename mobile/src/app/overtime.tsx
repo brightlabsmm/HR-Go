@@ -1,30 +1,72 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
-import { OVERTIME_REQUESTS } from '../constants/mockData';
 import { Badge, StatusType } from '../components/Badge';
+import {
+  MobileOvertimeRequest,
+  overtimeApi,
+} from '../services/api/overtimeApi';
 
 type TabType = 'All' | 'Pending' | 'Approved' | 'Rejected';
+
+function fmtHours(minutes: number): string {
+  const hrs = minutes / 60;
+  return `${Number.isInteger(hrs) ? hrs : hrs.toFixed(1)}h`;
+}
 
 export default function OvertimeScreen() {
   const router = useRouter();
   const [tab, setTab] = useState<TabType>('All');
-  const [openId, setOpenId] = useState<number | null>(1);
+  const [requests, setRequests] = useState<MobileOvertimeRequest[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [openId, setOpenId] = useState<string | null>(null);
 
-  const filteredRequests = OVERTIME_REQUESTS.filter((r) => {
+  const loadOvertime = useCallback(async () => {
+    try {
+      const res = await overtimeApi.listRequests({ pageSize: 50 });
+      setRequests(res?.items ?? []);
+    } catch (err: any) {
+      Alert.alert('Load Failed', err?.message || 'Unable to load overtime requests.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadOvertime();
+  }, [loadOvertime]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    void loadOvertime();
+  };
+
+  const filteredRequests = requests.filter((r) => {
     if (tab === 'All') return true;
-    return r.status.toLowerCase() === tab.toLowerCase();
+    return r.requestStatus.toLowerCase() === tab.toLowerCase();
   });
 
-  const toggleOpen = (id: number) => {
+  const approvedMins = requests
+    .filter((r) => r.requestStatus === 'APPROVED')
+    .reduce((sum, r) => sum + r.requestedMinutes, 0);
+  const pendingMins = requests
+    .filter((r) => r.requestStatus === 'PENDING')
+    .reduce((sum, r) => sum + r.requestedMinutes, 0);
+
+  const toggleOpen = (id: string) => {
     setOpenId(openId === id ? null : id);
   };
 
@@ -56,20 +98,23 @@ export default function OvertimeScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
       >
         {/* Top Summary Card */}
         <View style={styles.summaryCard}>
           <View style={styles.summaryCol}>
-            <Text style={styles.summaryLabel}>Approved · Nov</Text>
-            <Text style={styles.summaryValue}>5.5h</Text>
+            <Text style={styles.summaryLabel}>Approved</Text>
+            <Text style={styles.summaryValue}>{fmtHours(approvedMins)}</Text>
           </View>
           <View style={styles.summaryCol}>
             <Text style={styles.summaryLabel}>Pending</Text>
-            <Text style={styles.summaryValue}>2h</Text>
+            <Text style={styles.summaryValue}>{fmtHours(pendingMins)}</Text>
           </View>
           <View style={styles.summaryCol}>
             <Text style={styles.summaryLabel}>Requests</Text>
-            <Text style={styles.summaryValue}>4</Text>
+            <Text style={styles.summaryValue}>{requests.length}</Text>
           </View>
         </View>
 
@@ -93,10 +138,18 @@ export default function OvertimeScreen() {
         </View>
 
         {/* Requests Accordion List */}
+        {loading ? (
+          <ActivityIndicator style={{ marginTop: 28 }} color={colors.primary} />
+        ) : filteredRequests.length === 0 ? (
+          <View style={styles.card}>
+            <Text style={styles.cardDate}>No overtime requests</Text>
+            <Text style={styles.detailValue}>Tap &ldquo;Request&rdquo; to log an overtime request.</Text>
+          </View>
+        ) : (
         <View style={styles.list}>
           {filteredRequests.map((item) => {
             const isOpen = openId === item.id;
-            const isRejected = item.status === 'REJECTED';
+            const isRejected = item.requestStatus === 'REJECTED';
 
             return (
               <TouchableOpacity
@@ -107,13 +160,13 @@ export default function OvertimeScreen() {
               >
                 <View style={styles.cardHeader}>
                   <View style={styles.cardMainInfo}>
-                    <Text style={styles.cardDate}>{item.date}</Text>
+                    <Text style={styles.cardDate}>{item.workDate}</Text>
                     <Text style={styles.cardMeta}>
-                      {item.hours} · {item.cat} · {item.time}
+                      {fmtHours(item.requestedMinutes)} · {item.categoryName} · {item.startTime}–{item.endTime}
                     </Text>
                   </View>
                   <View style={styles.cardRight}>
-                    <Badge status={item.status as StatusType} />
+                    <Badge status={item.requestStatus as StatusType} />
                     <Ionicons
                       name={isOpen ? 'chevron-up' : 'chevron-down'}
                       size={18}
@@ -138,7 +191,10 @@ export default function OvertimeScreen() {
                           isRejected ? { color: colors.status.absentText } : { color: colors.textSecondary },
                         ]}
                       >
-                        {item.decision}
+                        {item.decisionNotes ||
+                          (item.requestStatus === 'PENDING'
+                            ? 'Waiting for manager review'
+                            : item.requestStatus)}
                       </Text>
                     </View>
 
@@ -157,6 +213,7 @@ export default function OvertimeScreen() {
             );
           })}
         </View>
+        )}
       </ScrollView>
     </View>
   );

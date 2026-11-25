@@ -1,22 +1,60 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../constants/theme';
-import { LEAVE_BALANCES, LEAVE_REQUESTS } from '../constants/mockData';
 import { Badge, StatusType } from '../components/Badge';
+import {
+  leaveApi,
+  MobileLeaveBalance,
+  MobileLeaveRequest,
+} from '../services/api/leaveApi';
+
+const PALETTE = ['#1787f5', '#12805C', '#D97706', '#7C3AED'];
 
 export default function LeaveScreen() {
   const router = useRouter();
-  const [openId, setOpenId] = useState<number | null>(0);
+  const [balances, setBalances] = useState<MobileLeaveBalance[]>([]);
+  const [requests, setRequests] = useState<MobileLeaveRequest[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [openId, setOpenId] = useState<string | null>(null);
 
-  const toggleOpen = (id: number) => {
+  const loadLeaveData = useCallback(async () => {
+    try {
+      const [balList, reqPage] = await Promise.all([
+        leaveApi.listBalances(),
+        leaveApi.listRequests({ pageSize: 50 }),
+      ]);
+      setBalances(balList);
+      setRequests(reqPage?.items ?? []);
+    } catch (err: any) {
+      Alert.alert('Load Failed', err?.message || 'Unable to load leave data.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadLeaveData();
+  }, [loadLeaveData]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    void loadLeaveData();
+  };
+
+  const toggleOpen = (id: string) => {
     setOpenId(openId === id ? null : id);
   };
 
@@ -48,104 +86,131 @@ export default function LeaveScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
       >
-        {/* Balances 2x2 Grid */}
-        <View style={styles.balanceGrid}>
-          {LEAVE_BALANCES.map((b, i) => (
-            <View key={i} style={styles.balanceTile}>
-              <Text style={styles.balanceName}>{b.name}</Text>
-              <View style={styles.balanceCountRow}>
-                <Text style={[styles.balanceLeft, { color: b.c }]}>{b.left}</Text>
-                <Text style={styles.balanceOf}>
-                  {b.total ? `of ${b.total} left` : 'no limit'}
-                </Text>
-              </View>
-              <View style={styles.progressBarBg}>
-                <View
-                  style={[
-                    styles.progressBarFill,
-                    {
-                      width:
-                        typeof b.left === 'number' && b.total
-                          ? `${Math.round((b.left / b.total) * 100)}%`
-                          : '0%',
-                      backgroundColor: b.c,
-                    },
-                  ]}
-                />
-              </View>
-            </View>
-          ))}
-        </View>
-
-        {/* Leave Requests Heading */}
-        <Text style={styles.sectionHeading}>Leave requests</Text>
-
-        {/* Requests List */}
-        <View style={styles.list}>
-          {LEAVE_REQUESTS.map((item) => {
-            const isOpen = openId === item.id;
-            const isRejected = item.status === 'REJECTED';
-
-            return (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.card}
-                activeOpacity={0.9}
-                onPress={() => toggleOpen(item.id)}
-              >
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardMain}>
-                    <Text style={styles.cardType}>{item.type}</Text>
-                    <Text style={styles.cardRange}>
-                      {item.days} · {item.range}
-                    </Text>
-                  </View>
-                  <View style={styles.cardRight}>
-                    <Badge status={item.status as StatusType} />
-                    <Ionicons
-                      name={isOpen ? 'chevron-up' : 'chevron-down'}
-                      size={18}
-                      color="#8A94AD"
-                    />
-                  </View>
-                </View>
-
-                {/* Expanded Details */}
-                {isOpen && (
-                  <View style={styles.expandedContent}>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Reason</Text>
-                      <Text style={styles.detailValue}>{item.reason}</Text>
-                    </View>
-
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Decision</Text>
-                      <Text
-                        style={[
-                          styles.detailValue,
-                          isRejected ? { color: colors.status.absentText } : { color: colors.textSecondary },
-                        ]}
-                      >
-                        {item.decision}
+        {loading ? (
+          <ActivityIndicator style={{ marginTop: 32 }} color={colors.primary} />
+        ) : (
+          <>
+            {/* Balances 2x2 Grid */}
+            <View style={styles.balanceGrid}>
+              {balances.map((b, i) => {
+                const accent = PALETTE[i % PALETTE.length];
+                const pct =
+                  b.requiresBalance && b.allocatedDays > 0
+                    ? Math.max(0, Math.min(100, Math.round((b.remainingDays / b.allocatedDays) * 100)))
+                    : 0;
+                return (
+                  <View key={b.id || b.leaveTypeId} style={styles.balanceTile}>
+                    <Text style={styles.balanceName}>{b.leaveTypeName}</Text>
+                    <View style={styles.balanceCountRow}>
+                      <Text style={[styles.balanceLeft, { color: accent }]}>
+                        {b.requiresBalance ? b.remainingDays : '—'}
+                      </Text>
+                      <Text style={styles.balanceOf}>
+                        {b.requiresBalance ? `of ${b.allocatedDays} left` : 'no limit'}
                       </Text>
                     </View>
-
-                    {isRejected && (
-                      <TouchableOpacity
-                        style={styles.resubmitButton}
-                        activeOpacity={0.8}
-                        onPress={() => router.push('/new-leave')}
-                      >
-                        <Text style={styles.resubmitButtonText}>Edit and resubmit</Text>
-                      </TouchableOpacity>
-                    )}
+                    <View style={styles.progressBarBg}>
+                      <View
+                        style={[
+                          styles.progressBarFill,
+                          { width: `${pct}%`, backgroundColor: accent },
+                        ]}
+                      />
+                    </View>
                   </View>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+                );
+              })}
+            </View>
+
+            {/* Leave Requests Heading */}
+            <Text style={styles.sectionHeading}>Leave requests</Text>
+
+            {/* Requests List */}
+            {requests.length === 0 ? (
+              <View style={styles.card}>
+                <Text style={styles.cardType}>No leave requests yet</Text>
+                <Text style={styles.detailValue}>Tap &ldquo;Apply leave&rdquo; to submit a request.</Text>
+              </View>
+            ) : (
+              <View style={styles.list}>
+                {requests.map((item) => {
+                  const isOpen = openId === item.id;
+                  const isRejected = item.requestStatus === 'REJECTED';
+                  const daysLabel = `${item.requestedDays} ${item.requestedDays === 1 ? 'day' : 'days'}`;
+                  const rangeLabel =
+                    item.startDate === item.endDate
+                      ? item.startDate
+                      : `${item.startDate} – ${item.endDate}`;
+
+                  return (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={styles.card}
+                      activeOpacity={0.9}
+                      onPress={() => toggleOpen(item.id)}
+                    >
+                      <View style={styles.cardHeader}>
+                        <View style={styles.cardMain}>
+                          <Text style={styles.cardType}>{item.leaveTypeName}</Text>
+                          <Text style={styles.cardRange}>
+                            {daysLabel} · {rangeLabel}
+                          </Text>
+                        </View>
+                        <View style={styles.cardRight}>
+                          <Badge status={item.requestStatus as StatusType} />
+                          <Ionicons
+                            name={isOpen ? 'chevron-up' : 'chevron-down'}
+                            size={18}
+                            color="#8A94AD"
+                          />
+                        </View>
+                      </View>
+
+                      {/* Expanded Details */}
+                      {isOpen && (
+                        <View style={styles.expandedContent}>
+                          <View style={styles.detailRow}>
+                            <Text style={styles.detailLabel}>Reason</Text>
+                            <Text style={styles.detailValue}>{item.reason}</Text>
+                          </View>
+
+                          <View style={styles.detailRow}>
+                            <Text style={styles.detailLabel}>Decision</Text>
+                            <Text
+                              style={[
+                                styles.detailValue,
+                                isRejected ? { color: colors.status.absentText } : { color: colors.textSecondary },
+                              ]}
+                            >
+                              {item.decisionNotes ||
+                                (item.requestStatus === 'PENDING'
+                                  ? 'Waiting for approval'
+                                  : item.requestStatus)}
+                            </Text>
+                          </View>
+
+                          {isRejected && (
+                            <TouchableOpacity
+                              style={styles.resubmitButton}
+                              activeOpacity={0.8}
+                              onPress={() => router.push('/new-leave')}
+                            >
+                              <Text style={styles.resubmitButtonText}>Edit and resubmit</Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </>
+        )}
       </ScrollView>
     </View>
   );

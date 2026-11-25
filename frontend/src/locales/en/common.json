@@ -14,6 +14,8 @@
     "shifts": "Shifts",
     "holidays": "Holidays",
     "attendance": "Attendance",
+    "leave": "Leave",
+    "overtime": "Overtime",
     "organization_settings": "Organization settings",
     "account": "My account"
   },

@@ -168,3 +168,13 @@ export const AttendanceListPage = pageLoader(
   () => import("@/features/attendance/pages/attendance-list-page"),
   "AttendanceListPage"
 )
+
+export const LeaveListPage = pageLoader(
+  () => import("@/features/leave/pages/leave-list-page"),
+  "LeaveListPage"
+)
+
+export const OvertimeListPage = pageLoader(
+  () => import("@/features/overtime/pages/overtime-list-page"),
+  "OvertimeListPage"
+)
