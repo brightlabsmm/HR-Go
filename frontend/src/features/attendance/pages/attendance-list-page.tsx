@@ -23,9 +23,71 @@ import { MotionStack } from "@/components/common/motion-stack"
 import { PageEmptyState } from "@/components/common/page-empty-state"
 import { PageHeader } from "@/components/common/page-header"
 import { Pagination } from "@/components/common/pagination"
-import { StatusBadge } from "@/components/common/status-badge"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+
+const ATTENDANCE_STATUS_STYLES: Record<string, { bg: string; text: string; dot: string }> = {
+  PRESENT: { bg: "bg-success-muted", text: "text-success", dot: "bg-success" },
+  LATE: { bg: "bg-warning-muted", text: "text-warning-foreground", dot: "bg-warning" },
+  ABSENT: { bg: "bg-destructive-muted", text: "text-destructive", dot: "bg-destructive" },
+  HALF_DAY: { bg: "bg-info-muted", text: "text-info", dot: "bg-info" },
+  ON_LEAVE: { bg: "bg-purple-100 dark:bg-purple-950", text: "text-purple-700 dark:text-purple-300", dot: "bg-purple-500" },
+  HOLIDAY: { bg: "bg-blue-100 dark:bg-blue-950", text: "text-blue-700 dark:text-blue-300", dot: "bg-blue-500" },
+}
+
+function AttendanceStatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation("attendance")
+  const key = (status || "").toUpperCase()
+  const style = ATTENDANCE_STATUS_STYLES[key] || {
+    bg: "bg-muted",
+    text: "text-muted-foreground",
+    dot: "bg-muted-foreground",
+  }
+  const label = t(`status.${key}`, { defaultValue: status })
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full py-0.5 pr-2.5 pl-2 text-small-2 font-medium",
+        style.bg,
+        style.text
+      )}
+    >
+      <i className={cn("inline-block size-1.5 rounded-full", style.dot)} aria-hidden />
+      {label}
+    </span>
+  )
+}
+
+const CORRECTION_STATUS_STYLES: Record<string, { bg: string; text: string; dot: string }> = {
+  PENDING: { bg: "bg-warning-muted", text: "text-warning-foreground", dot: "bg-warning" },
+  APPROVED: { bg: "bg-success-muted", text: "text-success", dot: "bg-success" },
+  REJECTED: { bg: "bg-destructive-muted", text: "text-destructive", dot: "bg-destructive" },
+}
+
+function CorrectionStatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation("attendance")
+  const key = (status || "").toUpperCase()
+  const style = CORRECTION_STATUS_STYLES[key] || {
+    bg: "bg-muted",
+    text: "text-muted-foreground",
+    dot: "bg-muted-foreground",
+  }
+  const label = t(`correction_status.${key}`, { defaultValue: status })
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full py-0.5 pr-2.5 pl-2 text-small-2 font-medium",
+        style.bg,
+        style.text
+      )}
+    >
+      <i className={cn("inline-block size-1.5 rounded-full", style.dot)} aria-hidden />
+      {label}
+    </span>
+  )
+}
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -312,7 +374,7 @@ export function AttendanceListPage() {
     recordCol.accessor("attendanceStatus", {
       header: t("columns.status"),
       enableSorting: false,
-      cell: ({ getValue }) => <StatusBadge status={getValue()} />,
+      cell: ({ getValue }) => <AttendanceStatusBadge status={getValue()} />,
     }),
     recordCol.accessor("source", {
       header: t("columns.source"),
@@ -384,7 +446,7 @@ export function AttendanceListPage() {
     correctionCol.accessor("requestStatus", {
       header: t("corrections.columns.status"),
       enableSorting: false,
-      cell: ({ getValue }) => <StatusBadge status={getValue()} />,
+      cell: ({ getValue }) => <CorrectionStatusBadge status={getValue()} />,
     }),
     correctionCol.display({
       id: "actions",

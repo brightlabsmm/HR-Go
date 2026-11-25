@@ -1,0 +1,109 @@
+name: Mobile CI / CD
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile*"
+  push:
+    branches:
+      - dev
+      - staging
+      - prod
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile*"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  mobile:
+    name: Expo Doctor, Typecheck, Bundle & Expo Go
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Expo & EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Enable Corepack & Yarn 4
+        run: |
+          corepack enable
+          corepack prepare yarn@4.16.0 --activate
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Expo Doctor Health Check
+        run: yarn doctor
+
+      - name: TypeScript Check
+        run: yarn typecheck
+
+      - name: Test Android Bundle Export
+        run: npx expo export --platform android --no-bytecode
+
+      - name: Test iOS Bundle Export
+        run: npx expo export --platform ios --no-bytecode
+
+      - name: Determine EAS Update Channel
+        id: branch_channel
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "channel=preview" >> $GITHUB_OUTPUT
+            echo "branch=preview" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref_name }}" = "prod" ]; then
+            echo "channel=production" >> $GITHUB_OUTPUT
+            echo "branch=production" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref_name }}" = "staging" ]; then
+            echo "channel=preview" >> $GITHUB_OUTPUT
+            echo "branch=preview" >> $GITHUB_OUTPUT
+          else
+            echo "channel=development" >> $GITHUB_OUTPUT
+            echo "branch=development" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publish EAS Update for Expo Go
+        if: ${{ env.EXPO_TOKEN != '' }}
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          eas update --auto --branch ${{ steps.branch_channel.outputs.branch }} --non-interactive
+
+      - name: Post Expo Go Preview QR Code to Pull Request
+        if: ${{ github.event_name == 'pull_request' && env.EXPO_TOKEN != '' }}
+        uses: expo/expo-github-action/preview-comment@v8
+        with:
+          project-id: 627825d3-776b-4be2-b0e8-c3789811a82d
+          channel: ${{ steps.branch_channel.outputs.channel }}
+
+      - name: Summary / Expo Go Instructions
+        run: |
+          echo "### 📱 HR-Go Mobile CI / CD Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Expo SDK**: 58" >> $GITHUB_STEP_SUMMARY
+          echo "- **Doctor checks**: Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- **TypeScript**: Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Bundle exports (iOS & Android)**: Verified" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "✅ **EAS Update Published to Channel**: \`${{ steps.branch_channel.outputs.channel }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "Open in Expo Go: [exp://u.expo.dev/627825d3-776b-4be2-b0e8-c3789811a82d?channel-name=${{ steps.branch_channel.outputs.channel }}](exp://u.expo.dev/627825d3-776b-4be2-b0e8-c3789811a82d?channel-name=${{ steps.branch_channel.outputs.channel }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "ℹ️ **Note**: \`EXPO_TOKEN\` secret is not yet configured in GitHub repository secrets. Once added, automated over-the-air Expo Go updates and PR QR codes will publish automatically." >> $GITHUB_STEP_SUMMARY
+          fi
