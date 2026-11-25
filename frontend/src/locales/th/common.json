@@ -14,8 +14,10 @@
     "shifts": "กะการทำงาน",
     "holidays": "วันหยุด",
     "attendance": "การเข้างาน",
+    "attendance_imports": "นำเข้า/ส่งออกเวลาทำงาน",
     "leave": "การลางาน",
     "overtime": "ทำงานล่วงเวลา",
+    "audit_logs": "บันทึกการตรวจสอบ",
     "organization_settings": "การตั้งค่าองค์กร",
     "account": "บัญชีของฉัน"
   },

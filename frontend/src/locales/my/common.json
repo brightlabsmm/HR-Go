@@ -14,8 +14,10 @@
     "shifts": "အလုပ်ချိန်ဇယားများ",
     "holidays": "ရုံးပိတ်ရက်များ",
     "attendance": "အလုပ်တက်ရောက်မှု",
+    "attendance_imports": "ရုံးတက်ချိန် CSV သွင်း/ထုတ်",
     "leave": "ခွင့်ရက်စီမံခန့်ခွဲမှု",
     "overtime": "အချိန်ပိုစီမံခန့်ခွဲမှု",
+    "audit_logs": "Audit မှတ်တမ်းများ",
     "organization_settings": "အဖွဲ့အစည်း ဆက်တင်များ",
     "account": "ကျွန်ုပ်၏ account"
   },

@@ -88,6 +88,27 @@ import (
 	mobileroutes "hrgo/backend/internal/modules/workspace/mobile/routes"
 	mobilesvc "hrgo/backend/internal/modules/workspace/mobile/service"
 
+	// Phase 2 ERD Completion & Audit
+	attimporthandler "hrgo/backend/internal/modules/workspace/attendanceimport/handler"
+	attimportrepo "hrgo/backend/internal/modules/workspace/attendanceimport/repository"
+	attimportroutes "hrgo/backend/internal/modules/workspace/attendanceimport/routes"
+	attimportsvc "hrgo/backend/internal/modules/workspace/attendanceimport/service"
+
+	auditloghandler "hrgo/backend/internal/modules/workspace/auditlog/handler"
+	auditlogrepo "hrgo/backend/internal/modules/workspace/auditlog/repository"
+	auditlogroutes "hrgo/backend/internal/modules/workspace/auditlog/routes"
+	auditlogsvc "hrgo/backend/internal/modules/workspace/auditlog/service"
+
+	branchhourshandler "hrgo/backend/internal/modules/workspace/branchhours/handler"
+	branchhoursrepo "hrgo/backend/internal/modules/workspace/branchhours/repository"
+	branchhoursroutes "hrgo/backend/internal/modules/workspace/branchhours/routes"
+	branchhourssvc "hrgo/backend/internal/modules/workspace/branchhours/service"
+
+	lifecyclehandler "hrgo/backend/internal/modules/workspace/lifecycle/handler"
+	lifecyclerepo "hrgo/backend/internal/modules/workspace/lifecycle/repository"
+	lifecycleroutes "hrgo/backend/internal/modules/workspace/lifecycle/routes"
+	lifecyclesvc "hrgo/backend/internal/modules/workspace/lifecycle/service"
+
 	// Phase 2: Leave & Overtime
 	leavehandler "hrgo/backend/internal/modules/workspace/leave/handler"
 	leaverepo "hrgo/backend/internal/modules/workspace/leave/repository"
@@ -99,6 +120,7 @@ import (
 	overtimeroutes "hrgo/backend/internal/modules/workspace/overtime/routes"
 	overtimesvc "hrgo/backend/internal/modules/workspace/overtime/service"
 
+	"hrgo/backend/internal/shared/audit"
 	apperrors "hrgo/backend/internal/shared/errors"
 	"hrgo/backend/internal/shared/responses"
 	"hrgo/backend/internal/shared/security"
@@ -198,6 +220,9 @@ func NewEngine(deps Dependencies) *gin.Engine {
 	// API v1 Routing
 	v1 := engine.Group("/api/v1")
 	if deps.DB != nil {
+		auditRecorder := audit.NewRecorder(deps.DB)
+		v1.Use(audit.WorkspaceMutationMiddleware(auditRecorder))
+
 		// Public. Registered on the engine so it is outside every auth middleware group.
 		patchVersionRepo := patchversionrepo.New(deps.DB)
 		patchVersionService := patchversionsvc.New(patchVersionRepo)
@@ -273,6 +298,23 @@ func NewEngine(deps Dependencies) *gin.Engine {
 		mobileRepo := mobilerepo.New(deps.DB)
 		mobileService := mobilesvc.New(mobileRepo, tokenManager)
 		mobileroutes.Register(v1, mobilehandler.New(mobileService), secMiddleware)
+
+		// Phase 2 ERD Completion & Audit
+		branchHoursRepo := branchhoursrepo.New(deps.DB)
+		branchHoursService := branchhourssvc.New(branchHoursRepo, auditRecorder)
+		branchhoursroutes.Register(v1, branchhourshandler.New(branchHoursService), secMiddleware)
+
+		lifecycleRepo := lifecyclerepo.New(deps.DB)
+		lifecycleService := lifecyclesvc.New(lifecycleRepo, auditRecorder)
+		lifecycleroutes.Register(v1, lifecyclehandler.New(lifecycleService), secMiddleware)
+
+		attImportRepo := attimportrepo.New(deps.DB)
+		attImportService := attimportsvc.New(attImportRepo, auditRecorder)
+		attimportroutes.Register(v1, attimporthandler.New(attImportService), secMiddleware)
+
+		auditLogRepo := auditlogrepo.New(deps.DB)
+		auditLogService := auditlogsvc.New(auditLogRepo)
+		auditlogroutes.Register(v1, auditloghandler.New(auditLogService), secMiddleware)
 
 		// Phase 2: Leave & Overtime (Web + Mobile)
 		leaveRepo := leaverepo.New(deps.DB)

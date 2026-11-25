@@ -2,7 +2,9 @@ import type { RouteObject } from "react-router"
 
 import {
   AccountPage,
+  AttendanceImportPage,
   AttendanceListPage,
+  AuditLogListPage,
   BranchCreatePage,
   BranchDetailPage,
   BranchEditPage,
@@ -60,8 +62,10 @@ export const organizationRoutes: RouteObject[] = [
   { path: "holidays/new", element: <HolidayCreatePage /> },
   { path: "holidays/:id/edit", element: <HolidayEditPage /> },
   { path: "attendance", element: <AttendanceListPage /> },
+  { path: "attendance/imports", element: <AttendanceImportPage /> },
   { path: "leave", element: <LeaveListPage /> },
   { path: "overtime", element: <OvertimeListPage /> },
+  { path: "audit-logs", element: <AuditLogListPage /> },
   { path: "roles/:id", element: <RoleDetailPage /> },
   { path: "roles", element: <RoleListPage /> },
   { path: "users", element: <UserListPage /> },
