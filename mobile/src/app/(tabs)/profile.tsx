@@ -11,14 +11,14 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../constants/theme';
-import { EMPLOYEE_PROFILE, CURRENT_SHIFT, POSITION_HISTORY } from '../../constants/mockData';
 import { useAuth } from '../../context/AuthContext';
 import { profileApi } from '../../services/api/profileApi';
 import { MobileShiftResponse } from '../../services/api/types';
+import { formatShortDate } from '../../utils/dateTime';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, logout, refreshProfile } = useAuth();
+  const { user, device, logout, refreshProfile } = useAuth();
 
   const [shiftData, setShiftData] = useState<MobileShiftResponse | null>(null);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -30,12 +30,12 @@ export default function ProfileScreen() {
         setShiftData(s);
       }
     } catch {
-      // Retain fallback shift
+      // Shift may be unavailable when offline
     }
   }, []);
 
   useEffect(() => {
-    fetchShift();
+    void fetchShift();
   }, [fetchShift]);
 
   const onRefresh = async () => {
@@ -58,26 +58,31 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const displayName = user ? `${user.firstName} ${user.lastName}` : EMPLOYEE_PROFILE.name;
+  const displayName = user ? `${user.firstName} ${user.lastName}` : '—';
   const initials = user
-    ? `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase()
-    : EMPLOYEE_PROFILE.avatarInitials;
+    ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || 'E'
+    : 'E';
   const roleDept = user
     ? `${user.positionTitle || 'Employee'} · ${user.departmentName || 'General'}`
-    : `${EMPLOYEE_PROFILE.role} · ${EMPLOYEE_PROFILE.department}`;
+    : '—';
   const empMeta = user
-    ? `${user.employeeCode} · ${user.branchName || 'Yangon Branch'} · ${user.employmentStatus || 'Active'}`
-    : `${EMPLOYEE_PROFILE.employeeCode} · ${EMPLOYEE_PROFILE.branch} · ${EMPLOYEE_PROFILE.status}`;
-  const phone = user?.phone || EMPLOYEE_PROFILE.phone;
-  const joinDate = user?.dateOfJoining || EMPLOYEE_PROFILE.joinDate;
+    ? `${user.employeeCode} · ${user.branchName || 'All Branches'} · ${user.employmentStatus || '—'}`
+    : '—';
+  const phone = user?.phone || '—';
+  const joinDate = user?.dateOfJoining ? formatShortDate(user.dateOfJoining) : '—';
+  const dob = user?.profile?.dateOfBirth ? formatShortDate(user.profile.dateOfBirth) : '—';
+  const genderMarital =
+    user?.profile?.gender || user?.profile?.maritalStatus
+      ? `${user.profile.gender || '—'} · ${user.profile.maritalStatus || '—'}`
+      : '—';
+  const emergencyContact = user?.profile?.emergencyContact || '—';
+  const positionHistory = user?.positionHistory ?? [];
 
-  const shiftName = shiftData?.shiftName || CURRENT_SHIFT.name;
-  const shiftHours = shiftData
-    ? `${shiftData.startTime} – ${shiftData.endTime}`
-    : CURRENT_SHIFT.hours;
+  const shiftName = shiftData?.shiftName || 'Default Workspace Shift';
+  const shiftHours = shiftData ? `${shiftData.startTime} – ${shiftData.endTime}` : '—';
   const shiftBreak = shiftData
-    ? `${shiftData.gracePeriodMinutes || 60} min grace/break`
-    : `${CURRENT_SHIFT.breakMinutes} min break · since ${CURRENT_SHIFT.effectiveDate}`;
+    ? `${shiftData.breakMinutes ?? 0} min break · ${shiftData.gracePeriodMinutes ?? 0} min grace`
+    : 'Standard hours';
 
   return (
     <View style={styles.container}>
@@ -109,7 +114,7 @@ export default function ProfileScreen() {
             <View style={styles.shiftInfo}>
               <Text style={styles.sectionSubtitle}>Assigned shift</Text>
               <Text style={styles.shiftTitle}>
-                {shiftName} · {shiftHours}
+                {shiftName} {shiftHours !== '—' ? `· ${shiftHours}` : ''}
               </Text>
               <Text style={styles.shiftSubtitle}>{shiftBreak}</Text>
             </View>
@@ -128,32 +133,40 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.row}>
               <Text style={styles.rowLabel}>Date of birth</Text>
-              <Text style={styles.rowValue}>{EMPLOYEE_PROFILE.dob}</Text>
+              <Text style={styles.rowValue}>{dob}</Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.rowLabel}>Gender · Marital status</Text>
-              <Text style={styles.rowValue}>
-                {EMPLOYEE_PROFILE.gender} · {EMPLOYEE_PROFILE.maritalStatus}
-              </Text>
+              <Text style={styles.rowValue}>{genderMarital}</Text>
             </View>
             <View style={[styles.row, { borderBottomWidth: 0 }]}>
               <Text style={styles.rowLabel}>Emergency contact</Text>
-              <Text style={styles.rowValue}>{EMPLOYEE_PROFILE.emergencyContact}</Text>
+              <Text style={styles.rowValue}>{emergencyContact}</Text>
             </View>
           </View>
 
           {/* Position History Card */}
           <View style={styles.cardSection}>
             <Text style={styles.cardHeading}>Position history</Text>
-            {POSITION_HISTORY.map((item, index) => (
-              <View key={index} style={styles.timelineItem}>
-                <View style={styles.timelineDot} />
-                <View style={styles.timelineContent}>
-                  <Text style={styles.timelineTitle}>{item.title}</Text>
-                  <Text style={styles.timelineSubtitle}>Effective {item.effective}</Text>
+            {positionHistory.length === 0 ? (
+              <Text style={styles.timelineSubtitle}>No position changes recorded.</Text>
+            ) : (
+              positionHistory.map((item) => (
+                <View key={item.id} style={styles.timelineItem}>
+                  <View style={styles.timelineDot} />
+                  <View style={styles.timelineContent}>
+                    <Text style={styles.timelineTitle}>
+                      {item.oldPositionTitle
+                        ? `${item.oldPositionTitle} → ${item.newPositionTitle}`
+                        : item.newPositionTitle}
+                    </Text>
+                    <Text style={styles.timelineSubtitle}>
+                      Effective {formatShortDate(item.effectiveDate)}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            ))}
+              ))
+            )}
           </View>
 
           {/* Account Navigation List */}
@@ -175,7 +188,9 @@ export default function ProfileScreen() {
             >
               <Ionicons name="phone-portrait-outline" size={20} color={colors.primary} />
               <Text style={styles.navMenuText}>This device & offline sync</Text>
-              <Text style={styles.deviceBadge}>Registered</Text>
+              <Text style={styles.deviceBadge}>
+                {device?.status === 'ACTIVE' ? 'Registered' : 'Device'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity

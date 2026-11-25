@@ -1,14 +1,23 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  ReactNode,
+} from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiClient } from '../services/api/client';
+import { apiClient, ApiError } from '../services/api/client';
 import { authApi } from '../services/api/authApi';
 import { profileApi } from '../services/api/profileApi';
+import { tokenStorage } from '../services/storage/tokenStorage';
 import { MobileUserProfile, MobileDeviceResponse } from '../services/api/types';
 
-const TOKEN_KEY = '@hrgo_access_token';
 const USER_KEY = '@hrgo_user_profile';
 const DEVICE_ID_KEY = '@hrgo_device_identifier';
 const ORG_CODE_KEY = '@hrgo_saved_org_code';
+const MUST_CHANGE_PASSWORD_KEY = '@hrgo_must_change_password';
 
 interface AuthContextType {
   token: string | null;
@@ -16,11 +25,17 @@ interface AuthContextType {
   device: MobileDeviceResponse | null;
   deviceIdentifier: string;
   savedOrgCode: string;
+  mustChangePassword: boolean;
   isLoading: boolean;
   isLoggedIn: boolean;
-  login: (identifier: string, password: string, organizationCode?: string) => Promise<void>;
+  login: (
+    identifier: string,
+    password: string,
+    organizationCode?: string
+  ) => Promise<{ mustChangePassword: boolean }>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  clearMustChangePassword: () => Promise<void>;
   setSavedOrgCode: (code: string) => Promise<void>;
 }
 
@@ -39,11 +54,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<MobileUserProfile | null>(null);
   const [device, setDevice] = useState<MobileDeviceResponse | null>(null);
   const [deviceIdentifier, setDeviceIdentifier] = useState<string>('');
-  const [savedOrgCode, setSavedOrgCodeState] = useState<string>('ORG-001');
+  const [savedOrgCode, setSavedOrgCodeState] = useState<string>('');
+  const [mustChangePassword, setMustChangePassword] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const logout = useCallback(async () => {
+    setToken(null);
+    setUser(null);
+    setDevice(null);
+    setMustChangePassword(false);
+    apiClient.setToken(null);
+    await tokenStorage.removeToken();
+    await Promise.all([
+      AsyncStorage.removeItem(USER_KEY),
+      AsyncStorage.removeItem(MUST_CHANGE_PASSWORD_KEY),
+    ]);
+  }, []);
+
+  const logoutRef = useRef(logout);
+  useEffect(() => {
+    logoutRef.current = logout;
+  }, [logout]);
 
   // Initialize session and device id on startup
   useEffect(() => {
+    apiClient.setOnUnauthorized(() => {
+      void logoutRef.current();
+    });
+
     const bootstrap = async () => {
       try {
         // 1. Resolve Device Identifier
@@ -61,8 +99,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         // 3. Resolve Stored Token & User
-        const storedToken = await AsyncStorage.getItem(TOKEN_KEY);
+        const storedToken = await tokenStorage.getToken();
         const storedUser = await AsyncStorage.getItem(USER_KEY);
+        const storedMustChange = await AsyncStorage.getItem(MUST_CHANGE_PASSWORD_KEY);
+        setMustChangePassword(storedMustChange === 'true');
 
         if (storedToken) {
           setToken(storedToken);
@@ -77,8 +117,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const freshProfile = await profileApi.getProfile();
             setUser(freshProfile);
             await AsyncStorage.setItem(USER_KEY, JSON.stringify(freshProfile));
-          } catch {
-            // Offline or token expired; keep cached user or allow offline operation
+          } catch (profileErr) {
+            if (profileErr instanceof ApiError && profileErr.status === 401) {
+              await logoutRef.current();
+            }
           }
         }
       } catch (err) {
@@ -88,12 +130,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     };
 
-    bootstrap();
-
-    // Setup unauthorized interceptor
-    apiClient.setOnUnauthorized(() => {
-      logout();
-    });
+    void bootstrap();
   }, []);
 
   const login = async (identifier: string, password: string, organizationCode?: string) => {
@@ -107,30 +144,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         deviceName: 'Mobile App Device',
       });
 
+      const forcePasswordChange = Boolean(res.mustChangePassword);
       setToken(res.accessToken);
       setUser(res.user);
       setDevice(res.device);
+      setMustChangePassword(forcePasswordChange);
       apiClient.setToken(res.accessToken);
 
-      await AsyncStorage.setItem(TOKEN_KEY, res.accessToken);
+      await tokenStorage.setToken(res.accessToken);
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(res.user));
+      await AsyncStorage.setItem(
+        MUST_CHANGE_PASSWORD_KEY,
+        forcePasswordChange ? 'true' : 'false'
+      );
 
-      if (organizationCode) {
-        await AsyncStorage.setItem(ORG_CODE_KEY, organizationCode);
-        setSavedOrgCodeState(organizationCode);
+      if (organizationCode?.trim()) {
+        const cleanOrg = organizationCode.trim();
+        await AsyncStorage.setItem(ORG_CODE_KEY, cleanOrg);
+        setSavedOrgCodeState(cleanOrg);
       }
+
+      return { mustChangePassword: forcePasswordChange };
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const logout = async () => {
-    setToken(null);
-    setUser(null);
-    setDevice(null);
-    apiClient.setToken(null);
-    await AsyncStorage.removeItem(TOKEN_KEY);
-    await AsyncStorage.removeItem(USER_KEY);
   };
 
   const refreshProfile = async () => {
@@ -142,6 +179,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (err) {
       console.warn('Failed to refresh profile:', err);
     }
+  };
+
+  const clearMustChangePassword = async () => {
+    setMustChangePassword(false);
+    await AsyncStorage.setItem(MUST_CHANGE_PASSWORD_KEY, 'false');
   };
 
   const setSavedOrgCode = async (code: string) => {
@@ -157,11 +199,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         device,
         deviceIdentifier,
         savedOrgCode,
+        mustChangePassword,
         isLoading,
         isLoggedIn: Boolean(token),
         login,
         logout,
         refreshProfile,
+        clearMustChangePassword,
         setSavedOrgCode,
       }}
     >

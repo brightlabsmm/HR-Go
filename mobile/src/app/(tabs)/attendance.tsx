@@ -11,91 +11,132 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../constants/theme';
-import { ATTENDANCE_HISTORY, AttendanceRecord } from '../../constants/mockData';
 import { Badge, StatusType } from '../../components/Badge';
 import { attendanceApi } from '../../services/api/attendanceApi';
+import { useAuth } from '../../context/AuthContext';
+import { formatFullDate, formatTime, toLocalDateString } from '../../utils/dateTime';
 
 type FilterType = 'All' | 'Late' | 'Absent' | 'Holiday';
 
-function formatPunchTimes(inTime?: string, outTime?: string): string {
-  const fmt = (t?: string) => {
-    if (!t) return '--:--';
-    try {
-      const d = new Date(t);
-      return isNaN(d.getTime())
-        ? t
-        : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-    } catch {
-      return t;
-    }
-  };
+interface AttendanceHistoryRow {
+  id: string;
+  rawDate: string;
+  dow: string;
+  day: string;
+  date: string;
+  times: string;
+  meta: string;
+  status: string;
+  shiftLabel: string;
+  workedMinutes: number;
+  workedLabel: string;
+  checkInTime: string;
+  checkOutTime: string;
+  lateMinutes: number;
+  earlyMinutes: number;
+  source: string;
+  notes: string;
+}
 
+function formatPunchTimes(inTime?: string, outTime?: string): string {
   if (!inTime && !outTime) return 'No check-in';
-  return `${fmt(inTime)} – ${fmt(outTime)}`;
+  return `${formatTime(inTime)} – ${formatTime(outTime)}`;
 }
 
 export default function AttendanceScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
   const [filter, setFilter] = useState<FilterType>('All');
-  const [records, setRecords] = useState<AttendanceRecord[]>(ATTENDANCE_HISTORY);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [records, setRecords] = useState<AttendanceHistoryRow[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const monthLabel = new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString(
+    'en-GB',
+    { month: 'short', year: 'numeric' }
+  );
 
   const fetchHistory = useCallback(async () => {
+    setErrorMessage(null);
+    const startDate = toLocalDateString(new Date(selectedYear, selectedMonth - 1, 1));
+    const endDate = toLocalDateString(new Date(selectedYear, selectedMonth, 0));
+
     try {
-      const res = await attendanceApi.getHistory({ pageSize: 50 });
-      if (res && res.items && res.items.length > 0) {
-        const mapped: AttendanceRecord[] = res.items.map((item) => {
-          const d = new Date(item.attendanceDate);
-          const dow = isNaN(d.getTime())
-            ? 'DAY'
-            : d.toLocaleDateString('en-GB', { weekday: 'short' }).toUpperCase();
-          const day = isNaN(d.getTime()) ? '01' : String(d.getDate()).padStart(2, '0');
-          const dateFull = isNaN(d.getTime())
-            ? item.attendanceDate
-            : d.toLocaleDateString('en-GB', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              });
+      const res = await attendanceApi.getHistory({
+        startDate,
+        endDate,
+        pageSize: 50,
+      });
+      const mapped: AttendanceHistoryRow[] = (res?.items ?? []).map((item) => {
+        const d = new Date(item.attendanceDate);
+        const dow = isNaN(d.getTime())
+          ? 'DAY'
+          : d.toLocaleDateString('en-GB', { weekday: 'short' }).toUpperCase();
+        const day = isNaN(d.getTime()) ? '01' : String(d.getDate()).padStart(2, '0');
+        const dateFull = formatFullDate(item.attendanceDate);
 
-          const times = formatPunchTimes(item.checkInTime, item.checkOutTime);
-          const lateMeta =
-            item.lateMinutes && item.lateMinutes > 0 ? ` · ${item.lateMinutes} min late` : '';
-          const workMeta = item.workMinutes
-            ? ` · ${Math.floor(item.workMinutes / 60)}h ${item.workMinutes % 60}m`
-            : '';
-          const meta = `${item.checkInSource || 'Mobile'}${lateMeta}${workMeta}`;
+        const times = formatPunchTimes(item.checkInTime, item.checkOutTime);
+        const workMins = item.workMinutes ?? 0;
+        const workedLabel = workMins
+          ? `${Math.floor(workMins / 60)}h ${workMins % 60}m`
+          : '0h 0m';
+        const lateMins = item.lateMinutes ?? 0;
+        const earlyMins = item.earlyDepartureMinutes ?? 0;
+        const lateMeta = lateMins > 0 ? ` · ${lateMins} min late` : '';
+        const workMeta = workMins ? ` · ${workedLabel}` : '';
+        const source = item.checkInSource || 'Mobile';
+        const meta = `${source}${lateMeta}${workMeta}`;
 
-          return {
-            id: item.id,
-            dow,
-            day,
-            date: dateFull,
-            times,
-            meta: meta || 'Recorded on mobile',
-            status: (item.status || 'PRESENT') as any,
-          };
-        });
+        return {
+          id: item.id,
+          rawDate: item.attendanceDate.slice(0, 10),
+          dow,
+          day,
+          date: dateFull,
+          times,
+          meta,
+          status: item.status || 'PRESENT',
+          shiftLabel: item.shiftName || 'Default Shift',
+          workedMinutes: workMins,
+          workedLabel,
+          checkInTime: formatTime(item.checkInTime),
+          checkOutTime: formatTime(item.checkOutTime),
+          lateMinutes: lateMins,
+          earlyMinutes: earlyMins,
+          source,
+          notes: item.notes || '',
+        };
+      });
 
-        setRecords(mapped);
-      }
-    } catch {
-      // Retain fallback records if offline
+      setRecords(mapped);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Unable to load attendance history.');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [selectedYear, selectedMonth]);
 
   useEffect(() => {
-    fetchHistory();
+    void fetchHistory();
   }, [fetchHistory]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchHistory();
+    void fetchHistory();
+  };
+
+  const handleCycleMonth = () => {
+    if (selectedMonth === 1) {
+      setSelectedMonth(12);
+      setSelectedYear((y) => y - 1);
+    } else {
+      setSelectedMonth((m) => m - 1);
+    }
   };
 
   const filteredRecords = records.filter((item) => {
@@ -106,10 +147,13 @@ export default function AttendanceScreen() {
     return true;
   });
 
-  // Calculate dynamic stats
+  // Calculate dynamic stats from fetched records
   const onTimeCount = records.filter((r) => r.status === 'PRESENT' || r.status === 'WORKING').length;
   const lateCount = records.filter((r) => r.status === 'LATE').length;
   const absentCount = records.filter((r) => r.status === 'ABSENT').length;
+  const totalWorkedHours = Math.floor(
+    records.reduce((acc, r) => acc + r.workedMinutes, 0) / 60
+  );
 
   return (
     <View style={styles.container}>
@@ -123,9 +167,9 @@ export default function AttendanceScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Attendance</Text>
-          <TouchableOpacity style={styles.monthPicker} activeOpacity={0.7}>
-            <Text style={styles.monthText}>Nov 2026</Text>
-            <Ionicons name="chevron-down" size={16} color={colors.primary} />
+          <TouchableOpacity style={styles.monthPicker} activeOpacity={0.7} onPress={handleCycleMonth}>
+            <Text style={styles.monthText}>{monthLabel}</Text>
+            <Ionicons name="chevron-back" size={16} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
@@ -133,24 +177,24 @@ export default function AttendanceScreen() {
         <View style={styles.statsGrid}>
           <View style={styles.statTile}>
             <Text style={[styles.statValue, { color: colors.status.presentText }]}>
-              {onTimeCount || 11}
+              {onTimeCount}
             </Text>
             <Text style={styles.statLabel}>On time</Text>
           </View>
           <View style={styles.statTile}>
             <Text style={[styles.statValue, { color: colors.status.lateText }]}>
-              {lateCount || 3}
+              {lateCount}
             </Text>
             <Text style={styles.statLabel}>Late</Text>
           </View>
           <View style={styles.statTile}>
             <Text style={[styles.statValue, { color: colors.status.absentText }]}>
-              {absentCount || 1}
+              {absentCount}
             </Text>
             <Text style={styles.statLabel}>Absent</Text>
           </View>
           <View style={styles.statTile}>
-            <Text style={[styles.statValue, { color: colors.primary }]}>98h</Text>
+            <Text style={[styles.statValue, { color: colors.primary }]}>{totalWorkedHours}h</Text>
             <Text style={styles.statLabel}>Worked</Text>
           </View>
         </View>
@@ -183,6 +227,24 @@ export default function AttendanceScreen() {
         </View>
 
         {/* Attendance List */}
+        {loading ? (
+          <ActivityIndicator style={{ marginTop: 28 }} color={colors.primary} />
+        ) : errorMessage ? (
+          <View style={styles.card}>
+            <Text style={[styles.cardMeta, { color: colors.status.absentText }]}>
+              {errorMessage}
+            </Text>
+          </View>
+        ) : filteredRecords.length === 0 ? (
+          <View style={styles.card}>
+            <View style={styles.cardInfo}>
+              <Text style={styles.cardTimes}>No attendance records</Text>
+              <Text style={styles.cardMeta}>
+                Records for {monthLabel} will appear here once logged.
+              </Text>
+            </View>
+          </View>
+        ) : (
         <View style={styles.list}>
           {filteredRecords.map((item) => (
             <TouchableOpacity
@@ -194,12 +256,21 @@ export default function AttendanceScreen() {
                   pathname: '/attendance-detail',
                   params: {
                     id: item.id,
+                    rawDate: item.rawDate,
                     day: item.day,
                     dow: item.dow,
                     date: item.date,
                     status: item.status,
                     times: item.times,
-                    meta: item.meta,
+                    shiftLabel: item.shiftLabel,
+                    workedLabel: item.workedLabel,
+                    checkInTime: item.checkInTime,
+                    checkOutTime: item.checkOutTime,
+                    lateMinutes: String(item.lateMinutes),
+                    earlyMinutes: String(item.earlyMinutes),
+                    source: item.source,
+                    branchName: user?.branchName || '',
+                    notes: item.notes,
                   },
                 })
               }
@@ -222,6 +293,7 @@ export default function AttendanceScreen() {
             </TouchableOpacity>
           ))}
         </View>
+        )}
       </ScrollView>
     </View>
   );

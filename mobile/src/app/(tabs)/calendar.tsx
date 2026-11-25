@@ -13,93 +13,104 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/theme';
 import { Badge } from '../../components/Badge';
-import { getCalendarMonthData, CalendarDayInfo } from '../../constants/mockData';
 import { attendanceApi } from '../../services/api/attendanceApi';
-import { MobileCalendarDay } from '../../services/api/types';
+import { profileApi } from '../../services/api/profileApi';
+import { useAuth } from '../../context/AuthContext';
+import { MobileShiftResponse } from '../../services/api/types';
+import { formatTime, toLocalDateString } from '../../utils/dateTime';
 
-function formatPunchTime(iso?: string): string {
-  if (!iso) return '--:--';
-  try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return iso;
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-  } catch {
-    return iso;
-  }
+interface CalendarDayView {
+  day: number;
+  dow: number;
+  rawDate: string;
+  status: string;
+  inTime: string;
+  outTime: string;
+  note: string;
+  title: string;
+  badgeBg: string;
+  badgeFg: string;
+  dot: string;
 }
 
 export default function CalendarScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const now = new Date();
 
-  const [currentYear, setCurrentYear] = useState<number>(2026);
-  const [currentMonth, setCurrentMonth] = useState<number>(11); // 1-12
-  const [selectedDayNum, setSelectedDayNum] = useState<number>(20);
-  const [monthDays, setMonthDays] = useState<CalendarDayInfo[]>(getCalendarMonthData());
-  const [loading, setLoading] = useState<boolean>(false);
+  const [currentYear, setCurrentYear] = useState<number>(now.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState<number>(now.getMonth() + 1);
+  const [selectedDayNum, setSelectedDayNum] = useState<number>(now.getDate());
+  const [monthDays, setMonthDays] = useState<CalendarDayView[]>([]);
+  const [shiftData, setShiftData] = useState<MobileShiftResponse | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
   const fetchCalendar = useCallback(async (year: number, month: number) => {
     setLoading(true);
     try {
-      const res = await attendanceApi.getCalendar(year, month);
-      if (res && res.days && res.days.length > 0) {
-        // Map backend days
-        const mapped: CalendarDayInfo[] = res.days.map((d, index) => {
-          const dateObj = new Date(d.date);
-          const dayNum = dateObj.getDate() || index + 1;
-          const dow = dateObj.getDay() || 0;
+      const [res, shiftRes] = await Promise.all([
+        attendanceApi.getCalendar(year, month),
+        profileApi.getShift().catch(() => null),
+      ]);
+      if (shiftRes) setShiftData(shiftRes);
 
-          let badgeBg: string = Colors.status.off.bg;
-          let badgeFg: string = Colors.status.off.text;
-          let dot: string = 'transparent';
-          let title = 'Work day';
+      const mapped: CalendarDayView[] = (res?.days ?? []).map((d, index) => {
+        const dateObj = new Date(`${d.date.slice(0, 10)}T00:00:00`);
+        const dayNum = dateObj.getDate() || index + 1;
+        const dow = dateObj.getDay() || 0;
 
-          const normalizedStatus = (d.status || 'DAY OFF').toUpperCase();
-          if (normalizedStatus === 'PRESENT') {
-            dot = Colors.status.present.dot;
-            badgeBg = Colors.status.present.bg;
-            badgeFg = Colors.status.present.text;
-            title = 'Worked full shift';
-          } else if (normalizedStatus === 'LATE') {
-            dot = Colors.status.late.dot;
-            badgeBg = Colors.status.late.bg;
-            badgeFg = Colors.status.late.text;
-            title = 'Late arrival';
-          } else if (normalizedStatus === 'ABSENT') {
-            dot = Colors.status.absent.dot;
-            badgeBg = Colors.status.absent.bg;
-            badgeFg = Colors.status.absent.text;
-            title = 'No attendance recorded';
-          } else if (d.isHoliday || normalizedStatus === 'HOLIDAY') {
-            dot = Colors.status.holiday.dot;
-            badgeBg = Colors.status.holiday.bg;
-            badgeFg = Colors.status.holiday.text;
-            title = d.holidayName || 'Holiday';
-          } else if (normalizedStatus === 'WORKING' || normalizedStatus === 'TODAY') {
-            dot = Colors.status.today.dot;
-            badgeBg = Colors.status.today.bg;
-            badgeFg = Colors.status.today.text;
-            title = 'Working today';
-          }
+        let badgeBg: string = Colors.status.off.bg;
+        let badgeFg: string = Colors.status.off.text;
+        let dot: string = 'transparent';
+        let title = 'Work day';
 
-          return {
-            day: dayNum,
-            dow,
-            status: normalizedStatus as any,
-            inTime: formatPunchTime(d.checkInTime),
-            outTime: formatPunchTime(d.checkOutTime),
-            note: d.isHoliday ? 'Paid holiday' : d.checkInTime ? 'Recorded' : 'No punches',
-            title,
-            badgeBg,
-            badgeFg,
-            dot,
-          };
-        });
+        const normalizedStatus = (d.status || 'DAY OFF').toUpperCase();
+        if (normalizedStatus === 'PRESENT') {
+          dot = Colors.status.present.dot;
+          badgeBg = Colors.status.present.bg;
+          badgeFg = Colors.status.present.text;
+          title = 'Worked full shift';
+        } else if (normalizedStatus === 'LATE') {
+          dot = Colors.status.late.dot;
+          badgeBg = Colors.status.late.bg;
+          badgeFg = Colors.status.late.text;
+          title = 'Late arrival';
+        } else if (normalizedStatus === 'ABSENT') {
+          dot = Colors.status.absent.dot;
+          badgeBg = Colors.status.absent.bg;
+          badgeFg = Colors.status.absent.text;
+          title = 'No attendance recorded';
+        } else if (d.isHoliday || normalizedStatus === 'HOLIDAY') {
+          dot = Colors.status.holiday.dot;
+          badgeBg = Colors.status.holiday.bg;
+          badgeFg = Colors.status.holiday.text;
+          title = d.holidayName || 'Holiday';
+        } else if (normalizedStatus === 'WORKING' || normalizedStatus === 'TODAY') {
+          dot = Colors.status.today.dot;
+          badgeBg = Colors.status.today.bg;
+          badgeFg = Colors.status.today.text;
+          title = 'Working today';
+        }
 
-        setMonthDays(mapped);
-      }
+        return {
+          day: dayNum,
+          dow,
+          rawDate: d.date.slice(0, 10),
+          status: normalizedStatus,
+          inTime: formatTime(d.checkInTime),
+          outTime: formatTime(d.checkOutTime),
+          note: d.isHoliday ? 'Paid holiday' : d.checkInTime ? 'Recorded' : 'No punches',
+          title,
+          badgeBg,
+          badgeFg,
+          dot,
+        };
+      });
+
+      setMonthDays(mapped);
     } catch {
-      // Fallback to local month data
+      setMonthDays([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -107,12 +118,12 @@ export default function CalendarScreen() {
   }, []);
 
   useEffect(() => {
-    fetchCalendar(currentYear, currentMonth);
+    void fetchCalendar(currentYear, currentMonth);
   }, [fetchCalendar, currentYear, currentMonth]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchCalendar(currentYear, currentMonth);
+    void fetchCalendar(currentYear, currentMonth);
   };
 
   const handlePrevMonth = () => {
@@ -138,22 +149,27 @@ export default function CalendarScreen() {
     'July', 'August', 'September', 'October', 'November', 'December',
   ];
   const monthTitle = `${monthNames[currentMonth - 1]} ${currentYear}`;
+  const selectedDateObj = new Date(currentYear, currentMonth - 1, selectedDayNum);
 
-  const selectedDay = monthDays.find((d) => d.day === selectedDayNum) || monthDays[0] || {
+  const selectedDay: CalendarDayView = monthDays.find((d) => d.day === selectedDayNum) || {
     day: selectedDayNum,
-    dow: 5,
-    status: 'LATE',
-    inTime: '09:21',
-    outTime: '17:00',
-    note: '21 min late',
-    title: 'Late arrival',
-    badgeBg: Colors.status.late.bg,
-    badgeFg: Colors.status.late.text,
-    dot: Colors.status.late.dot,
+    dow: selectedDateObj.getDay(),
+    rawDate: toLocalDateString(selectedDateObj),
+    status: 'DAY OFF',
+    inTime: '--:--',
+    outTime: '--:--',
+    note: 'No attendance record',
+    title: 'No punches recorded',
+    badgeBg: Colors.status.off.bg,
+    badgeFg: Colors.status.off.text,
+    dot: 'transparent',
   };
 
   const dowNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const fullDateLabel = `${dowNames[selectedDay.dow]}, ${selectedDay.day} ${monthNames[currentMonth - 1]} ${currentYear}`;
+  const shiftSummary = shiftData
+    ? `${shiftData.shiftName} · ${shiftData.startTime}–${shiftData.endTime}`
+    : 'Default Workspace Shift';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -169,7 +185,7 @@ export default function CalendarScreen() {
           <Text style={styles.screenTitle}>Calendar</Text>
           <View style={styles.headerShiftBadge}>
             <Feather name="clock" size={13} color={Colors.accentDark} />
-            <Text style={styles.headerShiftText}>Morning Shift · 09:00–17:00</Text>
+            <Text style={styles.headerShiftText}>{shiftSummary}</Text>
           </View>
         </View>
 
@@ -287,12 +303,18 @@ export default function CalendarScreen() {
             <View style={styles.shiftDetailsRow}>
               <Feather name="clock" size={15} color={Colors.textMuted} />
               <Text style={styles.shiftDetailsLabel}>Assigned shift:</Text>
-              <Text style={styles.shiftDetailsValue}>Morning Shift (09:00 – 17:00)</Text>
+              <Text style={styles.shiftDetailsValue}>
+                {shiftData
+                  ? `${shiftData.shiftName} (${shiftData.startTime} – ${shiftData.endTime})`
+                  : 'Default Workspace Shift'}
+              </Text>
             </View>
             <View style={styles.shiftDetailsRow}>
               <Feather name="coffee" size={15} color={Colors.textMuted} />
               <Text style={styles.shiftDetailsLabel}>Break allowance:</Text>
-              <Text style={styles.shiftDetailsValue}>60 minutes</Text>
+              <Text style={styles.shiftDetailsValue}>
+                {shiftData ? `${shiftData.breakMinutes ?? 0} minutes` : '—'}
+              </Text>
             </View>
           </View>
 
@@ -304,9 +326,15 @@ export default function CalendarScreen() {
                 router.push({
                   pathname: '/attendance-detail',
                   params: {
+                    rawDate: selectedDay.rawDate,
                     date: fullDateLabel,
                     status: selectedDay.status,
                     day: String(selectedDay.day),
+                    shiftLabel: shiftSummary,
+                    checkInTime: selectedDay.inTime,
+                    checkOutTime: selectedDay.outTime,
+                    branchName: user?.branchName || '',
+                    notes: selectedDay.note,
                   },
                 })
               }
