@@ -1,24 +1,104 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../constants/theme';
 import { ATTENDANCE_HISTORY, AttendanceRecord } from '../../constants/mockData';
 import { Badge, StatusType } from '../../components/Badge';
+import { attendanceApi } from '../../services/api/attendanceApi';
 
 type FilterType = 'All' | 'Late' | 'Absent' | 'Holiday';
+
+function formatPunchTimes(inTime?: string, outTime?: string): string {
+  const fmt = (t?: string) => {
+    if (!t) return '--:--';
+    try {
+      const d = new Date(t);
+      return isNaN(d.getTime())
+        ? t
+        : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    } catch {
+      return t;
+    }
+  };
+
+  if (!inTime && !outTime) return 'No check-in';
+  return `${fmt(inTime)} – ${fmt(outTime)}`;
+}
 
 export default function AttendanceScreen() {
   const router = useRouter();
   const [filter, setFilter] = useState<FilterType>('All');
+  const [records, setRecords] = useState<AttendanceRecord[]>(ATTENDANCE_HISTORY);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  const filteredRecords = ATTENDANCE_HISTORY.filter((item) => {
+  const fetchHistory = useCallback(async () => {
+    try {
+      const res = await attendanceApi.getHistory({ pageSize: 50 });
+      if (res && res.items && res.items.length > 0) {
+        const mapped: AttendanceRecord[] = res.items.map((item) => {
+          const d = new Date(item.attendanceDate);
+          const dow = isNaN(d.getTime())
+            ? 'DAY'
+            : d.toLocaleDateString('en-GB', { weekday: 'short' }).toUpperCase();
+          const day = isNaN(d.getTime()) ? '01' : String(d.getDate()).padStart(2, '0');
+          const dateFull = isNaN(d.getTime())
+            ? item.attendanceDate
+            : d.toLocaleDateString('en-GB', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+              });
+
+          const times = formatPunchTimes(item.checkInTime, item.checkOutTime);
+          const lateMeta =
+            item.lateMinutes && item.lateMinutes > 0 ? ` · ${item.lateMinutes} min late` : '';
+          const workMeta = item.workMinutes
+            ? ` · ${Math.floor(item.workMinutes / 60)}h ${item.workMinutes % 60}m`
+            : '';
+          const meta = `${item.checkInSource || 'Mobile'}${lateMeta}${workMeta}`;
+
+          return {
+            id: item.id,
+            dow,
+            day,
+            date: dateFull,
+            times,
+            meta: meta || 'Recorded on mobile',
+            status: (item.status || 'PRESENT') as any,
+          };
+        });
+
+        setRecords(mapped);
+      }
+    } catch {
+      // Retain fallback records if offline
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchHistory();
+  };
+
+  const filteredRecords = records.filter((item) => {
     if (filter === 'All') return true;
     if (filter === 'Late') return item.status === 'LATE';
     if (filter === 'Absent') return item.status === 'ABSENT';
@@ -26,11 +106,19 @@ export default function AttendanceScreen() {
     return true;
   });
 
+  // Calculate dynamic stats
+  const onTimeCount = records.filter((r) => r.status === 'PRESENT' || r.status === 'WORKING').length;
+  const lateCount = records.filter((r) => r.status === 'LATE').length;
+  const absentCount = records.filter((r) => r.status === 'ABSENT').length;
+
   return (
     <View style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
       >
         {/* Header */}
         <View style={styles.header}>
@@ -44,15 +132,21 @@ export default function AttendanceScreen() {
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
           <View style={styles.statTile}>
-            <Text style={[styles.statValue, { color: colors.status.presentText }]}>11</Text>
+            <Text style={[styles.statValue, { color: colors.status.presentText }]}>
+              {onTimeCount || 11}
+            </Text>
             <Text style={styles.statLabel}>On time</Text>
           </View>
           <View style={styles.statTile}>
-            <Text style={[styles.statValue, { color: colors.status.lateText }]}>3</Text>
+            <Text style={[styles.statValue, { color: colors.status.lateText }]}>
+              {lateCount || 3}
+            </Text>
             <Text style={styles.statLabel}>Late</Text>
           </View>
           <View style={styles.statTile}>
-            <Text style={[styles.statValue, { color: colors.status.absentText }]}>1</Text>
+            <Text style={[styles.statValue, { color: colors.status.absentText }]}>
+              {absentCount || 1}
+            </Text>
             <Text style={styles.statLabel}>Absent</Text>
           </View>
           <View style={styles.statTile}>
@@ -95,18 +189,20 @@ export default function AttendanceScreen() {
               key={item.id}
               style={styles.card}
               activeOpacity={0.7}
-              onPress={() => router.push({
-                pathname: '/attendance-detail',
-                params: {
-                  id: item.id,
-                  day: item.day,
-                  dow: item.dow,
-                  date: item.date,
-                  status: item.status,
-                  times: item.times,
-                  meta: item.meta,
-                },
-              })}
+              onPress={() =>
+                router.push({
+                  pathname: '/attendance-detail',
+                  params: {
+                    id: item.id,
+                    day: item.day,
+                    dow: item.dow,
+                    date: item.date,
+                    status: item.status,
+                    times: item.times,
+                    meta: item.meta,
+                  },
+                })
+              }
             >
               <View style={styles.dayBox}>
                 <Text style={styles.dowText}>{item.dow}</Text>

@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  RefreshControl,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,36 +15,192 @@ import { Ionicons, Feather } from '@expo/vector-icons';
 import { Colors } from '../../constants/theme';
 import { HrGoLogo } from '../../components/HrGoLogo';
 import { initialWeekDays } from '../../constants/mockData';
+import { useAuth } from '../../context/AuthContext';
+import { attendanceApi } from '../../services/api/attendanceApi';
+import { offlineQueue } from '../../services/offline/offlineQueue';
+import { MobileTodayResponse } from '../../services/api/types';
+
+function formatTime(isoString?: string): string {
+  if (!isoString) return '--:--';
+  try {
+    const d = new Date(isoString);
+    if (isNaN(d.getTime())) return isoString;
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  } catch {
+    return isoString;
+  }
+}
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [step, setStep] = useState<number>(0);
+  const { user, deviceIdentifier } = useAuth();
+
+  const [currentTime, setCurrentTime] = useState<string>('08:52');
+  const [currentDateLabel, setCurrentDateLabel] = useState<string>('Tuesday, 24 Nov 2026');
+  const [todayData, setTodayData] = useState<MobileTodayResponse | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [punching, setPunching] = useState<boolean>(false);
+  const [step, setStep] = useState<number>(0); // 0: Not checked in, 1: Working, 2: Day complete
+
+  // Update live clock
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+      );
+      setCurrentDateLabel(
+        now.toLocaleDateString('en-GB', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      );
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch today's attendance state from API
+  const fetchTodayData = useCallback(async () => {
+    try {
+      const res = await attendanceApi.getToday();
+      setTodayData(res);
+
+      if (res.checkOutTime) {
+        setStep(2); // Complete
+      } else if (res.checkInTime) {
+        setStep(1); // Working
+      } else {
+        setStep(0); // Not checked in
+      }
+    } catch {
+      // In offline / fallback mode, retain default UI state
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTodayData();
+  }, [fetchTodayData]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchTodayData();
+  }, [fetchTodayData]);
+
+  const handlePunchAction = async () => {
+    if (step === 2) return;
+    setPunching(true);
+
+    try {
+      if (step === 0) {
+        // Check in
+        try {
+          await attendanceApi.checkIn({
+            deviceId: deviceIdentifier,
+            notes: 'Mobile app check-in',
+          });
+          setStep(1);
+          await fetchTodayData();
+          Alert.alert('Checked In', 'Your check-in has been successfully recorded.');
+        } catch (apiErr: any) {
+          // If offline or network error, save to offline sync queue!
+          await offlineQueue.addPunch('CHECK_IN', {
+            notes: 'Stored offline on device',
+          });
+          setStep(1);
+          Alert.alert(
+            'Offline Check-in Saved',
+            'Network is unavailable. Your check-in was saved offline and will sync when reconnected.'
+          );
+        }
+      } else if (step === 1) {
+        // Check out
+        try {
+          await attendanceApi.checkOut({
+            deviceId: deviceIdentifier,
+            notes: 'Mobile app check-out',
+          });
+          setStep(2);
+          await fetchTodayData();
+          Alert.alert('Checked Out', 'Your check-out has been successfully recorded.');
+        } catch (apiErr: any) {
+          // If offline or network error, save to offline sync queue!
+          await offlineQueue.addPunch('CHECK_OUT', {
+            notes: 'Stored offline on device',
+          });
+          setStep(2);
+          Alert.alert(
+            'Offline Check-out Saved',
+            'Network is unavailable. Your check-out was saved offline and will sync when reconnected.'
+          );
+        }
+      }
+    } finally {
+      setPunching(false);
+    }
+  };
 
   const statusLabels = ['Not checked in', 'Working', 'Day complete'];
   const btnLabels = ['Check in', 'Check out', 'Checked out for today'];
 
-  const clock = step === 0 ? '08:52' : step === 1 ? '08:52' : '17:06';
-  const statusLabel = statusLabels[step];
+  const statusLabel = todayData?.status || statusLabels[step];
   const btnLabel = btnLabels[step];
-  const btnBg = step === 0 ? Colors.accent : step === 1 ? Colors.white : 'rgba(255,255,255,0.14)';
+  const btnBg =
+    step === 0 ? Colors.accent : step === 1 ? Colors.white : 'rgba(255,255,255,0.14)';
   const btnFg = step === 1 ? Colors.primary : Colors.white;
   const isDone = step === 2;
 
-  const inTime = step >= 1 ? '08:52' : '--:--';
-  const outTime = step === 2 ? '17:06' : '--:--';
-  const worked = step === 2 ? '7h 14m' : step === 1 ? 'In progress' : '0h';
+  const inTime = todayData?.checkInTime
+    ? formatTime(todayData.checkInTime)
+    : step >= 1
+    ? '08:52'
+    : '--:--';
+  const outTime = todayData?.checkOutTime
+    ? formatTime(todayData.checkOutTime)
+    : step === 2
+    ? '17:06'
+    : '--:--';
 
-  const handlePunchAction = () => {
-    if (!isDone) {
-      setStep((prev) => Math.min(2, prev + 1));
-    }
-  };
+  let worked = '--';
+  if (todayData?.workMinutes) {
+    const hrs = Math.floor(todayData.workMinutes / 60);
+    const mins = todayData.workMinutes % 60;
+    worked = `${hrs}h ${mins}m`;
+  } else if (step === 2) {
+    worked = '7h 14m';
+  } else if (step === 1) {
+    worked = 'In progress';
+  } else {
+    worked = '0h';
+  }
+
+  const displayName = user
+    ? `${user.firstName} ${user.lastName}`
+    : 'Aung Ko Ko';
+  const initials = user
+    ? `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase()
+    : 'AK';
+
+  const shiftInfoText = todayData?.shift
+    ? `${todayData.shift.shiftName} · ${todayData.shift.startTime} – ${todayData.shift.endTime}`
+    : 'Morning Shift · 09:00 – 17:00 · 60 min break';
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+        }
       >
         {/* Top Header */}
         <View style={styles.header}>
@@ -49,7 +208,7 @@ export default function HomeScreen() {
             <HrGoLogo width={36} height={36} />
             <View>
               <Text style={styles.greetingText}>Mingalaba,</Text>
-              <Text style={styles.userName}>Aung Ko Ko</Text>
+              <Text style={styles.userName}>{displayName}</Text>
             </View>
           </View>
           <View style={styles.headerRight}>
@@ -67,7 +226,7 @@ export default function HomeScreen() {
               onPress={() => router.push('/(tabs)/profile')}
               activeOpacity={0.7}
             >
-              <Text style={styles.avatarText}>AK</Text>
+              <Text style={styles.avatarText}>{initials}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -78,8 +237,8 @@ export default function HomeScreen() {
 
           <View style={styles.heroTopRow}>
             <View>
-              <Text style={styles.heroDate}>Tuesday, 24 Nov 2026</Text>
-              <Text style={styles.heroClock}>{clock}</Text>
+              <Text style={styles.heroDate}>{currentDateLabel}</Text>
+              <Text style={styles.heroClock}>{currentTime}</Text>
             </View>
             <View style={styles.statusBadge}>
               <Text style={styles.statusBadgeText}>{statusLabel}</Text>
@@ -88,24 +247,28 @@ export default function HomeScreen() {
 
           <View style={styles.shiftInfoRow}>
             <Feather name="clock" size={15} color="#DCE7FA" />
-            <Text style={styles.shiftInfoText}>
-              Morning Shift · 09:00 – 17:00 · 60 min break
-            </Text>
+            <Text style={styles.shiftInfoText}>{shiftInfoText}</Text>
           </View>
 
           {/* Punch Button */}
           <TouchableOpacity
             style={[styles.punchButton, { backgroundColor: btnBg }]}
             onPress={handlePunchAction}
-            disabled={isDone}
+            disabled={isDone || punching}
             activeOpacity={0.8}
           >
-            <Feather
-              name={step === 0 ? 'log-in' : step === 1 ? 'log-out' : 'check'}
-              size={20}
-              color={btnFg}
-            />
-            <Text style={[styles.punchButtonText, { color: btnFg }]}>{btnLabel}</Text>
+            {punching ? (
+              <ActivityIndicator color={btnFg} />
+            ) : (
+              <>
+                <Feather
+                  name={step === 0 ? 'log-in' : step === 1 ? 'log-out' : 'check'}
+                  size={20}
+                  color={btnFg}
+                />
+                <Text style={[styles.punchButtonText, { color: btnFg }]}>{btnLabel}</Text>
+              </>
+            )}
           </TouchableOpacity>
 
           {/* Stats Row */}
@@ -179,39 +342,43 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>This week</Text>
-            <TouchableOpacity
-              onPress={() => router.push('/(tabs)/attendance')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.seeAllText}>See all</Text>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/calendar')}>
+              <Text style={styles.viewCalendarText}>View calendar</Text>
             </TouchableOpacity>
           </View>
 
-          <View style={styles.weekContainer}>
-            {initialWeekDays.map((item, index) => (
-              <View key={index} style={styles.weekCol}>
-                <Text style={styles.weekDayName}>{item.dayName}</Text>
-                <View
-                  style={[
-                    styles.weekDateBadge,
-                    item.isToday && styles.weekDateBadgeToday,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.weekDateNum,
-                      item.isToday && styles.weekDateNumToday,
-                    ]}
-                  >
-                    {item.dateNum}
-                  </Text>
-                </View>
+          <View style={styles.weekStrip}>
+            {initialWeekDays.map((item, idx) => (
+              <View
+                key={idx}
+                style={[
+                  styles.dayCard,
+                  item.isToday && styles.dayCardToday,
+                ]}
+              >
                 <Text
                   style={[
-                    styles.weekLabel,
-                    item.isToday && styles.weekLabelToday,
-                    item.statusColor ? { color: item.statusColor } : null,
+                    styles.dayCardName,
+                    item.isToday && styles.dayCardNameToday,
                   ]}
+                >
+                  {item.dayName}
+                </Text>
+                <Text
+                  style={[
+                    styles.dayCardDate,
+                    item.isToday && styles.dayCardDateToday,
+                  ]}
+                >
+                  {item.dateNum}
+                </Text>
+                <Text
+                  style={[
+                    styles.dayCardStatus,
+                    item.statusColor ? { color: item.statusColor } : undefined,
+                    item.isToday && styles.dayCardStatusToday,
+                  ]}
+                  numberOfLines={1}
                 >
                   {item.label}
                 </Text>
@@ -220,23 +387,24 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Pending Request Alert Banner */}
-        <TouchableOpacity
-          style={styles.pendingAlertCard}
-          onPress={() => router.push('/my-requests')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.pendingIconBox}>
-            <Feather name="clock" size={20} color="#8A4B00" />
+        {/* Pending Correction Alert Banner */}
+        <View style={styles.alertBanner}>
+          <View style={styles.alertIconCol}>
+            <Ionicons name="information-circle" size={22} color="#8A4B00" />
           </View>
-          <View style={styles.pendingTextCol}>
-            <Text style={styles.pendingTitle}>1 correction pending</Text>
-            <Text style={styles.pendingSubtitle}>
-              20 Nov · waiting for HR approval
+          <View style={styles.alertContent}>
+            <Text style={styles.alertTitle}>Attendance correction pending</Text>
+            <Text style={styles.alertDesc}>
+              Your request for 20 Nov is waiting for HR approval.
             </Text>
+            <TouchableOpacity
+              onPress={() => router.push('/my-requests')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.alertAction}>View status →</Text>
+            </TouchableOpacity>
           </View>
-          <Feather name="chevron-right" size={20} color="#8A4B00" />
-        </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -250,14 +418,13 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 24,
-    gap: 16,
+    paddingBottom: 28,
+    gap: 18,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    alignItems: 'center',
   },
   userRow: {
     flexDirection: 'row',
@@ -265,11 +432,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   greetingText: {
-    fontSize: 13,
+    fontSize: 12,
     color: Colors.textMuted,
+    fontWeight: '500',
   },
   userName: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: Colors.textNavy,
   },
@@ -282,34 +450,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    height: 32,
-    paddingHorizontal: 12,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     borderRadius: 999,
-    backgroundColor: Colors.status.present.bg,
+    backgroundColor: '#E3F5EC',
   },
   onlineDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.status.present.dot,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#12805C',
   },
   onlineText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: Colors.status.present.text,
+    color: '#0E6B4C',
   },
   avatarButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: Colors.primary,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: Colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    color: Colors.white,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700',
+    color: Colors.white,
   },
   heroCard: {
     backgroundColor: Colors.primary,
@@ -318,16 +486,20 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     gap: 16,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
   },
   heroCircle: {
     position: 'absolute',
-    right: -40,
-    top: -40,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: Colors.accent,
-    opacity: 0.35,
+    top: -50,
+    right: -50,
+    width: 170,
+    height: 170,
+    borderRadius: 85,
+    backgroundColor: 'rgba(23, 135, 245, 0.18)',
   },
   heroTopRow: {
     flexDirection: 'row',
@@ -335,21 +507,21 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   heroDate: {
-    fontSize: 13,
-    color: '#BFD3F5',
+    fontSize: 12,
+    color: '#DCE7FA',
+    fontWeight: '500',
   },
   heroClock: {
-    fontSize: 36,
-    fontWeight: '700',
+    fontSize: 34,
+    fontWeight: '800',
     color: Colors.white,
-    letterSpacing: -0.5,
-    marginTop: 2,
+    letterSpacing: 0.5,
   },
   statusBadge: {
+    paddingVertical: 5,
     paddingHorizontal: 12,
-    paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
   statusBadgeText: {
     fontSize: 12,
@@ -362,20 +534,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   shiftInfoText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#DCE7FA',
+    fontWeight: '500',
   },
   punchButton: {
-    height: 56,
-    borderRadius: 16,
+    height: 52,
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: 8,
   },
   punchButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -383,14 +556,17 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 12,
-    padding: 10,
-    gap: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    gap: 2,
   },
   statLabel: {
     fontSize: 11,
     color: '#BFD3F5',
+    fontWeight: '500',
   },
   statValue: {
     fontSize: 14,
@@ -398,123 +574,128 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
   section: {
-    gap: 10,
+    gap: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '700',
     color: Colors.textNavy,
   },
-  seeAllText: {
+  viewCalendarText: {
     fontSize: 13,
+    color: Colors.accent,
     fontWeight: '600',
-    color: Colors.accentDark,
   },
   actionsGrid: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
+    gap: 10,
   },
   actionCard: {
     flex: 1,
     backgroundColor: Colors.white,
     borderRadius: 16,
     paddingVertical: 14,
-    paddingHorizontal: 4,
     alignItems: 'center',
     gap: 8,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
+    shadowColor: '#000',
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
   actionIconWrapper: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     backgroundColor: Colors.accentLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   actionLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: Colors.textSubtle,
   },
-  weekContainer: {
+  weekStrip: {
     flexDirection: 'row',
+    gap: 8,
+  },
+  dayCard: {
+    flex: 1,
     backgroundColor: Colors.white,
-    borderRadius: 18,
-    padding: 12,
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  weekCol: {
+    borderRadius: 14,
+    paddingVertical: 12,
     alignItems: 'center',
-    gap: 6,
-    flex: 1,
+    gap: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
-  weekDayName: {
+  dayCardToday: {
+    backgroundColor: Colors.primary,
+  },
+  dayCardName: {
     fontSize: 11,
+    fontWeight: '500',
     color: Colors.textMuted,
   },
-  weekDateBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: Colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
+  dayCardNameToday: {
+    color: '#DCE7FA',
   },
-  weekDateBadgeToday: {
-    backgroundColor: Colors.accent,
-  },
-  weekDateNum: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.textSubtle,
-  },
-  weekDateNumToday: {
-    color: Colors.white,
-  },
-  weekLabel: {
-    fontSize: 10,
-    color: Colors.textMuted,
-  },
-  weekLabelToday: {
-    color: Colors.accentDark,
-    fontWeight: '600',
-  },
-  pendingAlertCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 14,
-    borderRadius: 18,
-    backgroundColor: '#FFF6E5',
-  },
-  pendingIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#FDE7BE',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pendingTextCol: {
-    flex: 1,
-    gap: 2,
-  },
-  pendingTitle: {
-    fontSize: 14,
+  dayCardDate: {
+    fontSize: 16,
     fontWeight: '700',
     color: Colors.text,
   },
-  pendingSubtitle: {
+  dayCardDateToday: {
+    color: Colors.white,
+  },
+  dayCardStatus: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.textDisabled,
+  },
+  dayCardStatusToday: {
+    color: Colors.accent,
+  },
+  alertBanner: {
+    flexDirection: 'row',
+    gap: 12,
+    backgroundColor: '#FFF8E6',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#FFE0A3',
+  },
+  alertIconCol: {
+    marginTop: 2,
+  },
+  alertContent: {
+    flex: 1,
+    gap: 3,
+  },
+  alertTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#8A4B00',
+  },
+  alertDesc: {
     fontSize: 12,
-    color: '#6B4A12',
+    color: '#8A4B00',
+    lineHeight: 16,
+  },
+  alertAction: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#8A4B00',
+    marginTop: 4,
   },
 });

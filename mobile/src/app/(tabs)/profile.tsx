@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,43 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../constants/theme';
 import { EMPLOYEE_PROFILE, CURRENT_SHIFT, POSITION_HISTORY } from '../../constants/mockData';
+import { useAuth } from '../../context/AuthContext';
+import { profileApi } from '../../services/api/profileApi';
+import { MobileShiftResponse } from '../../services/api/types';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { user, logout, refreshProfile } = useAuth();
+
+  const [shiftData, setShiftData] = useState<MobileShiftResponse | null>(null);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const fetchShift = useCallback(async () => {
+    try {
+      const s = await profileApi.getShift();
+      if (s) {
+        setShiftData(s);
+      }
+    } catch {
+      // Retain fallback shift
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchShift();
+  }, [fetchShift]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([refreshProfile(), fetchShift()]);
+    setRefreshing(false);
+  };
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -21,30 +50,53 @@ export default function ProfileScreen() {
       {
         text: 'Sign Out',
         style: 'destructive',
-        onPress: () => router.replace('/(auth)/sign-in'),
+        onPress: async () => {
+          await logout();
+          router.replace('/(auth)/sign-in');
+        },
       },
     ]);
   };
+
+  const displayName = user ? `${user.firstName} ${user.lastName}` : EMPLOYEE_PROFILE.name;
+  const initials = user
+    ? `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase()
+    : EMPLOYEE_PROFILE.avatarInitials;
+  const roleDept = user
+    ? `${user.positionTitle || 'Employee'} · ${user.departmentName || 'General'}`
+    : `${EMPLOYEE_PROFILE.role} · ${EMPLOYEE_PROFILE.department}`;
+  const empMeta = user
+    ? `${user.employeeCode} · ${user.branchName || 'Yangon Branch'} · ${user.employmentStatus || 'Active'}`
+    : `${EMPLOYEE_PROFILE.employeeCode} · ${EMPLOYEE_PROFILE.branch} · ${EMPLOYEE_PROFILE.status}`;
+  const phone = user?.phone || EMPLOYEE_PROFILE.phone;
+  const joinDate = user?.dateOfJoining || EMPLOYEE_PROFILE.joinDate;
+
+  const shiftName = shiftData?.shiftName || CURRENT_SHIFT.name;
+  const shiftHours = shiftData
+    ? `${shiftData.startTime} – ${shiftData.endTime}`
+    : CURRENT_SHIFT.hours;
+  const shiftBreak = shiftData
+    ? `${shiftData.gracePeriodMinutes || 60} min grace/break`
+    : `${CURRENT_SHIFT.breakMinutes} min break · since ${CURRENT_SHIFT.effectiveDate}`;
 
   return (
     <View style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
       >
         {/* Profile Header Banner */}
         <View style={styles.headerBanner}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{EMPLOYEE_PROFILE.avatarInitials}</Text>
+            <Text style={styles.avatarText}>{initials}</Text>
           </View>
           <View style={styles.headerInfo}>
-            <Text style={styles.employeeName}>{EMPLOYEE_PROFILE.name}</Text>
-            <Text style={styles.employeeRole}>
-              {EMPLOYEE_PROFILE.role} · {EMPLOYEE_PROFILE.department}
-            </Text>
-            <Text style={styles.employeeMeta}>
-              {EMPLOYEE_PROFILE.employeeCode} · {EMPLOYEE_PROFILE.branch} · {EMPLOYEE_PROFILE.status}
-            </Text>
+            <Text style={styles.employeeName}>{displayName}</Text>
+            <Text style={styles.employeeRole}>{roleDept}</Text>
+            <Text style={styles.employeeMeta}>{empMeta}</Text>
           </View>
         </View>
 
@@ -57,11 +109,9 @@ export default function ProfileScreen() {
             <View style={styles.shiftInfo}>
               <Text style={styles.sectionSubtitle}>Assigned shift</Text>
               <Text style={styles.shiftTitle}>
-                {CURRENT_SHIFT.name} · {CURRENT_SHIFT.hours}
+                {shiftName} · {shiftHours}
               </Text>
-              <Text style={styles.shiftSubtitle}>
-                {CURRENT_SHIFT.breakMinutes} min break · since {CURRENT_SHIFT.effectiveDate}
-              </Text>
+              <Text style={styles.shiftSubtitle}>{shiftBreak}</Text>
             </View>
           </View>
 
@@ -70,11 +120,11 @@ export default function ProfileScreen() {
             <Text style={styles.cardHeading}>Personal information</Text>
             <View style={styles.row}>
               <Text style={styles.rowLabel}>Phone</Text>
-              <Text style={styles.rowValue}>{EMPLOYEE_PROFILE.phone}</Text>
+              <Text style={styles.rowValue}>{phone}</Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.rowLabel}>Date of joining</Text>
-              <Text style={styles.rowValue}>{EMPLOYEE_PROFILE.joinDate}</Text>
+              <Text style={styles.rowValue}>{joinDate}</Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.rowLabel}>Date of birth</Text>
