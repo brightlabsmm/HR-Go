@@ -1,7 +1,7 @@
 package request
 
 type CreateEmployeeRequest struct {
-	EmployeeCode     string  `json:"employeeCode" binding:"required,max=50"`
+	EmployeeCode     string  `json:"employeeCode" binding:"omitempty,max=50"`
 	FirstName        string  `json:"firstName" binding:"required,max=100"`
 	LastName         string  `json:"lastName" binding:"required,max=100"`
 	Email            *string `json:"email" binding:"omitempty,email,max=255"`

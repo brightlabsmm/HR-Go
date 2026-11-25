@@ -41,6 +41,7 @@ export interface Employee {
   dateOfJoining?: string | null
   employmentStatus: EmploymentStatus | string
   profile?: EmployeeProfile | null
+  generatedPassword?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -64,7 +65,7 @@ export interface EmployeeListParams extends ListQueryParams {
 }
 
 export interface CreateEmployeeInput {
-  employeeCode: string
+  employeeCode?: string | null
   firstName: string
   lastName: string
   email?: string | null

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -13,7 +14,8 @@ import (
 )
 
 type Repository interface {
-	Create(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile) error
+	Create(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile, account *models.OrganizationAccount) error
+	GetNextEmployeeCode(ctx context.Context, orgID string) (string, error)
 	FindByID(ctx context.Context, orgID, id string) (*models.Employee, error)
 	FindByCode(ctx context.Context, orgID, code string) (*models.Employee, error)
 	FindByEmail(ctx context.Context, orgID, email string) (*models.Employee, error)
@@ -33,7 +35,7 @@ func New(db *gorm.DB) Repository {
 	return &repository{db: db}
 }
 
-func (r *repository) Create(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile) error {
+func (r *repository) Create(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile, account *models.OrganizationAccount) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(emp).Error; err != nil {
 			return err
@@ -43,6 +45,22 @@ func (r *repository) Create(ctx context.Context, emp *models.Employee, profile *
 			profile.OrganizationID = emp.OrganizationID
 			if err := tx.Create(profile).Error; err != nil {
 				return err
+			}
+		}
+		if account != nil {
+			account.EmployeeID = emp.ID
+			account.OrganizationID = emp.OrganizationID
+			if err := tx.Create(account).Error; err != nil {
+				return err
+			}
+
+			// Assign default EMPLOYEE role if present in org_roles
+			var role struct{ ID string }
+			if err := tx.Table("org_roles").
+				Select("id").
+				Where("code = 'EMPLOYEE' AND (organization_id IS NULL OR organization_id = ?)", emp.OrganizationID).
+				First(&role).Error; err == nil && role.ID != "" {
+				_ = tx.Exec("INSERT INTO org_user_roles (account_id, role_id) VALUES (?, ?) ON CONFLICT DO NOTHING", account.ID, role.ID).Error
 			}
 		}
 		if emp.PositionID != nil && *emp.PositionID != "" {
@@ -59,6 +77,32 @@ func (r *repository) Create(ctx context.Context, emp *models.Employee, profile *
 		}
 		return nil
 	})
+}
+
+func (r *repository) GetNextEmployeeCode(ctx context.Context, orgID string) (string, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).Model(&models.Employee{}).
+		Where("organization_id = ?", orgID).
+		Count(&count).Error; err != nil {
+		return "", err
+	}
+
+	seq := count + 1
+	for i := 0; i < 100; i++ {
+		candidate := fmt.Sprintf("EMP-%03d", seq)
+		var existingCount int64
+		if err := r.db.WithContext(ctx).Model(&models.Employee{}).
+			Where("organization_id = ? AND LOWER(employee_code) = LOWER(?)", orgID, candidate).
+			Count(&existingCount).Error; err != nil {
+			return "", err
+		}
+		if existingCount == 0 {
+			return candidate, nil
+		}
+		seq++
+	}
+
+	return fmt.Sprintf("EMP-%d", time.Now().Unix()%100000), nil
 }
 
 func (r *repository) FindByID(ctx context.Context, orgID, id string) (*models.Employee, error) {

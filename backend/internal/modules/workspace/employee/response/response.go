@@ -12,25 +12,26 @@ type EmployeeProfileResponse struct {
 }
 
 type EmployeeResponse struct {
-	ID               string                   `json:"id"`
-	OrganizationID   string                   `json:"organizationId"`
-	EmployeeCode     string                   `json:"employeeCode"`
-	FirstName        string                   `json:"firstName"`
-	LastName         string                   `json:"lastName"`
-	FullName         string                   `json:"fullName"`
-	Email            *string                  `json:"email,omitempty"`
-	Phone            *string                  `json:"phone,omitempty"`
-	BranchID         *string                  `json:"branchId,omitempty"`
-	BranchName       *string                  `json:"branchName,omitempty"`
-	DepartmentID     *string                  `json:"departmentId,omitempty"`
-	DepartmentName   *string                  `json:"departmentName,omitempty"`
-	PositionID       *string                  `json:"positionId,omitempty"`
-	PositionTitle    *string                  `json:"positionTitle,omitempty"`
-	DateOfJoining    *string                  `json:"dateOfJoining,omitempty"`
-	EmploymentStatus string                   `json:"employmentStatus"`
-	Profile          *EmployeeProfileResponse `json:"profile,omitempty"`
-	CreatedAt        time.Time                `json:"createdAt"`
-	UpdatedAt        time.Time                `json:"updatedAt"`
+	ID                string                   `json:"id"`
+	OrganizationID    string                   `json:"organizationId"`
+	EmployeeCode      string                   `json:"employeeCode"`
+	FirstName         string                   `json:"firstName"`
+	LastName          string                   `json:"lastName"`
+	FullName          string                   `json:"fullName"`
+	Email             *string                  `json:"email,omitempty"`
+	Phone             *string                  `json:"phone,omitempty"`
+	BranchID          *string                  `json:"branchId,omitempty"`
+	BranchName        *string                  `json:"branchName,omitempty"`
+	DepartmentID      *string                  `json:"departmentId,omitempty"`
+	DepartmentName    *string                  `json:"departmentName,omitempty"`
+	PositionID        *string                  `json:"positionId,omitempty"`
+	PositionTitle     *string                  `json:"positionTitle,omitempty"`
+	DateOfJoining     *string                  `json:"dateOfJoining,omitempty"`
+	EmploymentStatus  string                   `json:"employmentStatus"`
+	Profile           *EmployeeProfileResponse `json:"profile,omitempty"`
+	GeneratedPassword *string                  `json:"generatedPassword,omitempty"`
+	CreatedAt         time.Time                `json:"createdAt"`
+	UpdatedAt         time.Time                `json:"updatedAt"`
 }
 
 type PositionHistoryResponse struct {

@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
 	"math"
+	"math/big"
 	"strings"
 	"time"
 
@@ -12,6 +14,7 @@ import (
 	"hrgo/backend/internal/modules/workspace/employee/request"
 	"hrgo/backend/internal/modules/workspace/employee/response"
 	apperrors "hrgo/backend/internal/shared/errors"
+	"hrgo/backend/internal/shared/security"
 )
 
 type Service interface {
@@ -32,6 +35,44 @@ func New(repo repository.Repository) Service {
 	return &service{repo: repo}
 }
 
+func generateTemporaryPassword() (string, error) {
+	const (
+		upper   = "ABCDEFGHJKLMNPQRSTUVWXYZ"
+		lower   = "abcdefghijkmnopqrstuvwxyz"
+		digits  = "23456789"
+		special = "!@#$%"
+	)
+	all := upper + lower + digits + special
+
+	buf := make([]byte, 12)
+	reqSets := []string{upper, upper, lower, lower, digits, digits, special}
+	for i, set := range reqSets {
+		idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(set))))
+		if err != nil {
+			return "", err
+		}
+		buf[i] = set[idx.Int64()]
+	}
+
+	for i := len(reqSets); i < 12; i++ {
+		idx, err := rand.Int(rand.Reader, big.NewInt(int64(len(all))))
+		if err != nil {
+			return "", err
+		}
+		buf[i] = all[idx.Int64()]
+	}
+
+	for i := len(buf) - 1; i > 0; i-- {
+		j, err := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
+		if err != nil {
+			return "", err
+		}
+		buf[i], buf[j.Int64()] = buf[j.Int64()], buf[i]
+	}
+
+	return string(buf), nil
+}
+
 func (s *service) Create(ctx context.Context, orgID string, req request.CreateEmployeeRequest) (*response.EmployeeResponse, *apperrors.Error) {
 	code := strings.TrimSpace(req.EmployeeCode)
 	firstName := strings.TrimSpace(req.FirstName)
@@ -40,7 +81,11 @@ func (s *service) Create(ctx context.Context, orgID string, req request.CreateEm
 	var validationIssues []apperrors.FieldIssue
 
 	if code == "" {
-		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "employeeCode", Message: "Employee code is required."})
+		autoCode, err := s.repo.GetNextEmployeeCode(ctx, orgID)
+		if err != nil {
+			return nil, apperrors.Internal()
+		}
+		code = autoCode
 	} else if len(code) > 50 {
 		validationIssues = append(validationIssues, apperrors.FieldIssue{Field: "employeeCode", Message: "Employee code must not exceed 50 characters."})
 	}
@@ -149,7 +194,24 @@ func (s *service) Create(ctx context.Context, orgID string, req request.CreateEm
 		}
 	}
 
-	if err := s.repo.Create(ctx, &emp, profile); err != nil {
+	tempPassword, err := generateTemporaryPassword()
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+	passHash, err := security.HashPassword(tempPassword)
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+
+	account := &models.OrganizationAccount{
+		OrganizationID:     orgID,
+		Identifier:         code,
+		PasswordHash:       passHash,
+		Status:             "ACTIVE",
+		MustChangePassword: true,
+	}
+
+	if err := s.repo.Create(ctx, &emp, profile, account); err != nil {
 		return nil, apperrors.Internal()
 	}
 
@@ -157,10 +219,12 @@ func (s *service) Create(ctx context.Context, orgID string, req request.CreateEm
 	createdEmp, err := s.repo.FindByID(ctx, orgID, emp.ID)
 	if err != nil || createdEmp == nil {
 		res := mapper.ToEmployeeResponse(&emp, profile)
+		res.GeneratedPassword = &tempPassword
 		return &res, nil
 	}
 
 	res := mapper.ToEmployeeResponse(createdEmp, profile)
+	res.GeneratedPassword = &tempPassword
 	return &res, nil
 }
 

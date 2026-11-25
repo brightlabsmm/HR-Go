@@ -65,3 +65,19 @@ type EmployeePositionHistory struct {
 func (EmployeePositionHistory) TableName() string {
 	return "employee_position_histories"
 }
+
+type OrganizationAccount struct {
+	ID                 string `gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	OrganizationID     string `gorm:"type:uuid;not null"`
+	EmployeeID         string `gorm:"type:uuid;not null"`
+	Identifier         string `gorm:"not null"`
+	PasswordHash       string `gorm:"not null"`
+	Status             string `gorm:"default:'ACTIVE'"`
+	MustChangePassword bool   `gorm:"column:must_change_password;default:true"`
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+}
+
+func (OrganizationAccount) TableName() string {
+	return "organization_accounts"
+}
