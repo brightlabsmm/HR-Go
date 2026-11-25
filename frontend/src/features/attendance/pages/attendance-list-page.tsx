@@ -62,7 +62,13 @@ import {
 import { useEmployeesQuery } from "@/shared/queries/employee.query"
 import { useShiftsQuery } from "@/shared/queries/shift.query"
 import { toast } from "@/shared/stores/toast.store"
-import { formatDate } from "@/util/format-date"
+import { notifyApiError } from "@/app/api/feedback"
+import {
+  formatDate,
+  formatLocalDateInput,
+  formatTime,
+  localDateTimeToIso,
+} from "@/util/format-date"
 import { getInitials } from "@/util/initials"
 import { parsePageParam, parsePageSizeParam } from "@/util/pagination"
 
@@ -83,7 +89,7 @@ export function AttendanceListPage() {
 
   // Filters
   const status = searchParams.get("status") ?? undefined
-  const date = searchParams.get("date") ?? new Date().toISOString().split("T")[0]
+  const date = searchParams.get("date") ?? formatLocalDateInput(new Date())
   const page = parsePageParam(searchParams.get(PAGE_PARAM))
   const limit = parsePageSizeParam(searchParams.get(PAGE_SIZE_PARAM))
 
@@ -109,12 +115,12 @@ export function AttendanceListPage() {
 
   // Date range for summary (current month)
   const today = new Date()
-  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-    .toISOString()
-    .split("T")[0]
-  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
-    .toISOString()
-    .split("T")[0]
+  const firstDayOfMonth = formatLocalDateInput(
+    new Date(today.getFullYear(), today.getMonth(), 1)
+  )
+  const lastDayOfMonth = formatLocalDateInput(
+    new Date(today.getFullYear(), today.getMonth() + 1, 0)
+  )
 
   const summaryQuery = useAttendanceSummaryQuery({
     from: firstDayOfMonth,
@@ -208,20 +214,20 @@ export function AttendanceListPage() {
   }
 
   const statusItems = [
-    { value: "all", label: "All status" },
-    { value: "PRESENT", label: "Present" },
-    { value: "LATE", label: "Late" },
-    { value: "HALF_DAY", label: "Half Day" },
-    { value: "ABSENT", label: "Absent" },
-    { value: "ON_LEAVE", label: "On Leave" },
-    { value: "HOLIDAY", label: "Holiday" },
+    { value: "all", label: t("all_status") },
+    { value: "PRESENT", label: t("status.PRESENT") },
+    { value: "LATE", label: t("status.LATE") },
+    { value: "HALF_DAY", label: t("status.HALF_DAY") },
+    { value: "ABSENT", label: t("status.ABSENT") },
+    { value: "ON_LEAVE", label: t("status.ON_LEAVE") },
+    { value: "HOLIDAY", label: t("status.HOLIDAY") },
   ]
 
   const correctionStatusItems = [
-    { value: "all", label: "All status" },
-    { value: "PENDING", label: "Pending" },
-    { value: "APPROVED", label: "Approved" },
-    { value: "REJECTED", label: "Rejected" },
+    { value: "all", label: t("all_status") },
+    { value: "PENDING", label: t("correction_status.PENDING") },
+    { value: "APPROVED", label: t("correction_status.APPROVED") },
+    { value: "REJECTED", label: t("correction_status.REJECTED") },
   ]
 
   const recordColumns = recordCol.columns([
@@ -258,7 +264,7 @@ export function AttendanceListPage() {
     recordCol.accessor("shiftName", {
       header: t("columns.shift"),
       enableSorting: false,
-      cell: ({ getValue }) => getValue() || "Default",
+      cell: ({ getValue }) => getValue() || t("default_shift"),
     }),
     recordCol.accessor("checkIn", {
       header: t("columns.check_in"),
@@ -266,13 +272,12 @@ export function AttendanceListPage() {
       cell: ({ row }) => {
         const val = row.original.checkIn
         if (!val) return "—"
-        const timePart = val.includes("T") ? val.split("T")[1].slice(0, 5) : val
         return (
           <div className="flex items-center gap-1.5 font-mono text-small-2">
-            <span>{timePart}</span>
+            <span>{formatTime(val, i18n.language)}</span>
             {row.original.lateMinutes > 0 && (
               <Badge variant="destructive" className="text-[10px] px-1 py-0">
-                +{row.original.lateMinutes}m late
+                {t("late_badge", { count: row.original.lateMinutes })}
               </Badge>
             )}
           </div>
@@ -285,13 +290,12 @@ export function AttendanceListPage() {
       cell: ({ row }) => {
         const val = row.original.checkOut
         if (!val) return "—"
-        const timePart = val.includes("T") ? val.split("T")[1].slice(0, 5) : val
         return (
           <div className="flex items-center gap-1.5 font-mono text-small-2">
-            <span>{timePart}</span>
+            <span>{formatTime(val, i18n.language)}</span>
             {row.original.earlyLeaveMinutes > 0 && (
               <Badge variant="secondary" className="text-[10px] px-1 py-0">
-                -{row.original.earlyLeaveMinutes}m early
+                {t("early_badge", { count: row.original.earlyLeaveMinutes })}
               </Badge>
             )}
           </div>
@@ -361,7 +365,7 @@ export function AttendanceListPage() {
       enableSorting: false,
       cell: ({ getValue }) => {
         const val = getValue()
-        return val ? (val.includes("T") ? val.split("T")[1].slice(0, 5) : val) : "—"
+        return val ? formatTime(val, i18n.language) : "—"
       },
     }),
     correctionCol.accessor("requestedCheckOut", {
@@ -369,7 +373,7 @@ export function AttendanceListPage() {
       enableSorting: false,
       cell: ({ getValue }) => {
         const val = getValue()
-        return val ? (val.includes("T") ? val.split("T")[1].slice(0, 5) : val) : "—"
+        return val ? formatTime(val, i18n.language) : "—"
       },
     }),
     correctionCol.accessor("reason", {
@@ -388,7 +392,7 @@ export function AttendanceListPage() {
     }),
     correctionCol.display({
       id: "actions",
-      header: "Action",
+      header: t("columns.actions"),
       enableSorting: false,
       meta: { align: "end" },
       cell: ({ row }) => {
@@ -453,7 +457,7 @@ export function AttendanceListPage() {
             }}
           >
             <ClockIcon className="size-4" />
-            Quick Punch
+            {t("quick_punch")}
           </Button>
           <Button
             size="sm"
@@ -515,7 +519,9 @@ export function AttendanceListPage() {
           <span className="text-2xl font-bold text-foreground">
             {summary?.presentDays ?? 0}
           </span>
-          <span className="text-caption text-muted-foreground">This month</span>
+          <span className="text-caption text-muted-foreground">
+            {t("metrics.this_month")}
+          </span>
         </div>
 
         <div className="flex flex-col gap-1 rounded-xl border border-hair bg-surface p-4 shadow-sm">
@@ -527,7 +533,7 @@ export function AttendanceListPage() {
             {summary?.lateDays ?? 0}
           </span>
           <span className="text-caption text-muted-foreground">
-            {summary?.totalLateMinutes ?? 0} mins total
+            {t("metrics.mins_total", { count: summary?.totalLateMinutes ?? 0 })}
           </span>
         </div>
 
@@ -539,7 +545,9 @@ export function AttendanceListPage() {
           <span className="text-2xl font-bold text-foreground">
             {summary?.absentDays ?? 0}
           </span>
-          <span className="text-caption text-muted-foreground">Unexcused</span>
+          <span className="text-caption text-muted-foreground">
+            {t("metrics.unexcused")}
+          </span>
         </div>
 
         <div className="flex flex-col gap-1 rounded-xl border border-hair bg-surface p-4 shadow-sm">
@@ -550,7 +558,9 @@ export function AttendanceListPage() {
           <span className="text-2xl font-bold text-foreground">
             {summary?.halfDays ?? 0}
           </span>
-          <span className="text-caption text-muted-foreground">Recorded</span>
+          <span className="text-caption text-muted-foreground">
+            {t("metrics.recorded")}
+          </span>
         </div>
 
         <div className="flex flex-col gap-1 rounded-xl border border-hair bg-surface p-4 shadow-sm">
@@ -561,7 +571,9 @@ export function AttendanceListPage() {
           <span className="text-2xl font-bold text-foreground">
             {summary ? Math.floor(summary.totalWorkedMinutes / 60) : 0}h
           </span>
-          <span className="text-caption text-muted-foreground">Accumulated</span>
+          <span className="text-caption text-muted-foreground">
+            {t("metrics.accumulated")}
+          </span>
         </div>
       </div>
 
@@ -570,7 +582,7 @@ export function AttendanceListPage() {
           <FilterBar hasFilters={Boolean(status || date)} onReset={resetFilters}>
             <div className="flex items-center gap-2">
               <Label htmlFor="date-filter" className="text-small-2 text-muted-foreground">
-                Date:
+                {t("date_label")}
               </Label>
               <Input
                 id="date-filter"
@@ -583,7 +595,7 @@ export function AttendanceListPage() {
             <FilterSelect
               items={activeTab === "records" ? statusItems : correctionStatusItems}
               value={status ?? "all"}
-              label="All status"
+              label={t("all_status")}
               onValueChange={(val) => patch("status", val)}
               className="w-40"
             />
@@ -624,8 +636,8 @@ export function AttendanceListPage() {
           <TableSkeleton columns={6} />
         ) : (correctionsQuery.data?.items ?? []).length === 0 ? (
           <PageEmptyState
-            title="No correction requests"
-            description="Pending time-clock adjustment requests will appear here for review."
+            title={t("corrections.empty_title")}
+            description={t("corrections.empty_description")}
           />
         ) : (
           <DataTable
@@ -642,10 +654,8 @@ export function AttendanceListPage() {
       <Dialog open={showPunchDialog} onOpenChange={setShowPunchDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Quick Attendance Punch</DialogTitle>
-            <DialogDescription>
-              Record an employee check-in or check-out timestamp.
-            </DialogDescription>
+            <DialogTitle>{t("punch.title")}</DialogTitle>
+            <DialogDescription>{t("punch.description")}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-2">
             <RadioGroup
@@ -656,13 +666,13 @@ export function AttendanceListPage() {
               <div className="flex items-center gap-2">
                 <RadioGroupItem value="in" id="punch-in" />
                 <Label htmlFor="punch-in" className="flex items-center gap-1.5 cursor-pointer">
-                  <LogInIcon className="size-4 text-emerald-500" /> Check In
+                  <LogInIcon className="size-4 text-emerald-500" /> {t("check_in")}
                 </Label>
               </div>
               <div className="flex items-center gap-2">
                 <RadioGroupItem value="out" id="punch-out" />
                 <Label htmlFor="punch-out" className="flex items-center gap-1.5 cursor-pointer">
-                  <LogOutIcon className="size-4 text-rose-500" /> Check Out
+                  <LogOutIcon className="size-4 text-rose-500" /> {t("check_out")}
                 </Label>
               </div>
             </RadioGroup>
@@ -675,7 +685,7 @@ export function AttendanceListPage() {
                 onValueChange={(val) => setPunchEmployeeId(val ?? "")}
               >
                 <SelectTrigger id="punch-emp" className="mt-1 w-full">
-                  <SelectValue placeholder="Select employee">
+                  <SelectValue placeholder={t("form.employee_placeholder")}>
                     {selectedPunchEmp
                       ? `${selectedPunchEmp.fullName} (${selectedPunchEmp.employeeCode})`
                       : undefined}
@@ -700,7 +710,7 @@ export function AttendanceListPage() {
                   onValueChange={(val) => setPunchShiftId(val ?? "")}
                 >
                   <SelectTrigger id="punch-shift" className="mt-1 w-full">
-                    <SelectValue placeholder="Default assigned shift">
+                    <SelectValue placeholder={t("form.shift_placeholder")}>
                       {selectedPunchShift
                         ? `${selectedPunchShift.shiftName} (${selectedPunchShift.startTime} - ${selectedPunchShift.endTime})`
                         : undefined}
@@ -718,7 +728,7 @@ export function AttendanceListPage() {
             )}
 
             <div>
-              <Label htmlFor="punch-time">Time</Label>
+              <Label htmlFor="punch-time">{t("punch.time_label")}</Label>
               <Input
                 id="punch-time"
                 type="time"
@@ -733,7 +743,7 @@ export function AttendanceListPage() {
               <Input
                 id="punch-remarks"
                 className="mt-1"
-                placeholder="Optional punch note..."
+                placeholder={t("punch.note_placeholder")}
                 value={punchRemarks}
                 onChange={(e) => setPunchRemarks(e.target.value)}
               />
@@ -748,9 +758,10 @@ export function AttendanceListPage() {
               loading={checkInMutation.isPending || checkOutMutation.isPending}
               onClick={() => {
                 const now = new Date()
-                const [h, m] = punchTime ? punchTime.split(":") : [now.getHours(), now.getMinutes()]
-                const dt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), Number(h), Number(m))
-                const isoTime = dt.toISOString()
+                const isoTime =
+                  (punchTime
+                    ? localDateTimeToIso(formatLocalDateInput(now), punchTime)
+                    : null) ?? now.toISOString()
 
                 if (punchMode === "in") {
                   checkInMutation.mutate(
@@ -764,8 +775,9 @@ export function AttendanceListPage() {
                     {
                       onSuccess: () => {
                         setShowPunchDialog(false)
-                        toast.success("Checked in successfully")
+                        toast.success(t("punch.in_success"))
                       },
+                      onError: (err) => notifyApiError(err),
                     }
                   )
                 } else {
@@ -778,8 +790,9 @@ export function AttendanceListPage() {
                     {
                       onSuccess: () => {
                         setShowPunchDialog(false)
-                        toast.success("Checked out successfully")
+                        toast.success(t("punch.out_success"))
                       },
+                      onError: (err) => notifyApiError(err),
                     }
                   )
                 }
@@ -796,9 +809,7 @@ export function AttendanceListPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t("manual_entry")}</DialogTitle>
-            <DialogDescription>
-              Create or override an attendance log for any day.
-            </DialogDescription>
+            <DialogDescription>{t("manual.description")}</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-2">
             <div>
@@ -809,7 +820,7 @@ export function AttendanceListPage() {
                 onValueChange={(val) => setManualEmployeeId(val ?? "")}
               >
                 <SelectTrigger id="man-emp" className="mt-1 w-full">
-                  <SelectValue placeholder="Select employee">
+                  <SelectValue placeholder={t("form.employee_placeholder")}>
                     {selectedManualEmp
                       ? `${selectedManualEmp.fullName} (${selectedManualEmp.employeeCode})`
                       : undefined}
@@ -839,6 +850,7 @@ export function AttendanceListPage() {
               <div>
                 <Label htmlFor="man-status">{t("form.status")}</Label>
                 <Select
+                  items={statusItems.filter((item) => item.value !== "all")}
                   value={manualStatus}
                   onValueChange={(val) => setManualStatus(val ?? "PRESENT")}
                 >
@@ -846,12 +858,13 @@ export function AttendanceListPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PRESENT">Present</SelectItem>
-                    <SelectItem value="LATE">Late</SelectItem>
-                    <SelectItem value="HALF_DAY">Half Day</SelectItem>
-                    <SelectItem value="ABSENT">Absent</SelectItem>
-                    <SelectItem value="ON_LEAVE">On Leave</SelectItem>
-                    <SelectItem value="HOLIDAY">Holiday</SelectItem>
+                    {statusItems
+                      .filter((item) => item.value !== "all")
+                      .map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -888,7 +901,7 @@ export function AttendanceListPage() {
                 onValueChange={(val) => setManualShiftId(val ?? "")}
               >
                 <SelectTrigger id="man-shift" className="mt-1 w-full">
-                  <SelectValue placeholder="Default assigned shift">
+                  <SelectValue placeholder={t("form.shift_placeholder")}>
                     {selectedManualShift
                       ? `${selectedManualShift.shiftName} (${selectedManualShift.startTime} - ${selectedManualShift.endTime})`
                       : undefined}
@@ -909,7 +922,7 @@ export function AttendanceListPage() {
               <Textarea
                 id="man-remarks"
                 className="mt-1"
-                placeholder="Reason or notes..."
+                placeholder={t("manual.remarks_placeholder")}
                 value={manualRemarks}
                 onChange={(e) => setManualRemarks(e.target.value)}
               />
@@ -923,15 +936,12 @@ export function AttendanceListPage() {
               disabled={!manualEmployeeId || !manualDate}
               loading={manualMutation.isPending}
               onClick={() => {
-                let inIso: string | null = null
-                let outIso: string | null = null
-
-                if (manualCheckIn) {
-                  inIso = `${manualDate}T${manualCheckIn}:00Z`
-                }
-                if (manualCheckOut) {
-                  outIso = `${manualDate}T${manualCheckOut}:00Z`
-                }
+                const inIso = manualCheckIn
+                  ? localDateTimeToIso(manualDate, manualCheckIn)
+                  : null
+                const outIso = manualCheckOut
+                  ? localDateTimeToIso(manualDate, manualCheckOut)
+                  : null
 
                 manualMutation.mutate(
                   {
@@ -948,6 +958,7 @@ export function AttendanceListPage() {
                       setShowManualDialog(false)
                       toast.success(t("form.save"))
                     },
+                    onError: (err) => notifyApiError(err),
                   }
                 )
               }}
@@ -964,7 +975,7 @@ export function AttendanceListPage() {
           <DialogHeader>
             <DialogTitle>{t("corrections.submit")}</DialogTitle>
             <DialogDescription>
-              Submit an attendance time adjustment request for manager review.
+              {t("corrections.submit_description")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-2">
@@ -976,7 +987,7 @@ export function AttendanceListPage() {
                 onValueChange={(val) => setCorrEmployeeId(val ?? "")}
               >
                 <SelectTrigger id="corr-emp" className="mt-1 w-full">
-                  <SelectValue placeholder="Select employee">
+                  <SelectValue placeholder={t("form.employee_placeholder")}>
                     {selectedCorrEmp
                       ? `${selectedCorrEmp.fullName} (${selectedCorrEmp.employeeCode})`
                       : undefined}
@@ -1027,11 +1038,13 @@ export function AttendanceListPage() {
             </div>
 
             <div>
-              <Label htmlFor="corr-reason">Reason for correction</Label>
+              <Label htmlFor="corr-reason">
+                {t("corrections.reason_input_label")}
+              </Label>
               <Textarea
                 id="corr-reason"
                 className="mt-1"
-                placeholder="Explain why this time punch requires adjustment..."
+                placeholder={t("corrections.reason_placeholder")}
                 value={corrReason}
                 onChange={(e) => setCorrReason(e.target.value)}
               />
@@ -1045,15 +1058,12 @@ export function AttendanceListPage() {
               disabled={!corrEmployeeId || !corrDate || !corrReason.trim()}
               loading={createCorrectionMutation.isPending}
               onClick={() => {
-                let inIso: string | null = null
-                let outIso: string | null = null
-
-                if (corrCheckIn) {
-                  inIso = `${corrDate}T${corrCheckIn}:00Z`
-                }
-                if (corrCheckOut) {
-                  outIso = `${corrDate}T${corrCheckOut}:00Z`
-                }
+                const inIso = corrCheckIn
+                  ? localDateTimeToIso(corrDate, corrCheckIn)
+                  : null
+                const outIso = corrCheckOut
+                  ? localDateTimeToIso(corrDate, corrCheckOut)
+                  : null
 
                 createCorrectionMutation.mutate(
                   {
@@ -1066,14 +1076,15 @@ export function AttendanceListPage() {
                   {
                     onSuccess: () => {
                       setShowCorrectionDialog(false)
-                      toast.success("Correction submitted for review")
+                      toast.success(t("corrections.submit_success"))
                       setActiveTab("corrections")
                     },
+                    onError: (err) => notifyApiError(err),
                   }
                 )
               }}
             >
-              Submit Request
+              {t("corrections.submit_button")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1090,32 +1101,42 @@ export function AttendanceListPage() {
           <DialogHeader>
             <DialogTitle>{t("corrections.review")}</DialogTitle>
             <DialogDescription>
-              Review adjustment requested by {reviewTarget?.employeeName} for{" "}
-              {reviewTarget?.attendanceDate}.
+              {t("corrections.review_description", {
+                name: reviewTarget?.employeeName ?? "",
+                date: reviewTarget?.attendanceDate
+                  ? formatDate(reviewTarget.attendanceDate, i18n.language)
+                  : "",
+              })}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-2">
             <div className="rounded-md border border-hair p-3 bg-subtle/50 text-small-2">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <span className="text-muted-foreground">Requested Check-in:</span>{" "}
+                  <span className="text-muted-foreground">
+                    {t("corrections.requested_in")}:
+                  </span>{" "}
                   <span className="font-mono font-medium">
                     {reviewTarget?.requestedCheckIn
-                      ? reviewTarget.requestedCheckIn.split("T")[1]?.slice(0, 5)
+                      ? formatTime(reviewTarget.requestedCheckIn, i18n.language)
                       : "—"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Requested Check-out:</span>{" "}
+                  <span className="text-muted-foreground">
+                    {t("corrections.requested_out")}:
+                  </span>{" "}
                   <span className="font-mono font-medium">
                     {reviewTarget?.requestedCheckOut
-                      ? reviewTarget.requestedCheckOut.split("T")[1]?.slice(0, 5)
+                      ? formatTime(reviewTarget.requestedCheckOut, i18n.language)
                       : "—"}
                   </span>
                 </div>
               </div>
               <div className="mt-2 text-muted-foreground">
-                <span className="font-medium text-foreground">Reason:</span>{" "}
+                <span className="font-medium text-foreground">
+                  {t("corrections.reason_label")}:
+                </span>{" "}
                 {reviewTarget?.reason}
               </div>
             </div>
@@ -1132,27 +1153,27 @@ export function AttendanceListPage() {
                 <div className="flex items-center gap-2">
                   <RadioGroupItem value="APPROVED" id="dec-app" />
                   <Label htmlFor="dec-app" className="cursor-pointer text-emerald-600 font-medium">
-                    Approve Request
+                    {t("corrections.approve")}
                   </Label>
                 </div>
                 <div className="flex items-center gap-2">
                   <RadioGroupItem value="REJECTED" id="dec-rej" />
                   <Label htmlFor="dec-rej" className="cursor-pointer text-rose-600 font-medium">
-                    Reject Request
+                    {t("corrections.reject")}
                   </Label>
                 </div>
               </RadioGroup>
             </div>
 
             <div>
-              <Label htmlFor="rev-notes">Review Remarks / Reason</Label>
+              <Label htmlFor="rev-notes">{t("corrections.review_notes_label")}</Label>
               <Input
                 id="rev-notes"
                 className="mt-1"
                 placeholder={
                   reviewDecision === "REJECTED"
-                    ? "Explanation for rejection..."
-                    : "Optional approval note..."
+                    ? t("corrections.rejection_placeholder")
+                    : t("corrections.approval_placeholder")
                 }
                 value={reviewReason}
                 onChange={(e) => setReviewReason(e.target.value)}
@@ -1165,6 +1186,7 @@ export function AttendanceListPage() {
             </Button>
             <Button
               loading={reviewMutation.isPending}
+              disabled={reviewDecision === "REJECTED" && !reviewReason.trim()}
               variant={reviewDecision === "REJECTED" ? "destructive" : "default"}
               onClick={() => {
                 if (!reviewTarget) return
@@ -1181,15 +1203,18 @@ export function AttendanceListPage() {
                       setReviewTarget(null)
                       toast.success(
                         reviewDecision === "APPROVED"
-                          ? "Correction approved and applied"
-                          : "Correction rejected"
+                          ? t("corrections.approve_success")
+                          : t("corrections.reject_success")
                       )
                     },
+                    onError: (err) => notifyApiError(err),
                   }
                 )
               }}
             >
-              Confirm {reviewDecision === "APPROVED" ? "Approval" : "Rejection"}
+              {reviewDecision === "APPROVED"
+                ? t("corrections.confirm_approve")
+                : t("corrections.confirm_reject")}
             </Button>
           </DialogFooter>
         </DialogContent>

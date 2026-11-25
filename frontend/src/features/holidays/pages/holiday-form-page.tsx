@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router"
 import { z } from "zod"
 
-import { applyApiFieldErrors } from "@/app/api/feedback"
+import { applyApiFieldErrors, notifyApiError } from "@/app/api/feedback"
 import { FormSkeleton } from "@/components/common/form-skeleton"
 import { FormSelectInput } from "@/components/common/form/form-select-input"
 import { FormTextInput } from "@/components/common/form/form-text-input"
@@ -44,23 +44,33 @@ export function HolidayFormPage() {
 
   const schema = useMemo(
     () =>
-      z.object({
-        holidayName: z
-          .string()
-          .trim()
-          .min(1, t("form.errors.name")),
-        startDate: z
-          .string()
-          .trim()
-          .min(1, t("form.errors.start_date")),
-        endDate: z
-          .string()
-          .trim()
-          .min(1, t("form.errors.end_date")),
-        branchId: z.string(),
-        holidayType: z.string(),
-        isPaid: z.boolean(),
-      }),
+      z
+        .object({
+          holidayName: z
+            .string()
+            .trim()
+            .min(1, t("form.errors.name"))
+            .max(150, t("form.errors.name_max")),
+          startDate: z
+            .string()
+            .trim()
+            .min(1, t("form.errors.start_date")),
+          endDate: z
+            .string()
+            .trim()
+            .min(1, t("form.errors.end_date")),
+          branchId: z.string(),
+          holidayType: z.string(),
+          isPaid: z.boolean(),
+        })
+        .refine(
+          (data) =>
+            !data.startDate || !data.endDate || data.endDate >= data.startDate,
+          {
+            message: t("form.errors.end_before_start"),
+            path: ["endDate"],
+          }
+        ),
     [t]
   )
 
@@ -72,8 +82,8 @@ export function HolidayFormPage() {
       resolver: zodResolver(schema),
       values: {
         holidayName: holiday?.holidayName ?? "",
-        startDate: holiday?.startDate ?? "",
-        endDate: holiday?.endDate ?? "",
+        startDate: holiday?.startDate ? holiday.startDate.slice(0, 10) : "",
+        endDate: holiday?.endDate ? holiday.endDate.slice(0, 10) : "",
         branchId: holiday?.branchId ?? "none",
         holidayType: holiday?.holidayType ?? "PUBLIC",
         isPaid: holiday?.isPaid ?? true,
@@ -81,7 +91,7 @@ export function HolidayFormPage() {
     })
 
   const branchOptions = [
-    { value: "none", label: "All branches (Workspace-wide)" },
+    { value: "none", label: t("all_branches_option") },
     ...(branchesQuery.data?.items ?? []).map((b) => ({
       value: b.id,
       label: b.branchName,
@@ -105,6 +115,7 @@ export function HolidayFormPage() {
         subtitle={isEdit ? holiday?.holidayName : t("subtitle")}
       />
       <form
+        noValidate
         className={formStackClassName}
         onSubmit={handleSubmit(async (values) => {
           const branchId = values.branchId === "none" ? null : values.branchId
@@ -146,7 +157,9 @@ export function HolidayFormPage() {
             }
             void navigate("/holidays")
           } catch (error) {
-            applyApiFieldErrors(error, setError)
+            if (!applyApiFieldErrors(error, setError)) {
+              notifyApiError(error)
+            }
           }
         })}
       >

@@ -2,10 +2,16 @@
   "title": "Holidays",
   "subtitle": "Manage company holidays, public observances, and calendar schedules",
   "add": "Add Holiday",
+  "search_placeholder": "Search holidays...",
   "all_types": "All types",
   "all_branches": "All branches",
+  "all_branches_label": "All Branches",
+  "all_branches_option": "All branches (Workspace-wide)",
   "tab_table": "List View",
   "tab_calendar": "Calendar View",
+  "today": "Today",
+  "paid_yes": "Paid",
+  "paid_no": "Unpaid",
   "columns": {
     "name": "Holiday Name",
     "dates": "Dates",
@@ -30,9 +36,11 @@
     "save": "Save Changes",
     "create": "Save Holiday",
     "errors": {
-      "name": "Holiday name is required",
-      "start_date": "Start date is required",
-      "end_date": "End date is required"
+      "name": "Holiday name is required.",
+      "name_max": "Holiday name must not exceed 150 characters.",
+      "start_date": "Start date is required.",
+      "end_date": "End date is required.",
+      "end_before_start": "End date cannot be before start date."
     }
   },
   "types": {
@@ -48,6 +56,6 @@
     "title": "Delete Holiday",
     "description": "Are you sure you want to delete {{name}}?",
     "confirm": "Delete Holiday",
-    "success": "Holiday deleted successfully"
+    "success": "Holiday deleted successfully."
   }
 }

@@ -22,6 +22,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PAGE_PARAM, PAGE_SIZE_PARAM } from "@/constants/pagination"
+import { notifyApiError } from "@/app/api/feedback"
+import { usePermissions } from "@/shared/hooks/use-permissions"
 import { useBranchesQuery } from "@/shared/queries/branch.query"
 import { useDepartmentsQuery } from "@/shared/queries/department.query"
 import {
@@ -43,6 +45,10 @@ export function EmployeeListPage() {
   const { t: tCommon } = useTranslation("common")
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { can } = usePermissions()
+  const canCreate = can("org.employee.create")
+  const canUpdate = can("org.employee.update")
+  const canDelete = can("org.employee.delete")
 
   const status = searchParams.get("status") ?? undefined
   const branchId = searchParams.get("branch") ?? undefined
@@ -117,11 +123,11 @@ export function EmployeeListPage() {
 
   const statusItems = [
     { value: "all", label: t("all_status") },
-    { value: "ACTIVE", label: "Active" },
-    { value: "PROBATION", label: "Probation" },
-    { value: "SUSPENDED", label: "Suspended" },
-    { value: "TERMINATED", label: "Terminated" },
-    { value: "RESIGNED", label: "Resigned" },
+    { value: "ACTIVE", label: t("status.ACTIVE") },
+    { value: "PROBATION", label: t("status.PROBATION") },
+    { value: "SUSPENDED", label: t("status.SUSPENDED") },
+    { value: "TERMINATED", label: t("status.TERMINATED") },
+    { value: "RESIGNED", label: t("status.RESIGNED") },
   ]
 
   const branchItems = [
@@ -155,7 +161,7 @@ export function EmployeeListPage() {
               }
             }}
             onChange={toggleSelectAll}
-            aria-label="Select all"
+            aria-label={t("select_all")}
           />
         </div>
       ),
@@ -172,7 +178,7 @@ export function EmployeeListPage() {
             className="size-4 cursor-pointer rounded border-border accent-primary"
             checked={selectedIds.has(row.original.id)}
             onChange={() => toggleSelectRow(row.original.id)}
-            aria-label={`Select ${row.original.fullName}`}
+            aria-label={t("select_row", { name: row.original.fullName })}
           />
         </div>
       ),
@@ -244,27 +250,39 @@ export function EmployeeListPage() {
         return val ? formatDate(val, i18n.language) : "—"
       },
     }),
-    column.display({
-      id: "actions",
-      header: t("columns.actions"),
-      enableSorting: false,
-      enableHiding: false,
-      meta: { align: "end" },
-      cell: ({ row }) => (
-        <DataTableActions
-          onEdit={() => void navigate(`/employees/${row.original.id}/edit`)}
-          onDelete={() => window.setTimeout(() => setTarget(row.original), 0)}
-        />
-      ),
-    }),
+    ...(canUpdate || canDelete
+      ? [
+          column.display({
+            id: "actions",
+            header: t("columns.actions"),
+            enableSorting: false,
+            enableHiding: false,
+            meta: { align: "end" },
+            cell: ({ row }) => (
+              <DataTableActions
+                onEdit={
+                  canUpdate
+                    ? () => void navigate(`/employees/${row.original.id}/edit`)
+                    : undefined
+                }
+                onDelete={
+                  canDelete
+                    ? () => window.setTimeout(() => setTarget(row.original), 0)
+                    : undefined
+                }
+              />
+            ),
+          }),
+        ]
+      : []),
   ])
 
-  const addButton = (
+  const addButton = canCreate ? (
     <Button type="button" onClick={() => void navigate("/employees/new")}>
       <PlusIcon className="size-4" />
       {t("add")}
     </Button>
-  )
+  ) : null
 
   function renderBody() {
     if (employeesQuery.isPending) {
@@ -352,8 +370,7 @@ export function EmployeeListPage() {
             {selectedIds.size > 0 && (
               <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-3.5 py-2 text-xs text-foreground">
                 <span className="font-medium">
-                  {selectedIds.size}{" "}
-                  {selectedIds.size === 1 ? "employee" : "employees"} selected
+                  {t("selected", { count: selectedIds.size })}
                 </span>
                 <Button
                   type="button"
@@ -362,7 +379,7 @@ export function EmployeeListPage() {
                   className="h-7 px-2 text-xs"
                   onClick={() => setSelectedIds(new Set())}
                 >
-                  Clear selection
+                  {t("clear_selection")}
                 </Button>
               </div>
             )}
@@ -400,7 +417,10 @@ export function EmployeeListPage() {
               setTarget(null)
               toast.success(t("delete.success"))
             },
-            onError: () => setTarget(null),
+            onError: (err) => {
+              setTarget(null)
+              notifyApiError(err)
+            },
           })
         }}
       />

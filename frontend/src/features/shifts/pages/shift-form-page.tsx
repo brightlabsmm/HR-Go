@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router"
 import { z } from "zod"
 
-import { applyApiFieldErrors } from "@/app/api/feedback"
+import { applyApiFieldErrors, notifyApiError } from "@/app/api/feedback"
 import { FormSkeleton } from "@/components/common/form-skeleton"
 import { FormSelectInput } from "@/components/common/form/form-select-input"
 import { FormTextInput } from "@/components/common/form/form-text-input"
@@ -48,16 +48,24 @@ export function ShiftFormPage() {
         shiftName: z
           .string()
           .trim()
-          .min(1, t("form.errors.name")),
+          .min(1, t("form.errors.name"))
+          .max(100, t("form.errors.name_max")),
         startTime: z
           .string()
           .trim()
-          .min(1, t("form.errors.start_time")),
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, t("form.errors.start_time")),
         endTime: z
           .string()
           .trim()
-          .min(1, t("form.errors.end_time")),
-        breakMinutes: z.string().trim(),
+          .regex(/^([01]\d|2[0-3]):([0-5]\d)$/, t("form.errors.end_time")),
+        breakMinutes: z
+          .string()
+          .trim()
+          .refine((val) => {
+            if (val === "") return true
+            const n = Number(val)
+            return Number.isInteger(n) && n >= 0 && n <= 480
+          }, t("form.errors.break_minutes")),
         branchId: z.string(),
         status: z.string(),
         isDefault: z.boolean(),
@@ -72,8 +80,8 @@ export function ShiftFormPage() {
     resolver: zodResolver(schema),
     values: {
       shiftName: shift?.shiftName ?? "",
-      startTime: shift?.startTime ?? "09:00",
-      endTime: shift?.endTime ?? "18:00",
+      startTime: shift?.startTime ? shift.startTime.slice(0, 5) : "09:00",
+      endTime: shift?.endTime ? shift.endTime.slice(0, 5) : "18:00",
       breakMinutes: String(shift?.breakMinutes ?? 60),
       branchId: shift?.branchId ?? "none",
       status: shift?.status ?? "ACTIVE",
@@ -82,7 +90,7 @@ export function ShiftFormPage() {
   })
 
   const branchOptions = [
-    { value: "none", label: "All branches (Workspace-wide)" },
+    { value: "none", label: t("all_branches_option") },
     ...(branchesQuery.data?.items ?? []).map((b) => ({
       value: b.id,
       label: b.branchName,
@@ -90,8 +98,8 @@ export function ShiftFormPage() {
   ]
 
   const statusOptions = [
-    { value: "ACTIVE", label: "Active" },
-    { value: "INACTIVE", label: "Inactive" },
+    { value: "ACTIVE", label: t("status.ACTIVE") },
+    { value: "INACTIVE", label: t("status.INACTIVE") },
   ]
 
   if (isEdit && shiftQuery.isFetched && !shift) {
@@ -105,6 +113,7 @@ export function ShiftFormPage() {
         subtitle={isEdit ? shift?.shiftName : t("subtitle")}
       />
       <form
+        noValidate
         className={formStackClassName}
         onSubmit={handleSubmit(async (values) => {
           const branchId = values.branchId === "none" ? null : values.branchId
@@ -149,7 +158,9 @@ export function ShiftFormPage() {
             }
             void navigate("/shifts")
           } catch (error) {
-            applyApiFieldErrors(error, setError)
+            if (!applyApiFieldErrors(error, setError)) {
+              notifyApiError(error)
+            }
           }
         })}
       >

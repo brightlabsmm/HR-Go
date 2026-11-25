@@ -21,6 +21,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PAGE_PARAM, PAGE_SIZE_PARAM } from "@/constants/pagination"
+import { notifyApiError } from "@/app/api/feedback"
+import { usePermissions } from "@/shared/hooks/use-permissions"
 import { useBranchesQuery } from "@/shared/queries/branch.query"
 import {
   useDeleteHolidayMutation,
@@ -28,7 +30,7 @@ import {
   useHolidaysQuery,
 } from "@/shared/queries/holiday.query"
 import { toast } from "@/shared/stores/toast.store"
-import { formatDate } from "@/util/format-date"
+import { formatDate, formatLocalDateInput } from "@/util/format-date"
 import { parsePageParam, parsePageSizeParam } from "@/util/pagination"
 
 import type { Holiday } from "@/shared/services/holiday.service"
@@ -41,6 +43,10 @@ export function HolidayListPage() {
   const { t: tCommon } = useTranslation("common")
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { can } = usePermissions()
+  const canCreate = can("org.holiday.create")
+  const canUpdate = can("org.holiday.update")
+  const canDelete = can("org.holiday.delete")
 
   const [viewMode, setViewMode] = useState<"table" | "calendar">("table")
   const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear())
@@ -146,7 +152,11 @@ export function HolidayListPage() {
             : type === "COMPANY"
               ? "secondary"
               : "outline"
-        return <Badge variant={variant}>{type}</Badge>
+        return (
+          <Badge variant={variant}>
+            {t(`types.${type}`, { defaultValue: type })}
+          </Badge>
+        )
       },
     }),
     column.accessor("isPaid", {
@@ -154,31 +164,50 @@ export function HolidayListPage() {
       enableSorting: false,
       cell: ({ getValue }) => (
         <Badge variant={getValue() ? "default" : "secondary"}>
-          {getValue() ? "Paid" : "Unpaid"}
+          {getValue() ? t("paid_yes") : t("paid_no")}
         </Badge>
       ),
     }),
     column.accessor("branchName", {
       header: t("columns.branch"),
       enableSorting: false,
-      cell: ({ getValue }) => getValue() || "All Branches",
+      cell: ({ getValue }) => getValue() || t("all_branches_label"),
     }),
-    column.display({
-      id: "actions",
-      header: t("columns.actions"),
-      enableSorting: false,
-      enableHiding: false,
-      meta: { align: "end" },
-      cell: ({ row }) => (
-        <DataTableActions
-          onEdit={() => void navigate(`/holidays/${row.original.id}/edit`)}
-          onDelete={() => window.setTimeout(() => setTarget(row.original), 0)}
-        />
-      ),
-    }),
+    ...(canUpdate || canDelete
+      ? [
+          column.display({
+            id: "actions",
+            header: t("columns.actions"),
+            enableSorting: false,
+            enableHiding: false,
+            meta: { align: "end" },
+            cell: ({ row }) => (
+              <DataTableActions
+                onEdit={
+                  canUpdate
+                    ? () => void navigate(`/holidays/${row.original.id}/edit`)
+                    : undefined
+                }
+                onDelete={
+                  canDelete
+                    ? () => window.setTimeout(() => setTarget(row.original), 0)
+                    : undefined
+                }
+              />
+            ),
+          }),
+        ]
+      : []),
   ])
 
-  const addButton = (
+  const createHolidayButton = canCreate ? (
+    <Button type="button" onClick={() => void navigate("/holidays/new")}>
+      <PlusIcon className="size-4" />
+      {t("add")}
+    </Button>
+  ) : null
+
+  const headerActions = (
     <div className="flex items-center gap-3">
       <div className="flex rounded-lg border border-hair p-0.5 bg-subtle">
         <Button
@@ -202,18 +231,22 @@ export function HolidayListPage() {
           {t("tab_calendar")}
         </Button>
       </div>
-      <Button type="button" onClick={() => void navigate("/holidays/new")}>
-        <PlusIcon className="size-4" />
-        {t("add")}
-      </Button>
+      {createHolidayButton}
     </div>
   )
 
   function renderCalendarView() {
-    const monthNames = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
-    ]
+    const locale = i18n.language || "en"
+    const monthTitle = new Intl.DateTimeFormat(locale, {
+      month: "long",
+      year: "numeric",
+    }).format(new Date(currentYear, currentMonth - 1, 1))
+    const weekdayLabels = Array.from({ length: 7 }, (_, i) =>
+      new Intl.DateTimeFormat(locale, { weekday: "short" }).format(
+        new Date(2024, 0, 7 + i)
+      )
+    )
+    const todayStr = formatLocalDateInput(new Date())
     const daysInMonth = new Date(currentYear, currentMonth, 0).getDate()
     const firstDayIndex = new Date(currentYear, currentMonth - 1, 1).getDay()
     const calendarHolidays = calendarQuery.data?.holidays ?? []
@@ -241,7 +274,7 @@ export function HolidayListPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h2 className="text-body-1 font-semibold text-foreground">
-              {monthNames[currentMonth - 1]} {currentYear}
+              {monthTitle}
             </h2>
             <div className="flex items-center gap-1">
               <Button variant="outline" size="icon-sm" onClick={prevMonth}>
@@ -261,14 +294,14 @@ export function HolidayListPage() {
               setCurrentMonth(now.getMonth() + 1)
             }}
           >
-            Today
+            {t("today")}
           </Button>
         </div>
 
         <div className="grid grid-cols-7 gap-px rounded-lg border border-hair bg-hair overflow-hidden">
-          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+          {weekdayLabels.map((day, idx) => (
             <div
-              key={day}
+              key={idx}
               className="bg-subtle p-2 text-center text-caption font-semibold text-muted-foreground"
             >
               {day}
@@ -291,8 +324,7 @@ export function HolidayListPage() {
               (h) => dateStr >= h.startDate && dateStr <= h.endDate
             )
 
-            const isToday =
-              new Date().toISOString().split("T")[0] === dateStr
+            const isToday = todayStr === dateStr
 
             return (
               <div
@@ -314,9 +346,15 @@ export function HolidayListPage() {
                   {dayHolidays.map((h) => (
                     <div
                       key={h.id}
-                      onClick={() => void navigate(`/holidays/${h.id}/edit`)}
-                      className="cursor-pointer rounded bg-primary/10 px-1.5 py-0.5 text-caption font-medium text-primary hover:bg-primary/20 truncate"
-                      title={`${h.holidayName} (${h.holidayType})`}
+                      onClick={
+                        canUpdate
+                          ? () => void navigate(`/holidays/${h.id}/edit`)
+                          : undefined
+                      }
+                      className={`rounded bg-primary/10 px-1.5 py-0.5 text-caption font-medium text-primary truncate ${
+                        canUpdate ? "cursor-pointer hover:bg-primary/20" : ""
+                      }`}
+                      title={`${h.holidayName} (${t(`types.${h.holidayType}`, { defaultValue: h.holidayType })})`}
                     >
                       {h.holidayName}
                     </div>
@@ -344,7 +382,7 @@ export function HolidayListPage() {
         <PageEmptyState
           title={t("empty.title")}
           description={t("empty.description")}
-          action={addButton}
+          action={createHolidayButton}
         />
       )
     }
@@ -371,7 +409,9 @@ export function HolidayListPage() {
         data={rows}
         getRowId={(holiday) => holiday.id}
         label={t("title")}
-        onRowClick={(holiday) => void navigate(`/holidays/${holiday.id}/edit`)}
+        onRowClick={
+          canUpdate ? (holiday) => void navigate(`/holidays/${holiday.id}/edit`) : undefined
+        }
       />
     )
   }
@@ -381,14 +421,14 @@ export function HolidayListPage() {
       <PageHeader
         title={t("title")}
         description={t("subtitle")}
-        actions={addButton}
+        actions={headerActions}
       />
       <ListCard
         toolbar={
           <FilterBar hasFilters={hasFilters} onReset={resetFilters}>
             <div className="w-56">
               <Input
-                placeholder="Search holidays..."
+                placeholder={t("search_placeholder")}
                 value={search ?? ""}
                 onChange={(e) => patch("q", e.target.value || null)}
                 className="h-9"
@@ -442,7 +482,10 @@ export function HolidayListPage() {
               setTarget(null)
               toast.success(t("delete.success"))
             },
-            onError: () => setTarget(null),
+            onError: (err) => {
+              setTarget(null)
+              notifyApiError(err)
+            },
           })
         }}
       />
