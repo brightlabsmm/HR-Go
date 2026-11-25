@@ -15,6 +15,10 @@ import enOrganizationSettings from "@/locales/en/organization-settings.json"
 import enPositions from "@/locales/en/positions.json"
 import enRoles from "@/locales/en/roles.json"
 import enUsers from "@/locales/en/users.json"
+import enEmployees from "@/locales/en/employees.json"
+import enShifts from "@/locales/en/shifts.json"
+import enHolidays from "@/locales/en/holidays.json"
+import enAttendance from "@/locales/en/attendance.json"
 import myAccount from "@/locales/my/account.json"
 import myAuth from "@/locales/my/auth.json"
 import myBranches from "@/locales/my/branches.json"
@@ -62,6 +66,10 @@ const resources = {
     users: enUsers,
     roles: enRoles,
     account: enAccount,
+    employees: enEmployees,
+    shifts: enShifts,
+    holidays: enHolidays,
+    attendance: enAttendance,
   },
   th: {
     common: thCommon,
@@ -75,6 +83,10 @@ const resources = {
     users: thUsers,
     roles: thRoles,
     account: thAccount,
+    employees: enEmployees,
+    shifts: enShifts,
+    holidays: enHolidays,
+    attendance: enAttendance,
   },
   zh: {
     common: zhCommon,
@@ -88,6 +100,10 @@ const resources = {
     users: zhUsers,
     roles: zhRoles,
     account: zhAccount,
+    employees: enEmployees,
+    shifts: enShifts,
+    holidays: enHolidays,
+    attendance: enAttendance,
   },
   my: {
     common: myCommon,
@@ -101,6 +117,10 @@ const resources = {
     users: myUsers,
     roles: myRoles,
     account: myAccount,
+    employees: enEmployees,
+    shifts: enShifts,
+    holidays: enHolidays,
+    attendance: enAttendance,
   },
 }
 
@@ -126,6 +146,10 @@ void i18n.use(initReactI18next).init({
     "users",
     "roles",
     "account",
+    "employees",
+    "shifts",
+    "holidays",
+    "attendance",
   ],
   defaultNS: "common",
   interpolation: {

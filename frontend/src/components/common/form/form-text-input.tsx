@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input"
 
 interface FormTextInputProps<TFieldValues extends FieldValues>
   extends FormFieldControlProps<TFieldValues> {
-  type?: "text" | "email" | "tel" | "url" | "search"
+  type?: "text" | "email" | "tel" | "url" | "search" | "date" | "time" | "datetime-local" | "number"
   placeholder?: string
   autoComplete?: string
   autoFocus?: boolean
