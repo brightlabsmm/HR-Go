@@ -1,0 +1,119 @@
+{
+  "title": "การเข้างาน",
+  "subtitle": "ติดตามการเข้างานประจำวัน เวลาเข้าออก ชั่วโมงทำงาน และคำขอแก้ไขเวลา",
+  "check_in": "เช็คอิน",
+  "check_out": "เช็คเอาต์",
+  "quick_punch": "ลงเวลาด่วน",
+  "manual_entry": "บันทึกเวลาด้วยตนเอง",
+  "tab_records": "บันทึกการเข้างาน",
+  "tab_corrections": "คำขอแก้ไขเวลา",
+  "all_status": "ทุกสถานะ",
+  "date_label": "วันที่:",
+  "default_shift": "ค่าเริ่มต้น",
+  "late_badge": "สาย +{{count}} นาที",
+  "early_badge": "ออกก่อน -{{count}} นาที",
+  "metrics": {
+    "present": "มาทำงาน",
+    "late": "มาสาย",
+    "absent": "ขาดงาน",
+    "half_day": "ครึ่งวัน",
+    "total_worked": "ชั่วโมงทำงานรวม",
+    "total_late": "นาทีสายรวม",
+    "this_month": "เดือนนี้",
+    "mins_total": "รวม {{count}} นาที",
+    "unexcused": "ไม่แจ้งล่วงหน้า",
+    "recorded": "บันทึกแล้ว",
+    "accumulated": "สะสม"
+  },
+  "columns": {
+    "employee": "พนักงาน",
+    "date": "วันที่",
+    "shift": "กะการทำงาน",
+    "check_in": "เวลาเข้า",
+    "check_out": "เวลาออก",
+    "worked": "เวลาทำงาน",
+    "status": "สถานะ",
+    "source": "แหล่งที่มา",
+    "actions": "การดำเนินการ"
+  },
+  "corrections": {
+    "title": "การแก้ไขเวลาเข้างาน",
+    "subtitle": "ตรวจสอบและอนุมัติคำขอปรับเวลาทำงานของพนักงาน",
+    "submit": "ยื่นคำขอแก้ไข",
+    "submit_description": "ส่งคำขอปรับเวลาเข้าออกงานเพื่อให้ผู้จัดการตรวจสอบ",
+    "submit_button": "ส่งคำขอ",
+    "submit_success": "ส่งคำขอแก้ไขเวลาเรียบร้อยแล้ว",
+    "review": "ตรวจสอบคำขอ",
+    "review_description": "ตรวจสอบคำขอแก้ไขของ {{name}} สำหรับวันที่ {{date}}",
+    "approve": "อนุมัติคำขอ",
+    "reject": "ปฏิเสธคำขอ",
+    "confirm_approve": "ยืนยันการอนุมัติ",
+    "confirm_reject": "ยืนยันการปฏิเสธ",
+    "approve_success": "อนุมัติและปรับปรุงเวลาเรียบร้อยแล้ว",
+    "reject_success": "ปฏิเสธคำขอเรียบร้อยแล้ว",
+    "decision": "การตัดสินใจ",
+    "requested_in": "เวลาเข้าที่ขอ",
+    "requested_out": "เวลาออกที่ขอ",
+    "reason_label": "เหตุผล",
+    "reason_input_label": "เหตุผลในการแก้ไข",
+    "reason_placeholder": "อธิบายเหตุผลที่ต้องการปรับเวลาลงทะเบียน...",
+    "review_notes_label": "หมายเหตุผู้ตรวจสอบ",
+    "rejection_placeholder": "เหตุผลในการปฏิเสธ...",
+    "approval_placeholder": "หมายเหตุการอนุมัติ (ไม่บังคับ)...",
+    "rejection_reason": "เหตุผลที่ปฏิเสธ",
+    "empty_title": "ไม่มีคำขอแก้ไขเวลา",
+    "empty_description": "คำขอปรับเวลาเข้าออกงานที่รอการอนุมัติจะปรากฏที่นี่",
+    "columns": {
+      "employee": "พนักงาน",
+      "date": "วันที่",
+      "requested_in": "เวลาเข้าที่ขอ",
+      "requested_out": "เวลาออกที่ขอ",
+      "reason": "เหตุผลของพนักงาน",
+      "status": "สถานะ",
+      "reviewer": "ผู้ตรวจสอบ"
+    }
+  },
+  "status": {
+    "PRESENT": "มาทำงาน",
+    "ABSENT": "ขาดงาน",
+    "LATE": "มาสาย",
+    "HALF_DAY": "ครึ่งวัน",
+    "EARLY_LEAVE": "ออกก่อนเวลา",
+    "ON_LEAVE": "ลางาน",
+    "HOLIDAY": "วันหยุด"
+  },
+  "correction_status": {
+    "PENDING": "รอการตรวจสอบ",
+    "APPROVED": "อนุมัติแล้ว",
+    "REJECTED": "ปฏิเสธแล้ว"
+  },
+  "punch": {
+    "title": "บันทึกเวลาด่วน",
+    "description": "บันทึกเวลาเข้างานหรือเลิกงานของพนักงาน",
+    "time_label": "เวลา",
+    "note_placeholder": "หมายเหตุเพิ่มเติม (ไม่บังคับ)...",
+    "in_success": "เช็คอินสำเร็จแล้ว",
+    "out_success": "เช็คเอาต์สำเร็จแล้ว"
+  },
+  "manual": {
+    "description": "สร้างหรือแก้ไขบันทึกการเข้างานสำหรับวันที่ต้องการ",
+    "remarks_placeholder": "เหตุผลหรือหมายเหตุ..."
+  },
+  "form": {
+    "employee": "พนักงาน",
+    "employee_placeholder": "เลือกพนักงาน",
+    "date": "วันที่เข้างาน",
+    "shift": "กะการทำงาน (ไม่บังคับ)",
+    "shift_placeholder": "กะเริ่มต้นที่ได้รับมอบหมาย",
+    "check_in": "เวลาเข้างาน",
+    "check_out": "เวลาเลิกงาน",
+    "status": "สถานะ",
+    "remarks": "หมายเหตุ",
+    "cancel": "ยกเลิก",
+    "save": "บันทึกการเข้างาน"
+  },
+  "empty": {
+    "title": "ไม่พบบันทึกการเข้างาน",
+    "description": "บันทึกเวลาเข้าออกงานประจำวันจะปรากฏที่นี่"
+  }
+}

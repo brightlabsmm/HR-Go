@@ -10,6 +10,10 @@
     "roles": "บทบาท",
     "permissions": "สิทธิ์",
     "positions": "ตำแหน่ง",
+    "employees": "พนักงาน",
+    "shifts": "กะการทำงาน",
+    "holidays": "วันหยุด",
+    "attendance": "การเข้างาน",
     "organization_settings": "การตั้งค่าองค์กร",
     "account": "บัญชีของฉัน"
   },
@@ -99,6 +103,8 @@
   },
   "nav_groups": {
     "structure": "โครงสร้าง",
+    "workforce": "กำลังคน",
+    "attendance": "เวลาและการเข้างาน",
     "people": "บุคลากรและสิทธิ์",
     "organization": "องค์กร",
     "compliance": "การตรวจสอบ",

@@ -1,0 +1,70 @@
+{
+  "title": "班次管理",
+  "subtitle": "配置工作时间、休息时长及员工排班",
+  "add": "新增班次",
+  "search_placeholder": "搜索班次...",
+  "all_status": "全部状态",
+  "all_branches": "全部机构",
+  "all_branches_label": "全部机构",
+  "all_branches_option": "全部机构（工作区通用）",
+  "default_badge": "默认",
+  "mins_unit": "{{count}} 分钟",
+  "status": {
+    "ACTIVE": "启用",
+    "INACTIVE": "停用"
+  },
+  "columns": {
+    "name": "班次名称",
+    "timing": "工作时间",
+    "break": "休息时长",
+    "branch": "所属分支",
+    "default": "默认",
+    "status": "状态",
+    "actions": "操作"
+  },
+  "sections": {
+    "details": "班次详情"
+  },
+  "form": {
+    "create_title": "创建班次",
+    "edit_title": "编辑班次",
+    "name": "班次名称",
+    "start_time": "上班时间 (HH:MM)",
+    "end_time": "下班时间 (HH:MM)",
+    "break_minutes": "休息时长（分钟）",
+    "branch": "所属分支",
+    "status": "状态",
+    "is_default": "设为默认班次",
+    "is_default_desc": "自动应用于未单独分配班次的员工",
+    "cancel": "取消",
+    "save": "保存更改",
+    "create": "创建班次",
+    "errors": {
+      "name": "请输入班次名称。",
+      "name_max": "班次名称不能超过 100 个字符。",
+      "start_time": "请按 HH:MM 格式输入上班时间。",
+      "end_time": "请按 HH:MM 格式输入下班时间。",
+      "break_minutes": "休息时长必须在 0 到 480 分钟之间。"
+    }
+  },
+  "assignments": {
+    "title": "班次分配",
+    "assign": "为员工分配班次",
+    "columns": {
+      "employee": "员工",
+      "shift": "班次",
+      "period": "生效周期",
+      "status": "状态"
+    }
+  },
+  "empty": {
+    "title": "暂未配置班次",
+    "description": "创建班次计划以便统计团队的正常出勤工时。"
+  },
+  "delete": {
+    "title": "删除班次",
+    "description": "确定要删除 {{name}} 吗？",
+    "confirm": "删除班次",
+    "success": "班次已删除。"
+  }
+}

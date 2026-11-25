@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router"
 import { z } from "zod"
 
-import { applyApiFieldErrors } from "@/app/api/feedback"
+import { applyApiFieldErrors, notifyApiError } from "@/app/api/feedback"
 import { FormSkeleton } from "@/components/common/form-skeleton"
 import { FormSelectInput } from "@/components/common/form/form-select-input"
 import { FormTextInput } from "@/components/common/form/form-text-input"
@@ -87,11 +87,13 @@ export function EmployeeFormPage() {
         firstName: z
           .string()
           .trim()
-          .min(1, t("form.errors.first_name")),
+          .min(1, t("form.errors.first_name"))
+          .max(100, t("form.errors.first_name_max")),
         lastName: z
           .string()
           .trim()
-          .min(1, t("form.errors.last_name")),
+          .min(1, t("form.errors.last_name"))
+          .max(100, t("form.errors.last_name_max")),
         email: z
           .string()
           .trim()
@@ -153,9 +155,13 @@ export function EmployeeFormPage() {
       departmentId: employee?.departmentId ?? "none",
       positionId: employee?.positionId ?? "none",
       roleId: employee?.roleId ?? "",
-      dateOfJoining: employee?.dateOfJoining ?? "",
+      dateOfJoining: employee?.dateOfJoining
+        ? employee.dateOfJoining.slice(0, 10)
+        : "",
       employmentStatus: employee?.employmentStatus ?? "ACTIVE",
-      dateOfBirth: employee?.profile?.dateOfBirth ?? "",
+      dateOfBirth: employee?.profile?.dateOfBirth
+        ? employee.profile.dateOfBirth.slice(0, 10)
+        : "",
       gender: employee?.profile?.gender ?? "none",
       nationality: employee?.profile?.nationality ?? "",
       maritalStatus: employee?.profile?.maritalStatus ?? "none",
@@ -234,27 +240,27 @@ export function EmployeeFormPage() {
   ]
 
   const statusOptions = [
-    { value: "ACTIVE", label: "Active" },
-    { value: "PROBATION", label: "Probation" },
-    { value: "SUSPENDED", label: "Suspended" },
-    { value: "TERMINATED", label: "Terminated" },
-    { value: "RESIGNED", label: "Resigned" },
+    { value: "ACTIVE", label: t("status.ACTIVE") },
+    { value: "PROBATION", label: t("status.PROBATION") },
+    { value: "SUSPENDED", label: t("status.SUSPENDED") },
+    { value: "TERMINATED", label: t("status.TERMINATED") },
+    { value: "RESIGNED", label: t("status.RESIGNED") },
   ]
 
   const genderOptions = [
     { value: "none", label: t("form.none") },
-    { value: "MALE", label: "Male" },
-    { value: "FEMALE", label: "Female" },
-    { value: "OTHER", label: "Other" },
+    { value: "MALE", label: t("gender.MALE") },
+    { value: "FEMALE", label: t("gender.FEMALE") },
+    { value: "OTHER", label: t("gender.OTHER") },
   ]
 
   const maritalStatusOptions = [
     { value: "none", label: t("form.none") },
-    { value: "SINGLE", label: "Single" },
-    { value: "MARRIED", label: "Married" },
-    { value: "DIVORCED", label: "Divorced" },
-    { value: "WIDOWED", label: "Widowed" },
-    { value: "OTHER", label: "Other" },
+    { value: "SINGLE", label: t("marital_status.SINGLE") },
+    { value: "MARRIED", label: t("marital_status.MARRIED") },
+    { value: "DIVORCED", label: t("marital_status.DIVORCED") },
+    { value: "WIDOWED", label: t("marital_status.WIDOWED") },
+    { value: "OTHER", label: t("marital_status.OTHER") },
   ]
 
   const handleModalClose = () => {
@@ -307,6 +313,7 @@ export function EmployeeFormPage() {
         }
       />
       <form
+        noValidate
         className={formStackClassName}
         onSubmit={handleSubmit(async (values) => {
           const branchId = values.branchId === "none" ? null : values.branchId
@@ -375,7 +382,9 @@ export function EmployeeFormPage() {
               })
             }
           } catch (error) {
-            applyApiFieldErrors(error, setError)
+            if (!applyApiFieldErrors(error, setError)) {
+              notifyApiError(error)
+            }
           }
         })}
       >
@@ -571,14 +580,12 @@ export function EmployeeFormPage() {
               <CheckCircle2Icon className="size-6" />
             </div>
             <DialogTitle className="text-center font-heading text-lg font-semibold text-foreground">
-              Employee Created Successfully
+              {t("credentials.title")}
             </DialogTitle>
             <DialogDescription className="text-center text-sm text-muted-foreground">
-              Account created for{" "}
-              <strong className="font-semibold text-foreground">
-                {createdCredentials?.fullName}
-              </strong>
-              . Please share these login credentials with the employee.
+              {t("credentials.description", {
+                name: createdCredentials?.fullName ?? "",
+              })}
             </DialogDescription>
           </DialogHeader>
 
@@ -586,7 +593,7 @@ export function EmployeeFormPage() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  Employee Code
+                  {t("credentials.employee_code")}
                 </div>
                 <div className="font-mono text-base font-semibold text-foreground">
                   {createdCredentials?.employeeCode}
@@ -612,7 +619,9 @@ export function EmployeeFormPage() {
                   <CopyIcon className="size-4" />
                 )}
                 <span className="text-xs">
-                  {copiedField === "code" ? "Copied" : "Copy"}
+                  {copiedField === "code"
+                    ? t("credentials.copied")
+                    : t("credentials.copy")}
                 </span>
               </Button>
             </div>
@@ -622,7 +631,7 @@ export function EmployeeFormPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Temporary Password
+                      {t("credentials.temporary_password")}
                     </div>
                     <div className="font-mono text-base font-semibold text-foreground">
                       {showPassword
@@ -636,7 +645,11 @@ export function EmployeeFormPage() {
                       variant="ghost"
                       size="icon-sm"
                       onClick={() => setShowPassword((prev) => !prev)}
-                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      aria-label={
+                        showPassword
+                          ? t("credentials.hide_password")
+                          : t("credentials.show_password")
+                      }
                     >
                       {showPassword ? (
                         <EyeClosed className="size-4" />
@@ -664,14 +677,15 @@ export function EmployeeFormPage() {
                         <CopyIcon className="size-4" />
                       )}
                       <span className="text-xs">
-                        {copiedField === "password" ? "Copied" : "Copy"}
+                        {copiedField === "password"
+                          ? t("credentials.copied")
+                          : t("credentials.copy")}
                       </span>
                     </Button>
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  The employee will be required to change this temporary password
-                  upon their first login.
+                  {t("credentials.hint")}
                 </p>
               </div>
             )}
@@ -682,9 +696,9 @@ export function EmployeeFormPage() {
               type="button"
               variant="outline"
               onClick={() => {
-                const text = `Employee: ${createdCredentials?.fullName}\nEmployee Code: ${createdCredentials?.employeeCode}${
+                const text = `${t("columns.name")}: ${createdCredentials?.fullName}\n${t("credentials.employee_code")}: ${createdCredentials?.employeeCode}${
                   createdCredentials?.generatedPassword
-                    ? `\nTemporary Password: ${createdCredentials.generatedPassword}`
+                    ? `\n${t("credentials.temporary_password")}: ${createdCredentials.generatedPassword}`
                     : ""
                 }`
                 void navigator.clipboard.writeText(text)
@@ -697,10 +711,12 @@ export function EmployeeFormPage() {
               ) : (
                 <CopyIcon className="size-4" />
               )}
-              {copiedField === "all" ? "Credentials Copied" : "Copy All Credentials"}
+              {copiedField === "all"
+                ? t("credentials.copied_all")
+                : t("credentials.copy_all")}
             </Button>
             <Button type="button" onClick={handleModalClose}>
-              Done
+              {t("credentials.done")}
             </Button>
           </DialogFooter>
         </DialogContent>

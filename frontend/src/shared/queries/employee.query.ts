@@ -84,8 +84,8 @@ export function useUpdateEmployeeMutation() {
       id: string
       input: UpdateEmployeeInput
     }) => updateEmployee(id, input),
-    onSuccess: (_, { id }) => {
-      void queryClient.invalidateQueries({ queryKey: employeeKeys.detail(id) })
+    onSuccess: (data, { id }) => {
+      queryClient.setQueryData(employeeKeys.detail(id), data)
       void queryClient.invalidateQueries({ queryKey: employeeKeys.lists() })
     },
   })

@@ -22,6 +22,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PAGE_PARAM, PAGE_SIZE_PARAM } from "@/constants/pagination"
+import { notifyApiError } from "@/app/api/feedback"
+import { usePermissions } from "@/shared/hooks/use-permissions"
 import { useBranchesQuery } from "@/shared/queries/branch.query"
 import {
   useDeleteShiftMutation,
@@ -40,6 +42,10 @@ export function ShiftListPage() {
   const { t: tCommon } = useTranslation("common")
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { can } = usePermissions()
+  const canCreate = can("org.shift.create")
+  const canUpdate = can("org.shift.update")
+  const canDelete = can("org.shift.delete")
 
   const status = searchParams.get("status") ?? undefined
   const branchId = searchParams.get("branch") ?? undefined
@@ -87,8 +93,8 @@ export function ShiftListPage() {
 
   const statusItems = [
     { value: "all", label: t("all_status") },
-    { value: "ACTIVE", label: "Active" },
-    { value: "INACTIVE", label: "Inactive" },
+    { value: "ACTIVE", label: t("status.ACTIVE") },
+    { value: "INACTIVE", label: t("status.INACTIVE") },
   ]
 
   const branchItems = [
@@ -110,7 +116,7 @@ export function ShiftListPage() {
           </span>
           {row.original.isDefault && (
             <Badge variant="secondary" className="text-[11px] font-semibold">
-              Default
+              {t("default_badge")}
             </Badge>
           )}
         </div>
@@ -128,39 +134,51 @@ export function ShiftListPage() {
     column.accessor("breakMinutes", {
       header: t("columns.break"),
       enableSorting: false,
-      cell: ({ getValue }) => `${getValue()} mins`,
+      cell: ({ getValue }) => t("mins_unit", { count: getValue() }),
     }),
     column.accessor("branchName", {
       header: t("columns.branch"),
       enableSorting: false,
-      cell: ({ getValue }) => getValue() || "All Branches",
+      cell: ({ getValue }) => getValue() || t("all_branches_label"),
     }),
     column.accessor("status", {
       header: t("columns.status"),
       enableSorting: false,
       cell: ({ getValue }) => <StatusBadge status={getValue()} />,
     }),
-    column.display({
-      id: "actions",
-      header: t("columns.actions"),
-      enableSorting: false,
-      enableHiding: false,
-      meta: { align: "end" },
-      cell: ({ row }) => (
-        <DataTableActions
-          onEdit={() => void navigate(`/shifts/${row.original.id}/edit`)}
-          onDelete={() => window.setTimeout(() => setTarget(row.original), 0)}
-        />
-      ),
-    }),
+    ...(canUpdate || canDelete
+      ? [
+          column.display({
+            id: "actions",
+            header: t("columns.actions"),
+            enableSorting: false,
+            enableHiding: false,
+            meta: { align: "end" },
+            cell: ({ row }) => (
+              <DataTableActions
+                onEdit={
+                  canUpdate
+                    ? () => void navigate(`/shifts/${row.original.id}/edit`)
+                    : undefined
+                }
+                onDelete={
+                  canDelete
+                    ? () => window.setTimeout(() => setTarget(row.original), 0)
+                    : undefined
+                }
+              />
+            ),
+          }),
+        ]
+      : []),
   ])
 
-  const addButton = (
+  const addButton = canCreate ? (
     <Button type="button" onClick={() => void navigate("/shifts/new")}>
       <PlusIcon className="size-4" />
       {t("add")}
     </Button>
-  )
+  ) : null
 
   function renderBody() {
     if (shiftsQuery.isPending) {
@@ -199,7 +217,9 @@ export function ShiftListPage() {
         data={rows}
         getRowId={(shift) => shift.id}
         label={t("title")}
-        onRowClick={(shift) => void navigate(`/shifts/${shift.id}/edit`)}
+        onRowClick={
+          canUpdate ? (shift) => void navigate(`/shifts/${shift.id}/edit`) : undefined
+        }
       />
     )
   }
@@ -216,7 +236,7 @@ export function ShiftListPage() {
           <FilterBar hasFilters={hasFilters} onReset={resetFilters}>
             <div className="w-56">
               <Input
-                placeholder="Search shifts..."
+                placeholder={t("search_placeholder")}
                 value={search ?? ""}
                 onChange={(e) => patch("q", e.target.value || null)}
                 className="h-9"
@@ -270,7 +290,10 @@ export function ShiftListPage() {
               setTarget(null)
               toast.success(t("delete.success"))
             },
-            onError: () => setTarget(null),
+            onError: (err) => {
+              setTarget(null)
+              notifyApiError(err)
+            },
           })
         }}
       />
