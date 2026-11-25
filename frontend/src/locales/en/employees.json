@@ -12,6 +12,7 @@
     "branch": "Branch",
     "department": "Department",
     "position": "Position",
+    "role": "Role",
     "status": "Status",
     "joined": "Joined",
     "actions": "Actions"

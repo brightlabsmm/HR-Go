@@ -76,6 +76,7 @@ export function EmployeeFormPage() {
     null
   )
 
+  const [roleInitialized, setRoleInitialized] = useState(false)
   const isPending = createMutation.isPending || updateMutation.isPending
   const isLoading = isEdit && employeeQuery.isPending
 
@@ -173,15 +174,32 @@ export function EmployeeFormPage() {
   }))
 
   useEffect(() => {
-    if (!isEdit && !selectedRoleId && rolesQuery.data && rolesQuery.data.length > 0) {
+    if (roleInitialized || !rolesQuery.data || rolesQuery.data.length === 0) return
+
+    if (isEdit) {
+      if (employee) {
+        if (employee.roleId) {
+          setValue("roleId", employee.roleId)
+        } else {
+          const defaultRole =
+            rolesQuery.data.find((r) => r.roleCode === "EMPLOYEE") ??
+            rolesQuery.data[0]
+          if (defaultRole) {
+            setValue("roleId", defaultRole.id)
+          }
+        }
+        setRoleInitialized(true)
+      }
+    } else {
       const defaultRole =
         rolesQuery.data.find((r) => r.roleCode === "EMPLOYEE") ??
         rolesQuery.data[0]
       if (defaultRole) {
         setValue("roleId", defaultRole.id)
       }
+      setRoleInitialized(true)
     }
-  }, [isEdit, selectedRoleId, rolesQuery.data, setValue])
+  }, [isEdit, employee, rolesQuery.data, roleInitialized, setValue])
 
   const selectedBranchId = watch("branchId")
   const filteredDepartments = (departmentsQuery.data?.items ?? []).filter(

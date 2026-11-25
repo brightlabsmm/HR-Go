@@ -11,6 +11,7 @@ import (
 
 	"hrgo/backend/internal/modules/workspace/employee/models"
 	"hrgo/backend/internal/modules/workspace/employee/request"
+	"hrgo/backend/internal/shared/security"
 )
 
 type Repository interface {
@@ -117,13 +118,12 @@ func (r *repository) GetNextEmployeeCode(ctx context.Context, orgID string) (str
 func (r *repository) FindByID(ctx context.Context, orgID, id string) (*models.Employee, error) {
 	var emp models.Employee
 	err := r.db.WithContext(ctx).Table("employee_identities e").
-		Select("e.*, b.name as branch_name, d.name as department_name, p.name as position_title, r.id as role_id, r.name as role_name, r.code as role_code").
+		Select("e.*, b.name as branch_name, d.name as department_name, p.name as position_title, r.role_id, r.role_name, r.role_code").
 		Joins("LEFT JOIN branches b ON b.id = e.branch_id").
 		Joins("LEFT JOIN departments d ON d.id = e.department_id").
 		Joins("LEFT JOIN positions p ON p.id = e.position_id").
 		Joins("LEFT JOIN organization_accounts oa ON oa.employee_id = e.id AND oa.organization_id = e.organization_id").
-		Joins("LEFT JOIN org_user_roles our ON our.account_id = oa.id").
-		Joins("LEFT JOIN org_roles r ON r.id = our.role_id").
+		Joins("LEFT JOIN LATERAL (SELECT our.role_id, r.name AS role_name, r.code AS role_code FROM org_user_roles our JOIN org_roles r ON r.id = our.role_id WHERE our.account_id = oa.id ORDER BY our.role_id ASC LIMIT 1) r ON true").
 		Where("e.id = ? AND e.organization_id = ? AND e.deleted_at IS NULL", id, orgID).
 		First(&emp).Error
 	if err != nil {
@@ -165,13 +165,12 @@ func (r *repository) FindByEmail(ctx context.Context, orgID, email string) (*mod
 
 func (r *repository) List(ctx context.Context, orgID string, q request.ListEmployeesQuery) ([]models.Employee, int64, error) {
 	query := r.db.WithContext(ctx).Table("employee_identities e").
-		Select("e.*, b.name as branch_name, d.name as department_name, p.name as position_title, r.id as role_id, r.name as role_name, r.code as role_code").
+		Select("e.*, b.name as branch_name, d.name as department_name, p.name as position_title, r.role_id, r.role_name, r.role_code").
 		Joins("LEFT JOIN branches b ON b.id = e.branch_id").
 		Joins("LEFT JOIN departments d ON d.id = e.department_id").
 		Joins("LEFT JOIN positions p ON p.id = e.position_id").
 		Joins("LEFT JOIN organization_accounts oa ON oa.employee_id = e.id AND oa.organization_id = e.organization_id").
-		Joins("LEFT JOIN org_user_roles our ON our.account_id = oa.id").
-		Joins("LEFT JOIN org_roles r ON r.id = our.role_id").
+		Joins("LEFT JOIN LATERAL (SELECT our.role_id, r.name AS role_name, r.code AS role_code FROM org_user_roles our JOIN org_roles r ON r.id = our.role_id WHERE our.account_id = oa.id ORDER BY our.role_id ASC LIMIT 1) r ON true").
 		Where("e.organization_id = ? AND e.deleted_at IS NULL", orgID)
 
 	if q.BranchID != "" {
@@ -242,10 +241,32 @@ func (r *repository) Update(ctx context.Context, emp *models.Employee, profile *
 		}
 		if roleID != nil && *roleID != "" {
 			var account models.OrganizationAccount
-			if err := tx.Where("employee_id = ? AND organization_id = ?", emp.ID, emp.OrganizationID).First(&account).Error; err == nil {
-				_ = tx.Exec("DELETE FROM org_user_roles WHERE account_id = ?", account.ID).Error
-				_ = tx.Exec("INSERT INTO org_user_roles (account_id, role_id) VALUES (?, ?) ON CONFLICT DO NOTHING", account.ID, *roleID).Error
+			err := tx.Where("employee_id = ? AND organization_id = ?", emp.ID, emp.OrganizationID).First(&account).Error
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					ident := strings.TrimSpace(emp.EmployeeCode)
+					if ident == "" {
+						ident = emp.ID
+					}
+					tempPass := "Temp@Pass123!"
+					hash, _ := security.HashPassword(tempPass)
+					account = models.OrganizationAccount{
+						OrganizationID:     emp.OrganizationID,
+						EmployeeID:         emp.ID,
+						Identifier:         ident,
+						PasswordHash:       hash,
+						Status:             "ACTIVE",
+						MustChangePassword: true,
+					}
+					if err := tx.Create(&account).Error; err != nil {
+						return err
+					}
+				} else {
+					return err
+				}
 			}
+			_ = tx.Exec("DELETE FROM org_user_roles WHERE account_id = ?", account.ID).Error
+			_ = tx.Exec("INSERT INTO org_user_roles (account_id, role_id) VALUES (?, ?) ON CONFLICT DO NOTHING", account.ID, *roleID).Error
 		}
 		return nil
 	})

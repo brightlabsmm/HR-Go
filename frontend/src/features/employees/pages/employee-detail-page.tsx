@@ -350,11 +350,19 @@ export function EmployeeDetailPage() {
             <div>
               <Label htmlFor="pos-select">{t("change_position.new_position")}</Label>
               <Select
+                items={(positionsQuery.data?.items ?? []).map((p) => ({
+                  value: p.id,
+                  label: `${p.positionName} (${p.positionCode})`,
+                }))}
                 value={newPositionId}
                 onValueChange={(val) => setNewPositionId(val ?? "")}
               >
                 <SelectTrigger id="pos-select" className="mt-1 w-full">
-                  <SelectValue placeholder="Select position" />
+                  <SelectValue placeholder="Select position">
+                    {positionsQuery.data?.items?.find((p) => p.id === newPositionId)
+                      ? `${positionsQuery.data.items.find((p) => p.id === newPositionId)!.positionName} (${positionsQuery.data.items.find((p) => p.id === newPositionId)!.positionCode})`
+                      : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {(positionsQuery.data?.items ?? []).map((p) => (
@@ -434,11 +442,19 @@ export function EmployeeDetailPage() {
             <div>
               <Label htmlFor="shift-select">{t("assign_shift.shift")}</Label>
               <Select
+                items={(shiftsQuery.data?.items ?? []).map((s) => ({
+                  value: s.id,
+                  label: `${s.shiftName} (${s.startTime} - ${s.endTime})`,
+                }))}
                 value={newShiftId}
                 onValueChange={(val) => setNewShiftId(val ?? "")}
               >
                 <SelectTrigger id="shift-select" className="mt-1 w-full">
-                  <SelectValue placeholder="Select shift schedule" />
+                  <SelectValue placeholder="Select shift schedule">
+                    {shiftsQuery.data?.items?.find((s) => s.id === newShiftId)
+                      ? `${shiftsQuery.data.items.find((s) => s.id === newShiftId)!.shiftName} (${shiftsQuery.data.items.find((s) => s.id === newShiftId)!.startTime} - ${shiftsQuery.data.items.find((s) => s.id === newShiftId)!.endTime})`
+                      : undefined}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {(shiftsQuery.data?.items ?? []).map((s) => (
