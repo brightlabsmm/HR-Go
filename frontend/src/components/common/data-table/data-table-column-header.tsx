@@ -5,23 +5,21 @@ import {
   ArrowUpDownIcon,
   ArrowUpIcon,
   FilterIcon,
+  SearchIcon,
   XIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { cn } from "cn"
 
 import type { DataTableColumnFilterMeta } from "@/components/common/data-table/data-table-columns"
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import {
   Select,
   SelectContent,
@@ -104,13 +102,11 @@ export function DataTableColumnHeader({
         ? ArrowDownIcon
         : ArrowUpDownIcon
   const ops = filterMeta ? defaultOps(filterMeta) : []
-  const [draftSort, setDraftSort] = useState<SortDirection>("none")
   const [draftOp, setDraftOp] = useState<ColumnFilterOp>("ilike")
   const [draftValue, setDraftValue] = useState("")
   const [valueError, setValueError] = useState(false)
 
   function syncDraftFromActive() {
-    setDraftSort(sorted === "asc" ? "asc" : sorted === "desc" ? "desc" : "none")
     setValueError(false)
     if (filterMeta) {
       setDraftOp(activeFilter?.op ?? defaultOp(filterMeta))
@@ -153,18 +149,23 @@ export function DataTableColumnHeader({
     }
   }
 
-  function apply() {
-    const nextSorting = canSort
-      ? upsertColumnSort(sorting, columnId, draftSort)
-      : sorting
+  function applySort(direction: "asc" | "desc") {
+    onColumnDialogApply?.({
+      sorting: upsertColumnSort(sorting, columnId, direction),
+      filterField: filterMeta?.field,
+      filter: activeFilter ?? undefined,
+    })
+    setOpen(false)
+  }
 
+  function applyFilter() {
     if (canFilter && filterMeta && opNeedsValue(draftOp) && !draftValue.trim()) {
       setValueError(true)
       return
     }
 
     onColumnDialogApply?.({
-      sorting: nextSorting,
+      sorting,
       filterField: filterMeta?.field,
       filter: canFilter ? buildFilter() : undefined,
     })
@@ -198,27 +199,25 @@ export function DataTableColumnHeader({
     value: op,
     label: t(`table.filter_ops.${op}`),
   }))
-  const sortItems = [
-    { value: "none", label: t("table.sort_none") },
-    { value: "asc", label: t("table.sort_asc") },
-    { value: "desc", label: t("table.sort_desc") },
-  ]
   const valueItems = filterMeta?.options ?? []
   const needsValue = opNeedsValue(draftOp)
+  const hasActive = Boolean(sorted || activeFilter)
+
+  const menuItemClass = cn(
+    "flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none transition-colors",
+    "hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground"
+  )
 
   return (
-    <>
-      <div className="inline-flex items-center gap-0.5">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
+    <div className="inline-flex items-center gap-0.5">
+      <Popover open={open} onOpenChange={handleOpenChange}>
+        <PopoverTrigger
+          aria-label={t("table.column_menu", { column: title })}
           className={cn(
+            buttonVariants({ variant: "ghost", size: "sm" }),
             "-ml-2 h-8 gap-1.5 px-2 text-small-2 font-medium text-muted-foreground hover:bg-accent hover:text-foreground",
             (sorted || activeFilter) && "text-foreground"
           )}
-          onClick={() => handleOpenChange(true)}
-          aria-label={t("table.column_menu", { column: title })}
         >
           {title}
           {canSort ? <SortIcon className="size-3.5" aria-hidden /> : null}
@@ -230,93 +229,78 @@ export function DataTableColumnHeader({
               {sortIndex + 1}
             </span>
           ) : null}
-        </Button>
-        {activeFilter ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="size-7 text-muted-foreground hover:text-foreground"
-            onClick={clearFilter}
-            aria-label={t("table.clear_filter", { column: title })}
-          >
-            <XIcon className="size-3.5" aria-hidden />
-          </Button>
-        ) : null}
-      </div>
+        </PopoverTrigger>
 
-      <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>
-              {t("table.column_dialog_title", { column: title })}
-            </DialogTitle>
-            <DialogDescription>
-              {t("table.column_dialog_description")}
-            </DialogDescription>
-          </DialogHeader>
+        <PopoverContent
+          side="bottom"
+          align="start"
+          sideOffset={4}
+          className="w-64 p-1"
+        >
+          {canSort ? (
+            <div className="flex flex-col gap-0.5 p-0.5">
+              <button
+                type="button"
+                className={cn(
+                  menuItemClass,
+                  sorted === "asc" && "bg-accent text-accent-foreground"
+                )}
+                onClick={() => applySort("asc")}
+              >
+                <ArrowUpIcon className="size-4 shrink-0" aria-hidden />
+                {t("table.sort_asc")}
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  menuItemClass,
+                  sorted === "desc" && "bg-accent text-accent-foreground"
+                )}
+                onClick={() => applySort("desc")}
+              >
+                <ArrowDownIcon className="size-4 shrink-0" aria-hidden />
+                {t("table.sort_desc")}
+              </button>
+            </div>
+          ) : null}
 
-          <div className="grid gap-4">
-            {canSort ? (
-              <div className="grid gap-2">
-                <Label htmlFor={`sort-${columnId}`}>{t("table.sort")}</Label>
-                <Select
-                  items={sortItems}
-                  value={draftSort}
-                  onValueChange={(value) => {
-                    if (value === "asc" || value === "desc" || value === "none") {
-                      setDraftSort(value)
-                    }
-                  }}
-                >
-                  <SelectTrigger id={`sort-${columnId}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sortItems.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : null}
-
-            {canFilter && filterMeta ? (
-              <>
-                <div className="grid gap-2">
-                  <Label htmlFor={`op-${columnId}`}>
-                    {t("table.filter_operator")}
-                  </Label>
-                  <Select
-                    items={opItems}
-                    value={draftOp}
-                    onValueChange={(value) => {
-                      if (value) {
-                        setDraftOp(value as ColumnFilterOp)
-                        setValueError(false)
-                      }
-                    }}
-                  >
-                    <SelectTrigger id={`op-${columnId}`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {opItems.map((item) => (
-                        <SelectItem key={item.value} value={item.value}>
-                          {item.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+          {canFilter && filterMeta ? (
+            <>
+              {canSort ? (
+                <div className="my-1 h-px bg-border" role="separator" />
+              ) : null}
+              <div className="grid gap-2 p-2">
+                {ops.length > 1 ? (
+                  <div className="grid gap-1.5">
+                    <Label htmlFor={`op-${columnId}`} className="text-xs">
+                      {t("table.filter_operator")}
+                    </Label>
+                    <Select
+                      items={opItems}
+                      value={draftOp}
+                      onValueChange={(value) => {
+                        if (value) {
+                          setDraftOp(value as ColumnFilterOp)
+                          setValueError(false)
+                        }
+                      }}
+                    >
+                      <SelectTrigger id={`op-${columnId}`} size="sm" className="h-8">
+                        <SelectValue className="text-small-1" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {opItems.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {item.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : null}
 
                 {needsValue ? (
-                  <div className="grid gap-2">
-                    <Label htmlFor={`value-${columnId}`}>
-                      {t("table.filter_value")}
-                    </Label>
+                  <div className="grid gap-1.5">
                     {filterMeta.valueType === "select" ? (
                       <Select
                         items={valueItems}
@@ -328,6 +312,8 @@ export function DataTableColumnHeader({
                       >
                         <SelectTrigger
                           id={`value-${columnId}`}
+                          size="sm"
+                          className="h-8"
                           aria-invalid={valueError}
                         >
                           <SelectValue
@@ -343,19 +329,32 @@ export function DataTableColumnHeader({
                         </SelectContent>
                       </Select>
                     ) : (
-                      <Input
-                        id={`value-${columnId}`}
-                        value={draftValue}
-                        aria-invalid={valueError}
-                        onChange={(event) => {
-                          setDraftValue(event.target.value)
-                          setValueError(false)
-                        }}
-                        placeholder={
-                          filterMeta.placeholder ??
-                          t("table.filter_search_placeholder")
-                        }
-                      />
+                      <div className="relative">
+                        <SearchIcon
+                          className="pointer-events-none absolute top-1/2 left-2 size-3.5 -translate-y-1/2 text-muted-foreground"
+                          aria-hidden
+                        />
+                        <Input
+                          id={`value-${columnId}`}
+                          value={draftValue}
+                          aria-invalid={valueError}
+                          className="h-4 pl-7 text-small-1"
+                          onChange={(event) => {
+                            setDraftValue(event.target.value)
+                            setValueError(false)
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault()
+                              applyFilter()
+                            }
+                          }}
+                          placeholder={
+                            filterMeta.placeholder ??
+                            t("table.filter_search_placeholder")
+                          }
+                        />
+                      </div>
                     )}
                     {valueError ? (
                       <p className="text-small-2 text-destructive">
@@ -364,20 +363,62 @@ export function DataTableColumnHeader({
                     ) : null}
                   </div>
                 ) : null}
-              </>
-            ) : null}
-          </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={clearAll}>
-              {t("table.clear_column")}
-            </Button>
-            <Button type="button" onClick={apply}>
-              {t("actions.apply")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+                <div className="flex gap-2 w-full">
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-8 w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                    onClick={applyFilter}
+                  >
+                    {t("actions.apply")}
+                  </Button>
+                </div>
+                
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8"
+                    onClick={clearAll}
+                    disabled={!hasActive}
+                  >
+                    {t("table.clear_column")}
+                  </Button>
+              </div>
+            </>
+          ) : canSort ? (
+            <>
+              <div className="my-1 h-px bg-border" role="separator" />
+              <div className="p-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-full"
+                  onClick={clearAll}
+                  disabled={!hasActive}
+                >
+                  {t("table.clear_column")}
+                </Button>
+              </div>
+            </>
+          ) : null}
+        </PopoverContent>
+      </Popover>
+
+      {activeFilter ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="size-7 text-muted-foreground hover:text-foreground"
+          onClick={clearFilter}
+          aria-label={t("table.clear_filter", { column: title })}
+        >
+          <XIcon className="size-3.5" aria-hidden />
+        </Button>
+      ) : null}
+    </div>
   )
 }
