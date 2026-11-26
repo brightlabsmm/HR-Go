@@ -27,6 +27,10 @@ export const HomePage = pageLoader(
   () => import("@/features/home/pages/home-page"),
   "HomePage"
 )
+export const BranchListPage = pageLoader(
+  () => import("@/features/branches/pages/branch-list-page"),
+  "BranchListPage"
+)
 export const BranchCreatePage = pageLoader(
   () => import("@/features/branches/pages/branch-create-page"),
   "BranchCreatePage"

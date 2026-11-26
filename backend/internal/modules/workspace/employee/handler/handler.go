@@ -79,6 +79,22 @@ func (h *Handler) List(c *gin.Context) {
 	responses.OK(c, res)
 }
 
+func (h *Handler) GetSummary(c *gin.Context) {
+	claims := security.GetClaims(c)
+	if claims == nil || claims.OrganizationID == "" {
+		responses.Fail(c, apperrors.Unauthorized("Unauthorized"))
+		return
+	}
+
+	res, appErr := h.svc.GetSummary(c.Request.Context(), claims.OrganizationID, c.Query("branchId"))
+	if appErr != nil {
+		responses.Fail(c, appErr)
+		return
+	}
+
+	responses.OK(c, res)
+}
+
 func (h *Handler) Update(c *gin.Context) {
 	claims := security.GetClaims(c)
 	if claims == nil || claims.OrganizationID == "" {

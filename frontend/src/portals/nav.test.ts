@@ -18,12 +18,23 @@ describe("sidebar nav active matching", () => {
     expect(active?.to).toBe("/attendance")
   })
 
-  it("highlights Branches on nested branch detail routes", () => {
+  it("highlights Dashboard on / and Branches on /branches and nested branch detail routes", () => {
+    const homeActive = findActiveNavItemForList(ORGANIZATION_NAV, "/")
+    expect(homeActive?.to).toBe("/")
+    expect(homeActive?.labelKey).toBe("nav.dashboard")
+
+    const branchListActive = findActiveNavItemForList(
+      ORGANIZATION_NAV,
+      "/branches"
+    )
+    expect(branchListActive?.to).toBe("/branches")
+    expect(branchListActive?.labelKey).toBe("nav.branches")
+
     const active = findActiveNavItemForList(
       ORGANIZATION_NAV,
       "/branches/branch-123"
     )
-    expect(active?.to).toBe("/")
+    expect(active?.to).toBe("/branches")
     expect(active?.labelKey).toBe("nav.branches")
   })
 

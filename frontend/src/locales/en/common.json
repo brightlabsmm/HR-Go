@@ -2,6 +2,7 @@
   "app_name": "HR Go",
   "nav": {
     "home": "Home",
+    "dashboard": "Dashboard",
     "login": "Log in",
     "branches": "Branches",
     "organizations": "Organizations",
@@ -133,6 +134,7 @@
     "reload": "Reload page"
   },
   "nav_groups": {
+    "overview": "Overview",
     "structure": "Structure",
     "workforce": "Workforce",
     "attendance": "Time & Attendance",

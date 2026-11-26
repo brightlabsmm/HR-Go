@@ -9,6 +9,7 @@ import {
   FileSpreadsheetIcon,
   GitBranchIcon,
   HistoryIcon,
+  LayoutDashboardIcon,
   NetworkIcon,
   ShieldIcon,
   TimerIcon,
@@ -21,6 +22,12 @@ export const ORGANIZATION_NAV: PortalNavItem[] = [
   {
     to: "/",
     end: true,
+    labelKey: "nav.dashboard",
+    groupKey: "nav_groups.overview",
+    icon: LayoutDashboardIcon,
+  },
+  {
+    to: "/branches",
     labelKey: "nav.branches",
     groupKey: "nav_groups.structure",
     icon: GitBranchIcon,
