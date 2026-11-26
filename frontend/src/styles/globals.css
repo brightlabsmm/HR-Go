@@ -73,6 +73,7 @@
   --color-info-foreground: var(--info-foreground);
   --color-info-muted: var(--info-muted);
   --color-light-blue: var(--light-blue);
+  --color-auth-banner: var(--auth-banner);
   --color-surface: var(--surface);
   --color-hair: var(--hair);
   --color-icon: var(--icon);
@@ -112,6 +113,7 @@
   --border: #e2e8f0;
   --input: #e2e8f0;
   --light-blue: #eaf3ff;
+  --auth-banner: #e0eefe;
   --accent: #eaf3ff;
   --accent-foreground: #0f2b71;
   --muted: #f4f4f4;
@@ -173,6 +175,7 @@
   --border: #4c4c4c;
   --input: #4c4c4c;
   --light-blue: #0f2b71;
+  --auth-banner: #e0eefe;
   --accent: #0f2b71;
   --accent-foreground: #eaf3ff;
   --muted: #4c4c4c;

@@ -5,7 +5,6 @@ import { useNavigate } from "react-router"
 
 import { ConfirmDialog } from "@/components/common/confirm-dialog"
 import { FilterBar } from "@/components/common/filter-bar"
-import { FilterSelect } from "@/components/common/filter-select"
 import { ListCard } from "@/components/common/list-card"
 import { MotionStack } from "@/components/common/motion-stack"
 import { PageEmptyState } from "@/components/common/page-empty-state"
@@ -32,8 +31,16 @@ export function BranchListPage() {
   const branchesQuery = useBranchesQuery(params.listParams)
   const deactivateMutation = useDeactivateBranchMutation()
   const [deleteTarget, setDeleteTarget] = useState<Branch | null>(null)
+  const allBranchesQuery = useBranchesQuery({ limit: 100 })
   const items = branchesQuery.data?.items ?? []
-  const parentNames = new Map(items.map((branch) => [branch.id, branch.branchName]))
+  const optionItems = allBranchesQuery.data?.items ?? items
+  const parentNames = new Map(
+    optionItems.map((branch) => [branch.id, branch.branchName])
+  )
+  const parentOptions = optionItems.map((branch) => ({
+    value: branch.id,
+    label: branch.branchName,
+  }))
   const isUnfilteredEmpty =
     branchesQuery.isSuccess &&
     !params.hasFilters &&
@@ -45,12 +52,6 @@ export function BranchListPage() {
       {t("add")}
     </Button>
   )
-
-  const statusItems = [
-    { value: "all", label: t("all_status") },
-    { value: "active", label: tCommon("status.active") },
-    { value: "inactive", label: tCommon("status.inactive") },
-  ]
 
   function renderBody() {
     if (branchesQuery.isPending) {
@@ -86,8 +87,11 @@ export function BranchListPage() {
       <BranchTable
         data={items}
         parentNames={parentNames}
+        parentOptions={parentOptions}
         sorting={params.sorting}
         onSortingChange={params.setSorting}
+        columnFilters={params.filters}
+        onColumnDialogApply={params.applyColumnDialog}
         onRowClick={(branch) => {
           void navigate(`/branches/${branch.id}`)
         }}
@@ -116,12 +120,9 @@ export function BranchListPage() {
               placeholder={t("search_placeholder")}
               className="w-[22rem] max-w-full shrink-0"
             />
-            <FilterSelect
-              items={statusItems}
-              value={params.status ?? "all"}
-              label={t("all_status")}
-              onValueChange={params.setStatus}
-            />
+            <span className="text-small-2 text-muted-foreground">
+              {tCommon("table.filter_hint")}
+            </span>
           </FilterBar>
         }
         footer={

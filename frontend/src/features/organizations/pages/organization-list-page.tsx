@@ -204,6 +204,7 @@ export function OrganizationListPage() {
             title={dialogContent?.title ?? ""}
             description={dialogContent?.description ?? ""}
             confirmLabel={dialogContent?.confirmLabel ?? t("status_change.confirm")}
+            illustration={dialogContent?.illustration}
             confirmVariant={
               statusTarget && isHighImpactOrganizationStatus(statusTarget.status)
                 ? "destructive"
@@ -250,6 +251,7 @@ export function OrganizationListPage() {
         })}
         confirmLabel={t("delete.confirm")}
         confirmVariant="destructive"
+        illustration="trash"
         isPending={deleteMutation.isPending}
         onOpenChange={(open) => {
           if (!open) {

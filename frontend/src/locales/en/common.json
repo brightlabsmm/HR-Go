@@ -41,6 +41,7 @@
     "delete": "Delete",
     "view": "View details",
     "back": "Back",
+    "apply": "Apply",
     "reset_filters": "Reset filters",
     "back_home": "Back to home"
   },
@@ -71,9 +72,35 @@
     "empty": "No results found",
     "columns": "Columns",
     "toggle_columns": "Toggle columns",
+    "sort": "Sort",
     "sort_asc": "Sort ascending",
     "sort_desc": "Sort descending",
+    "sort_none": "No sort",
     "clear_sort": "Clear sort",
+    "clear_filter": "Clear filter for {{column}}",
+    "clear_column": "Clear column",
+    "column_menu": "Filter and sort {{column}}",
+    "column_dialog_title": "{{column}}",
+    "column_dialog_description": "Set sort and filter for this column. Multiple columns can be sorted and filtered together.",
+    "filter_hint": "Click a column name to filter or sort",
+    "filter_operator": "Operator",
+    "filter_value": "Value",
+    "filter_value_placeholder": "Select a value",
+    "filter_search_placeholder": "Search this column",
+    "filter_value_required": "Enter or select a value to apply this filter",
+    "filter_ops": {
+      "eq": "Equals",
+      "ne": "Not equal",
+      "gt": "Greater than",
+      "gte": "Greater or equal",
+      "lt": "Less than",
+      "lte": "Less or equal",
+      "like": "Contains (case-sensitive)",
+      "ilike": "Contains",
+      "in": "In list",
+      "isnull": "Is empty",
+      "notnull": "Is not empty"
+    },
     "row_actions": "Row actions"
   },
   "language": "Language",
@@ -153,6 +180,8 @@
     "headline_platform": "Operate every HR Go tenant from one console",
     "feature_structure": "Branches, departments, and reporting lines",
     "feature_access": "Role-based access for every team member",
-    "feature_audit": "A full audit trail of every change"
+    "feature_audit": "A full audit trail of every change",
+    "banner_login": "HR Go login banner",
+    "banner_change_password": "HR Go change password banner"
   }
 }
