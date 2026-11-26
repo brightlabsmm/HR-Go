@@ -10,6 +10,8 @@ type AuditLog struct {
 	OrganizationID *string         `gorm:"column:organization_id"`
 	ActorID        *string         `gorm:"column:actor_id"`
 	ActorType      string          `gorm:"column:actor_type"`
+	ActorName      *string         `gorm:"->;column:actor_name"`
+	ActorCode      *string         `gorm:"->;column:actor_code"`
 	Action         string          `gorm:"column:action"`
 	EntityName     string          `gorm:"column:entity_name"`
 	EntityID       *string         `gorm:"column:entity_id"`

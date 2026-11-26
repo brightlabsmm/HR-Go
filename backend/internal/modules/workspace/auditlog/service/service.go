@@ -34,6 +34,8 @@ func (s *svc) List(ctx context.Context, orgID string, q request.ListAuditLogsQue
 			OrganizationID: r.OrganizationID,
 			ActorID:        r.ActorID,
 			ActorType:      r.ActorType,
+			ActorName:      r.ActorName,
+			ActorCode:      r.ActorCode,
 			Action:         r.Action,
 			EntityName:     r.EntityName,
 			EntityID:       r.EntityID,

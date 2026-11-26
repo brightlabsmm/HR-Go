@@ -8,6 +8,8 @@ export interface AuditLogEntry {
   organizationId?: string | null
   actorId?: string | null
   actorType: string
+  actorName?: string | null
+  actorCode?: string | null
   action: string
   entityName: string
   entityId?: string | null
