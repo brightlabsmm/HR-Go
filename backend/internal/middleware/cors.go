@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,9 +39,32 @@ func AllowedOrigin(origin string, allowed []string) string {
 		return ""
 	}
 	for _, item := range allowed {
+		item = strings.TrimSpace(item)
+		if item == "" {
+			continue
+		}
 		if item == "*" || origin == item {
 			return origin
 		}
+		if strings.HasSuffix(item, ":*") {
+			prefix := strings.TrimSuffix(item, "*")
+			if strings.HasPrefix(origin, prefix) && isValidPort(origin[len(prefix):]) {
+				return origin
+			}
+		}
 	}
 	return ""
+}
+
+func isValidPort(raw string) bool {
+	if raw == "" || len(raw) > 5 {
+		return false
+	}
+	for i := 0; i < len(raw); i++ {
+		if raw[i] < '0' || raw[i] > '9' {
+			return false
+		}
+	}
+	port, err := strconv.Atoi(raw)
+	return err == nil && port >= 1 && port <= 65535
 }
