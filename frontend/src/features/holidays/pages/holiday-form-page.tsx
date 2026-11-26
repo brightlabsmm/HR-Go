@@ -2,7 +2,7 @@ import { useMemo } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { useTranslation } from "react-i18next"
-import { useNavigate, useParams } from "react-router"
+import { useNavigate, useParams, useSearchParams } from "react-router"
 import { z } from "zod"
 
 import { applyApiFieldErrors, notifyApiError } from "@/app/api/feedback"
@@ -30,7 +30,12 @@ export function HolidayFormPage() {
   const { t } = useTranslation("holidays")
   const navigate = useNavigate()
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
   const isEdit = Boolean(id)
+  const prefillDateRaw = searchParams.get("date") ?? ""
+  const prefillDate = /^\d{4}-\d{2}-\d{2}$/.test(prefillDateRaw)
+    ? prefillDateRaw
+    : ""
 
   const holidayQuery = useHolidayQuery(id ?? "")
   const branchesQuery = useBranchesQuery({ status: "active", limit: 100 })
@@ -82,8 +87,12 @@ export function HolidayFormPage() {
       resolver: zodResolver(schema),
       values: {
         holidayName: holiday?.holidayName ?? "",
-        startDate: holiday?.startDate ? holiday.startDate.slice(0, 10) : "",
-        endDate: holiday?.endDate ? holiday.endDate.slice(0, 10) : "",
+        startDate: holiday?.startDate
+          ? holiday.startDate.slice(0, 10)
+          : prefillDate,
+        endDate: holiday?.endDate
+          ? holiday.endDate.slice(0, 10)
+          : prefillDate,
         branchId: holiday?.branchId ?? "none",
         holidayType: holiday?.holidayType ?? "PUBLIC",
         isPaid: holiday?.isPaid ?? true,

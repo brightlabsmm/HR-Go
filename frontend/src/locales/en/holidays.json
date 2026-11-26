@@ -57,5 +57,12 @@
     "description": "Are you sure you want to delete {{name}}?",
     "confirm": "Delete Holiday",
     "success": "Holiday deleted successfully."
+  },
+  "calendar": {
+    "month_holidays": "Holidays This Month ({{count}})",
+    "no_holidays_month": "No holidays scheduled for this month.",
+    "no_holidays_day": "No holidays on this date.",
+    "add_on_day": "Add on date",
+    "more": "+{{count}} more"
   }
 }
