@@ -41,6 +41,7 @@ export function importAttendanceCsv(input: {
 export async function exportAttendanceCsv(params?: {
   from?: string
   to?: string
+  branchId?: string
   status?: string
 }) {
   const res = await apiClient.get<string>(workspacePath("/attendance/export"), {
