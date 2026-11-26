@@ -337,7 +337,7 @@ export function EmployeeListPage() {
         toolbar={
           <div className="flex flex-col gap-3">
             <FilterBar hasFilters={hasFilters} onReset={resetFilters}>
-              <div className="w-56">
+              <div className="w-64">
                 <Input
                   placeholder={t("search_placeholder")}
                   value={search ?? ""}

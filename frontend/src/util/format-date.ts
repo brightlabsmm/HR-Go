@@ -96,3 +96,17 @@ export function formatTime(
     timeZone: DEFAULT_TIMEZONE,
   }).format(date)
 }
+
+export function splitServiceYears(serviceYears: number): {
+  years: number
+  months: number
+} {
+  if (!Number.isFinite(serviceYears) || serviceYears <= 0) {
+    return { years: 0, months: 0 }
+  }
+  const totalMonths = Math.round(serviceYears * 12)
+  return {
+    years: Math.floor(totalMonths / 12),
+    months: totalMonths % 12,
+  }
+}
