@@ -169,7 +169,7 @@ export function OrganizationCreateAdminPage() {
             label={t("create_admin.password")}
             required
             autoComplete="new-password"
-            className="md:col-span-2"
+            className="lg:col-span-2"
             disabled={createMutation.isPending}
           />
         </FormFieldGrid>

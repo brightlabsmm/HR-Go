@@ -201,7 +201,7 @@ export function OrganizationSettingsPage() {
                     required
                     maxLength={255}
                     label={t("fields.display_name")}
-                    className="md:col-span-2"
+                    className="lg:col-span-2"
                   />
                 </FormFieldGrid>
               )}
@@ -242,7 +242,7 @@ export function OrganizationSettingsPage() {
                     required
                     maxLength={2000}
                     label={t("fields.address")}
-                    className="md:col-span-2"
+                    className="lg:col-span-2"
                   />
                 </FormFieldGrid>
               )}

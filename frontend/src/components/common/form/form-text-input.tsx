@@ -28,6 +28,7 @@ export function FormTextInput<TFieldValues extends FieldValues>({
   disabled = false,
   required = false,
   className,
+  reserveErrorSpace = false,
   type = "text",
   placeholder = label,
   autoComplete,
@@ -48,6 +49,7 @@ export function FormTextInput<TFieldValues extends FieldValues>({
           error={fieldState.error?.message}
           invalid={fieldState.invalid}
           required={required}
+          reserveErrorSpace={reserveErrorSpace}
           className={className}
         >
           <Input

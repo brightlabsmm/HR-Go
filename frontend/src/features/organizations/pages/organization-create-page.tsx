@@ -170,7 +170,7 @@ export function OrganizationCreatePage() {
               name="displayName"
               required
               label={t("form.display_name")}
-              className="md:col-span-2"
+              className="lg:col-span-2"
               disabled={isPending}
             />
           </FormFieldGrid>
@@ -208,7 +208,7 @@ export function OrganizationCreatePage() {
               name="address"
               required
               label={t("form.address")}
-              className="md:col-span-2"
+              className="lg:col-span-2"
               disabled={isPending}
             />
           </FormFieldGrid>

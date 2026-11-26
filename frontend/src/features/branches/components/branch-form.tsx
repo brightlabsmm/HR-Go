@@ -121,7 +121,7 @@ export function BranchForm({
             name="address"
             label={t("form.address")}
             placeholder={t("form.address_placeholder")}
-            className="md:col-span-2"
+            className="lg:col-span-2"
             disabled={isPending}
           />
         </FormFieldGrid>

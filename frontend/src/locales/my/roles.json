@@ -7,7 +7,7 @@
     "grouping": "အုပ်စု",
     "permission": "Permission",
     "description": "ဖော်ပြချက်",
-    "scope": "Scope",
+    "scope": "နယ်ပယ်",
     "grant": "ခွင့်ပြုရန်"
   },
   "form": {
@@ -15,7 +15,7 @@
     "code": "ကုဒ်",
     "description": "ဖော်ပြချက်",
     "permissions": "Permission များ",
-    "system": "System"
+    "system": "စနစ်"
   },
   "empty": {
     "title": "Role မရှိသေးပါ",
@@ -61,7 +61,7 @@
   },
   "filters": {
     "all_groupings": "အုပ်စုအားလုံး",
-    "all_scopes": "Scope အားလုံး"
+    "all_scopes": "နယ်ပယ်အားလုံး"
   },
   "scopes": {
     "all": "အားလုံး",
@@ -86,7 +86,7 @@
   "sections": {
     "identity": "အထောက်အထား",
     "permissions": "Permission များ",
-    "access": "Access",
+    "access": "ဝင်ရောက်ခွင့်",
     "grant_permissions": "(Permission များ သတ်မှတ်ရန်)"
   },
   "save": "Permission များ သိမ်းဆည်းရန်",

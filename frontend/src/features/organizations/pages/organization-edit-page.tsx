@@ -181,7 +181,7 @@ export function OrganizationEditPage() {
                 name="displayName"
                 required
                 label={t("form.display_name")}
-                className="md:col-span-2"
+                className="lg:col-span-2"
               />
             </FormFieldGrid>
           )}
@@ -219,7 +219,7 @@ export function OrganizationEditPage() {
                 name="address"
                 required
                 label={t("form.address")}
-                className="md:col-span-2"
+                className="lg:col-span-2"
               />
             </FormFieldGrid>
           )}
