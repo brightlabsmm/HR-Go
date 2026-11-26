@@ -36,6 +36,20 @@ func TestFormat(t *testing.T) {
 			want:     "B-005",
 		},
 		{
+			name:     "SEQ placeholder defaults to 4-digit zero padding",
+			pattern:  "BR-{SEQ}",
+			seq:      5,
+			fallback: codeformat.DefaultBranchCodeFormat,
+			want:     "BR-0005",
+		},
+		{
+			name:     "SEQ:3 placeholder with explicit width",
+			pattern:  "DEP-{SEQ:3}",
+			seq:      7,
+			fallback: codeformat.DefaultDepartmentCodeFormat,
+			want:     "DEP-007",
+		},
+		{
 			name:     "plain prefix without braces",
 			pattern:  "DEPT-",
 			seq:      7,
@@ -66,6 +80,8 @@ func TestIsValidFormat(t *testing.T) {
 		valid   bool
 	}{
 		{"BR-{0000}", true},
+		{"BR-{SEQ}", true},
+		{"DEPT-{SEQ:3}", true},
 		{"DEPT-{NNN}", true},
 		{"{00}", true},
 		{"", true},
