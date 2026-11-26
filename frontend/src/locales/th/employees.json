@@ -40,6 +40,8 @@
     "role": "บทบาท",
     "status": "สถานะ",
     "joined": "วันที่เริ่มงาน",
+    "account_status": "สถานะบัญชี",
+    "last_login_at": "เข้าสู่ระบบล่าสุด",
     "actions": "การดำเนินการ"
   },
   "sections": {
@@ -160,6 +162,26 @@
   "empty": {
     "title": "ไม่พบพนักงาน",
     "description": "เริ่มต้นโดยเพิ่มพนักงานคนแรกเข้าสู่พื้นที่ทำงาน"
+  },
+  "account": {
+    "deactivate": "ปิดใช้งานบัญชี",
+    "reactivate": "เปิดใช้งานบัญชี",
+    "deactivate_title": "ปิดใช้งานบัญชีเข้าสู่ระบบหรือไม่?",
+    "deactivate_description": "การดำเนินการนี้จะปิดการเข้าสู่ระบบของ {{name}} โดยไม่ลบประวัติพนักงาน",
+    "deactivate_confirm": "ปิดใช้งาน",
+    "deactivate_success": "ปิดใช้งานบัญชีเข้าสู่ระบบเรียบร้อยแล้ว",
+    "reactivate_title": "เปิดใช้งานบัญชีเข้าสู่ระบบหรือไม่?",
+    "reactivate_description": "การดำเนินการนี้จะกู้คืนสิทธิ์การเข้าสู่ระบบให้ {{name}}",
+    "reactivate_confirm": "เปิดใช้งาน",
+    "reactivate_success": "เปิดใช้งานบัญชีเข้าสู่ระบบเรียบร้อยแล้ว"
+  },
+  "service_duration": {
+    "years_one": "{{count}} ปี",
+    "years_other": "{{count}} ปี",
+    "months_one": "{{count}} เดือน",
+    "months_other": "{{count}} เดือน",
+    "less_than_month": "< 1 เดือน",
+    "zero": "0 เดือน"
   },
   "delete": {
     "title": "ลบพนักงาน",

@@ -40,6 +40,8 @@
     "role": "角色",
     "status": "状态",
     "joined": "入职日期",
+    "account_status": "账号状态",
+    "last_login_at": "最后登录",
     "actions": "操作"
   },
   "sections": {
@@ -160,6 +162,26 @@
   "empty": {
     "title": "暂无员工",
     "description": "立即向工作区添加第一位员工。"
+  },
+  "account": {
+    "deactivate": "停用账号",
+    "reactivate": "重新启用账号",
+    "deactivate_title": "确定要停用登录账号吗？",
+    "deactivate_description": "这将停用 {{name}} 的登录权限，但保留其员工档案记录。",
+    "deactivate_confirm": "停用",
+    "deactivate_success": "登录账号已停用。",
+    "reactivate_title": "确定要重新启用登录账号吗？",
+    "reactivate_description": "这将恢复 {{name}} 的登录权限。",
+    "reactivate_confirm": "重新启用",
+    "reactivate_success": "登录账号已重新启用。"
+  },
+  "service_duration": {
+    "years_one": "{{count}} 年",
+    "years_other": "{{count}} 年",
+    "months_one": "{{count}} 个月",
+    "months_other": "{{count}} 个月",
+    "less_than_month": "< 1 个月",
+    "zero": "0 个月"
   },
   "delete": {
     "title": "删除员工",

@@ -40,6 +40,8 @@
     "role": "Role",
     "status": "အခြေအနေ",
     "joined": "အလုပ်ဝင်ရက်",
+    "account_status": "Account အခြေအနေ",
+    "last_login_at": "နောက်ဆုံး ဝင်ရောက်ချိန်",
     "actions": "လုပ်ဆောင်ချက်များ"
   },
   "sections": {
@@ -160,6 +162,26 @@
   "empty": {
     "title": "ဝန်ထမ်း မရှိသေးပါ",
     "description": "လုပ်ငန်းခွင်တွင် ပထမဆုံး ဝန်ထမ်းကို စတင်ထည့်သွင်းပါ။"
+  },
+  "account": {
+    "deactivate": "Account ပိတ်ရန်",
+    "reactivate": "Account ပြန်ဖွင့်ရန်",
+    "deactivate_title": "Login account ကို ပိတ်သိမ်းမလား?",
+    "deactivate_description": "ဝန်ထမ်းမှတ်တမ်းကို မဖျက်ဘဲ {{name}} ၏ login ဝင်ရောက်ခွင့်ကိုသာ ပိတ်သိမ်းပါမည်။",
+    "deactivate_confirm": "ပိတ်သိမ်းရန်",
+    "deactivate_success": "Login account ကို ပိတ်သိမ်းပြီးပါပြီ။",
+    "reactivate_title": "Login account ကို ပြန်ဖွင့်မလား?",
+    "reactivate_description": "{{name}} အတွက် login ဝင်ရောက်ခွင့်ကို ပြန်လည်ဖွင့်ပေးပါမည်။",
+    "reactivate_confirm": "ပြန်ဖွင့်ရန်",
+    "reactivate_success": "Login account ကို ပြန်ဖွင့်ပြီးပါပြီ။"
+  },
+  "service_duration": {
+    "years_one": "{{count}} နှစ်",
+    "years_other": "{{count}} နှစ်",
+    "months_one": "{{count}} လ",
+    "months_other": "{{count}} လ",
+    "less_than_month": "< ၁ လ",
+    "zero": "၀ လ"
   },
   "delete": {
     "title": "ဝန်ထမ်း ဖျက်ရန်",

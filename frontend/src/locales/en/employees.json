@@ -40,6 +40,8 @@
     "role": "Role",
     "status": "Status",
     "joined": "Joined",
+    "account_status": "Account Status",
+    "last_login_at": "Last Login",
     "actions": "Actions"
   },
   "sections": {
@@ -160,6 +162,26 @@
   "empty": {
     "title": "No employees found",
     "description": "Get started by adding your first employee to the workspace."
+  },
+  "account": {
+    "deactivate": "Deactivate Account",
+    "reactivate": "Reactivate Account",
+    "deactivate_title": "Deactivate login account?",
+    "deactivate_description": "This disables login access for {{name}} without deleting their employee record.",
+    "deactivate_confirm": "Deactivate",
+    "deactivate_success": "Login account deactivated.",
+    "reactivate_title": "Reactivate login account?",
+    "reactivate_description": "This restores login access for {{name}}.",
+    "reactivate_confirm": "Reactivate",
+    "reactivate_success": "Login account reactivated."
+  },
+  "service_duration": {
+    "years_one": "{{count}} yr",
+    "years_other": "{{count}} yrs",
+    "months_one": "{{count}} mo",
+    "months_other": "{{count}} mos",
+    "less_than_month": "< 1 mo",
+    "zero": "0 mos"
   },
   "delete": {
     "title": "Delete Employee",
