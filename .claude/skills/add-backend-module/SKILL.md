@@ -22,7 +22,7 @@ Do not invent business rules, DB fields or API contracts. If the spec is missing
    - `Status string` with `gorm:"default:'ACTIVE'"`, `CreatedAt`, `UpdatedAt`.
    - No Gin or JSON tags in models.
 
-4. **`request/request.go`**: `Create<Name>Request` (`binding:"required"` on mandatory fields, camelCase `json` tags), `Update<Name>Request` (pointer fields so omitted means unchanged), `List<Name>sQuery` (`form` tags: `q`, `status`, `page`, `pageSize`, `sortBy`, `sortDirection`). Never include `id`, `organizationId` or `status` in create/update bodies.
+4. **`request/request.go`**: `Create<Name>Request` (`binding:"required"` on mandatory fields, camelCase `json` tags), `Update<Name>Request` (pointer fields so omitted means unchanged), `List<Name>sQuery` (`form` tags: `q`, `status`, `page`, `pageSize`, `sortBy`, `sortDirection`). Never include `id`, `organizationId` or `status` in create/update bodies. **Codes:** branches and departments no longer take a code from the client (it is generated, see step 7). Only add a client-supplied `<Name>Code` (like positions) when the spec says the user types it; for a generated code, leave it out of both request structs.
 
 5. **`response/response.go`**: `<Name>Response` with camelCase JSON. Never expose password hashes, tokens or unintended columns. Do not reuse request structs.
 
@@ -33,11 +33,12 @@ Do not invent business rules, DB fields or API contracts. If the spec is missing
    - `FindBy*` returns `(nil, nil)` on `gorm.ErrRecordNotFound`.
    - `List` returns `([]models.X, int64, error)`: clamp `pageSize` to 1-100 (default 20), whitelist `sortBy` columns (never interpolate raw input), `ASC`/`DESC` only.
    - Use parameterized queries only. No Gin imports.
+   - **Generated codes** (see `branch` and `department` repositories): in `Create`, open `r.db.WithContext(ctx).Transaction(...)`, read the format from `organization_settings` (`setting_key = codeformat.SettingKey<Name>CodeFormat`, falling back to `codeformat.Default<Name>CodeFormat` and inserting the default), count the organization's rows, then loop `codeformat.Format(format, seq, default)` until `LOWER(code)` is unused in that organization, set `b.Code`, and create. Add the key and default constants in `internal/shared/codeformat/codeformat.go`, seed the default when an organization is created (`control/organization/repository`) and in `cmd/seed`, and backfill existing organizations in a new migration. The service must not read or validate a code from the request.
 
 8. **`service/service.go`**: exported `Service` interface, private `service` struct, `New(repo)`.
    - Signatures take `ctx`, `orgID`, and return `(*response.X, *apperrors.Error)`. `List` returns `(items, page, pageSize, total, *apperrors.Error)`.
    - Repo failure becomes `apperrors.Internal()`, missing record becomes `apperrors.NotFound("<Name> not found")`, duplicate code or bad input becomes `apperrors.ValidationFailed([]apperrors.FieldIssue{{Field: "...", Message: "..."}})` or `BadRequest`.
-   - Check that any referenced entity (parent, branch, ...) belongs to the same `orgID`.
+   - Check that any referenced entity (parent, branch, ...) belongs to the same `orgID`. For generated codes the service no longer checks for duplicates; the repository guarantees uniqueness.
    - Deactivate by setting `Status = "INACTIVE"`; do not hard-delete.
    - No Gin imports.
 
@@ -59,7 +60,7 @@ Do not invent business rules, DB fields or API contracts. If the spec is missing
 
 13. **OpenAPI.** Run the `api-contract-sync` skill: add paths and schemas to both OpenAPI copies, then add the frontend types.
 
-14. **Tests** go under `backend/test/unit/modules/<area>/<name>/<layer>/` (never `*_test.go` beside production code), using external packages (`package service_test`). Cover service error paths and the tenant filter. Existing tests only cover infrastructure, so copy the style of `backend/test/unit/shared/responses/responses_test.go`.
+14. **Tests** go under `backend/test/unit/modules/<area>/<name>/<layer>/` (never `*_test.go` beside production code), using external packages (`package service_test`). Cover service error paths and the tenant filter. Existing tests only cover shared packages (`responses`, `codeformat`, config, logging, middleware, bootstrap), so copy the style of `backend/test/unit/shared/codeformat/codeformat_test.go` (table-driven) or `responses_test.go`.
 
 ## Done checklist
 

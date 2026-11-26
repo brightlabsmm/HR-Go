@@ -24,6 +24,7 @@ First decide the portal: `organization` (workspace API, `workspacePath`) or `pla
 
 3. **Feature folder** `frontend/src/features/widgets/`:
    - `hooks/use-widget-list-params.ts`: URL-driven page, limit, search and status (copy `use-branch-list-params.ts`).
+   - Do not add a code field to the form when the backend generates the code (branches and departments); show the generated code only as a read-only column in the table, as `branch-form.tsx` and `branch-table.tsx` do. Include a code input only when the API takes one (positions).
    - `components/widget-table.tsx` (TanStack table on `components/common/data-table`) and `components/widget-form.tsx` (react-hook-form + zod, `components/common/form/*` inputs).
    - `pages/widget-list-page.tsx`, `widget-create-page.tsx`, `widget-edit-page.tsx`. Export named components (`WidgetListPage`). Reuse `PageHeader`, `ListCard`, `FilterBar`, `SearchBox`, `Pagination`, `ConfirmDialog`, `PageEmptyState`, `TableSkeleton`. Promote anything a second feature needs to `components/common`.
 
