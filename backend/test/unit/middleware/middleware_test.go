@@ -50,10 +50,19 @@ func TestRequestID(t *testing.T) {
 }
 
 func TestAllowedOrigin(t *testing.T) {
-	allowed := []string{"http://localhost:5173", "https://app.example.com"}
+	allowed := []string{"http://localhost:5173", "https://app.example.com", "http://127.0.0.1:*"}
 
 	if got := middleware.AllowedOrigin("http://localhost:5173", allowed); got != "http://localhost:5173" {
 		t.Errorf("AllowedOrigin = %q, want localhost", got)
+	}
+	if got := middleware.AllowedOrigin("http://127.0.0.1:5144", allowed); got != "http://127.0.0.1:5144" {
+		t.Errorf("AllowedOrigin = %q, want wildcard port match", got)
+	}
+	if got := middleware.AllowedOrigin("http://127.0.0.1:5144.evil.com", allowed); got != "" {
+		t.Errorf("AllowedOrigin = %q, want empty for invalid port suffix", got)
+	}
+	if got := middleware.AllowedOrigin("http://127.0.0.1:0", allowed); got != "" {
+		t.Errorf("AllowedOrigin = %q, want empty for port 0", got)
 	}
 	if got := middleware.AllowedOrigin("https://evil.example", allowed); got != "" {
 		t.Errorf("AllowedOrigin = %q, want empty for disallowed origin", got)
