@@ -43,6 +43,10 @@
     "description": "添加职位以定义组织中的岗位。"
   },
   "sections": {
-    "details": "职位详情"
+    "details": "职位详情",
+    "employees": "该职位员工",
+    "empty_employees": "该职位暂无员工。",
+    "branch": "分支",
+    "view_all": "查看全部"
   }
 }

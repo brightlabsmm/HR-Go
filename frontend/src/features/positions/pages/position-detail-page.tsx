@@ -1,8 +1,9 @@
 import { useState } from "react"
 import { PencilIcon, Trash2Icon } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { useNavigate, useParams } from "react-router"
+import { Link, useNavigate, useParams } from "react-router"
 
+import { notifyApiError } from "@/app/api/feedback"
 import { ConfirmDialog } from "@/components/common/confirm-dialog"
 import { DetailActionButton } from "@/components/common/detail-action-button"
 import { DetailList } from "@/components/common/detail-list"
@@ -11,16 +12,68 @@ import { MotionStack } from "@/components/common/motion-stack"
 import { NotFoundState } from "@/components/common/not-found-state"
 import { PageHeader } from "@/components/common/page-header"
 import { ProfileSummaryCard } from "@/components/common/profile-summary-card"
+import { RelatedRecordsSection } from "@/components/common/related-records-section"
 import { StatusBadge } from "@/components/common/status-badge"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import { useDepartmentsQuery } from "@/shared/queries/department.query"
+import { useEmployeesQuery } from "@/shared/queries/employee.query"
 import {
   useDeactivatePositionMutation,
   usePositionQuery,
 } from "@/shared/queries/position.query"
 import { toast } from "@/shared/stores/toast.store"
-import { formatDate } from "@/util/format-date"
+import { formatDateTime } from "@/util/format-date"
 import { getInitials } from "@/util/initials"
+
+function PositionEmployeesSection({ positionId }: { positionId: string }) {
+  const { t } = useTranslation("positions")
+  const employeesQuery = useEmployeesQuery({ positionId, limit: 100 })
+  const items = employeesQuery.data?.items ?? []
+
+  return (
+    <RelatedRecordsSection
+      title={t("sections.employees")}
+      count={employeesQuery.data?.meta.totalItems}
+      isLoading={employeesQuery.isPending}
+      emptyText={t("sections.empty_employees")}
+      items={items}
+      getRowKey={(e) => e.id}
+      viewAllTo="/employees"
+      viewAllLabel={t("sections.view_all")}
+      columns={[
+        {
+          key: "code",
+          header: t("columns.code"),
+          className: "font-mono text-muted-foreground",
+          render: (e) => e.employeeCode,
+        },
+        {
+          key: "name",
+          header: t("columns.name"),
+          render: (e) => (
+            <Link
+              to={`/employees/${e.id}`}
+              className="font-medium text-primary hover:underline"
+            >
+              {e.fullName}
+            </Link>
+          ),
+        },
+        {
+          key: "branch",
+          header: t("sections.branch"),
+          className: "text-muted-foreground",
+          render: (e) => e.branchName || "—",
+        },
+        {
+          key: "status",
+          header: t("columns.status"),
+          render: (e) => <StatusBadge status={e.employmentStatus} />,
+        },
+      ]}
+    />
+  )
+}
 
 export function PositionDetailPage() {
   const { t, i18n } = useTranslation("positions")
@@ -33,6 +86,7 @@ export function PositionDetailPage() {
   const { can } = usePermissions()
   const canUpdate = can("org.position.update")
   const canDeactivate = can("org.position.deactivate")
+  const canReadEmployees = can("org.employee.read")
   const deactivateMutation = useDeactivatePositionMutation()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
@@ -55,14 +109,30 @@ export function PositionDetailPage() {
   const identityItems = [
     { label: t("columns.code"), value: position?.positionCode, mono: true },
     { label: t("columns.name"), value: position?.positionName },
-    { label: t("form.department", "Department"), value: departmentName },
+    {
+      label: t("form.department", "Department"),
+      value: position?.departmentId ? (
+        <Link
+          to={`/departments/${position.departmentId}`}
+          className="text-primary hover:underline"
+        >
+          {departmentName}
+        </Link>
+      ) : (
+        "—"
+      ),
+    },
     {
       label: tCommon("created_at", "Created"),
-      value: position ? formatDate(position.createdAt, i18n.language) : null,
+      value: position
+        ? formatDateTime(position.createdAt, i18n.language)
+        : null,
     },
     {
       label: tCommon("updated_at", "Updated"),
-      value: position ? formatDate(position.updatedAt, i18n.language) : null,
+      value: position
+        ? formatDateTime(position.updatedAt, i18n.language)
+        : null,
     },
   ]
 
@@ -117,6 +187,9 @@ export function PositionDetailPage() {
               <DetailList columns={2} items={identityItems} />
             </section>
           )}
+          {position && canReadEmployees && (
+            <PositionEmployeesSection positionId={position.id} />
+          )}
         </div>
       </div>
       <ConfirmDialog
@@ -137,7 +210,10 @@ export function PositionDetailPage() {
               toast.success(t("delete.success"))
               void navigate("/positions")
             },
-            onError: () => setShowDeleteDialog(false),
+            onError: (err) => {
+              setShowDeleteDialog(false)
+              notifyApiError(err)
+            },
           })
         }}
       />

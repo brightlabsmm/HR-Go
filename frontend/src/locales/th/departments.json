@@ -43,6 +43,12 @@
     "description": "เพิ่มแผนกเพื่อจัดทีมงาน"
   },
   "sections": {
-    "details": "รายละเอียดแผนก"
+    "details": "รายละเอียดแผนก",
+    "positions": "ตำแหน่ง",
+    "empty_positions": "ยังไม่มีตำแหน่งในแผนกนี้",
+    "employees": "พนักงาน",
+    "empty_employees": "ยังไม่มีพนักงานในแผนกนี้",
+    "position": "ตำแหน่ง",
+    "view_all": "ดูทั้งหมด"
   }
 }

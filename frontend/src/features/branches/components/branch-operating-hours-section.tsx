@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react"
 import { SaveIcon } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import { notifyApiError } from "@/app/api/feedback"
 import { Button } from "@/components/ui/button"
@@ -31,6 +32,7 @@ export function BranchOperatingHoursSection({
 }: {
   branchId: string
 }) {
+  const { t } = useTranslation("branches")
   const { can } = usePermissions()
   const canUpdate = can("org.branch.update")
   const hoursQuery = useBranchOperatingHoursQuery(branchId)
@@ -63,6 +65,14 @@ export function BranchOperatingHoursSection({
   const [draft, setDraft] = useState<OperatingHourInput[] | null>(null)
   const rows = draft ?? defaultRows
 
+  const hasInvalidTimes = rows.some(
+    (row) =>
+      !row.isClosed &&
+      (!row.openingTime ||
+        !row.closingTime ||
+        row.closingTime <= row.openingTime)
+  )
+
   function updateDay(index: number, patch: Partial<OperatingHourInput>) {
     setDraft((prev) => {
       const base = [...(prev ?? defaultRows)]
@@ -72,12 +82,16 @@ export function BranchOperatingHoursSection({
   }
 
   function handleSave() {
+    if (hasInvalidTimes) {
+      toast.error(t("operating_hours.invalid_time"))
+      return
+    }
     upsertMutation.mutate(
       { branchId, hours: rows },
       {
         onSuccess: () => {
           setDraft(null)
-          toast.success("Operating hours saved.")
+          toast.success(t("operating_hours.saved"))
         },
         onError: (err) => notifyApiError(err),
       }
@@ -89,10 +103,10 @@ export function BranchOperatingHoursSection({
       <div className="mb-4 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-body-2 font-semibold text-foreground">
-            Operating Hours
+            {t("operating_hours.title")}
           </h2>
           <p className="text-small-2 text-muted-foreground">
-            Weekly branch opening and closing schedule.
+            {t("operating_hours.description")}
           </p>
         </div>
         {canUpdate && (
@@ -100,29 +114,36 @@ export function BranchOperatingHoursSection({
             type="button"
             size="sm"
             loading={upsertMutation.isPending}
+            disabled={hasInvalidTimes}
             onClick={handleSave}
           >
             <SaveIcon className="size-4" />
-            Save Schedule
+            {t("operating_hours.save")}
           </Button>
         )}
       </div>
+
+      {hasInvalidTimes && (
+        <p className="mb-3 text-xs text-destructive">
+          {t("operating_hours.invalid_time")}
+        </p>
+      )}
 
       <div className="overflow-hidden rounded-md border border-hair">
         <table className="w-full text-small-2">
           <thead className="border-b border-hair bg-subtle text-left font-medium text-muted-foreground">
             <tr>
-              <th className="p-3">Day</th>
-              <th className="p-3">Closed</th>
-              <th className="p-3">Opening Time</th>
-              <th className="p-3">Closing Time</th>
+              <th className="p-3">{t("operating_hours.day")}</th>
+              <th className="p-3">{t("operating_hours.closed")}</th>
+              <th className="p-3">{t("operating_hours.opening_time")}</th>
+              <th className="p-3">{t("operating_hours.closing_time")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-hair">
             {rows.map((row, idx) => (
               <tr key={row.dayOfWeek} className="hover:bg-subtle/40">
                 <td className="p-3 font-medium text-foreground">
-                  {row.dayOfWeek}
+                  {t(`operating_hours.days.${row.dayOfWeek}`)}
                 </td>
                 <td className="p-3">
                   <Switch

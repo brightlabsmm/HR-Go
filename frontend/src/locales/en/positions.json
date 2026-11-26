@@ -43,6 +43,10 @@
     "description": "Add positions to define job titles in your organization."
   },
   "sections": {
-    "details": "Position details"
+    "details": "Position details",
+    "employees": "Employees",
+    "empty_employees": "No employees assigned to this position.",
+    "branch": "Branch",
+    "view_all": "View all"
   }
 }
