@@ -14,11 +14,11 @@
     "shifts": "Shifts",
     "holidays": "Holidays",
     "attendance": "Attendance",
-    "attendance_imports": "Attendance Import/Export",
+    "attendance_imports": "Import & Export",
     "leave": "Leave",
     "overtime": "Overtime",
     "audit_logs": "Audit Logs",
-    "organization_settings": "Organization settings",
+    "organization_settings": "Settings",
     "account": "My account"
   },
   "header": {

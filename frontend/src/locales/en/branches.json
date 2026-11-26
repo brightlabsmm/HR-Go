@@ -50,5 +50,41 @@
       "code_required": "Branch code is required.",
       "name_required": "Branch name is required."
     }
+  },
+  "operating_hours": {
+    "title": "Operating Hours",
+    "description": "Weekly branch opening and closing schedule.",
+    "save": "Save Schedule",
+    "saved": "Operating hours saved.",
+    "invalid_time": "Closing time must be later than opening time for open days.",
+    "day": "Day",
+    "closed": "Closed",
+    "opening_time": "Opening Time",
+    "closing_time": "Closing Time",
+    "days": {
+      "MONDAY": "Monday",
+      "TUESDAY": "Tuesday",
+      "WEDNESDAY": "Wednesday",
+      "THURSDAY": "Thursday",
+      "FRIDAY": "Friday",
+      "SATURDAY": "Saturday",
+      "SUNDAY": "Sunday"
+    }
+  },
+  "sections": {
+    "sub_branches": "Sub-branches",
+    "empty_sub_branches": "No sub-branches assigned.",
+    "departments": "Departments",
+    "department_name": "Department",
+    "empty_departments": "No departments assigned to this branch.",
+    "shifts": "Shifts",
+    "shift_name": "Shift",
+    "empty_shifts": "No shifts configured for this branch.",
+    "schedule": "Schedule",
+    "employees": "Employees",
+    "employee_name": "Employee",
+    "empty_employees": "No employees assigned to this branch.",
+    "position": "Position",
+    "view_all": "View all"
   }
 }

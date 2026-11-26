@@ -13,6 +13,8 @@ func ToDepartmentResponse(d *models.Department) response.DepartmentResponse {
 		DepartmentCode: d.Code,
 		DepartmentName: d.Name,
 		Status:         d.Status,
+		CreatedAt:      d.CreatedAt,
+		UpdatedAt:      d.UpdatedAt,
 	}
 }
 

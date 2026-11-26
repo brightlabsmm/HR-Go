@@ -125,11 +125,11 @@ func (r *repository) GetNextEmployeeCode(ctx context.Context, orgID string) (str
 func (r *repository) FindByID(ctx context.Context, orgID, id string) (*models.Employee, error) {
 	var emp models.Employee
 	err := r.db.WithContext(ctx).Table("employee_identities e").
-		Select("e.*, b.name as branch_name, d.name as department_name, p.name as position_title, r.role_id, r.role_name, r.role_code").
+		Select("e.*, b.name as branch_name, d.name as department_name, p.name as position_title, oa.id as account_id, oa.status as account_status, oa.last_login_at, r.role_id, r.role_name, r.role_code").
 		Joins("LEFT JOIN branches b ON b.id = e.branch_id").
 		Joins("LEFT JOIN departments d ON d.id = e.department_id").
 		Joins("LEFT JOIN positions p ON p.id = e.position_id").
-		Joins("LEFT JOIN LATERAL (SELECT id FROM organization_accounts WHERE employee_id = e.id AND organization_id = e.organization_id ORDER BY (status = 'ACTIVE') DESC, created_at DESC LIMIT 1) oa ON true").
+		Joins("LEFT JOIN LATERAL (SELECT id, status, last_login_at FROM organization_accounts WHERE employee_id = e.id AND organization_id = e.organization_id ORDER BY (status = 'ACTIVE') DESC, created_at DESC LIMIT 1) oa ON true").
 		Joins("LEFT JOIN LATERAL (SELECT our.role_id, r.name AS role_name, r.code AS role_code FROM org_user_roles our JOIN org_roles r ON r.id = our.role_id WHERE our.account_id = oa.id ORDER BY our.role_id ASC LIMIT 1) r ON true").
 		Where("e.id = ? AND e.organization_id = ? AND e.deleted_at IS NULL", id, orgID).
 		First(&emp).Error
@@ -172,11 +172,11 @@ func (r *repository) FindByEmail(ctx context.Context, orgID, email string) (*mod
 
 func (r *repository) List(ctx context.Context, orgID string, q request.ListEmployeesQuery) ([]models.Employee, int64, error) {
 	query := r.db.WithContext(ctx).Table("employee_identities e").
-		Select("e.*, b.name as branch_name, d.name as department_name, p.name as position_title, r.role_id, r.role_name, r.role_code").
+		Select("e.*, b.name as branch_name, d.name as department_name, p.name as position_title, oa.id as account_id, oa.status as account_status, oa.last_login_at, r.role_id, r.role_name, r.role_code").
 		Joins("LEFT JOIN branches b ON b.id = e.branch_id").
 		Joins("LEFT JOIN departments d ON d.id = e.department_id").
 		Joins("LEFT JOIN positions p ON p.id = e.position_id").
-		Joins("LEFT JOIN LATERAL (SELECT id FROM organization_accounts WHERE employee_id = e.id AND organization_id = e.organization_id ORDER BY (status = 'ACTIVE') DESC, created_at DESC LIMIT 1) oa ON true").
+		Joins("LEFT JOIN LATERAL (SELECT id, status, last_login_at FROM organization_accounts WHERE employee_id = e.id AND organization_id = e.organization_id ORDER BY (status = 'ACTIVE') DESC, created_at DESC LIMIT 1) oa ON true").
 		Joins("LEFT JOIN LATERAL (SELECT our.role_id, r.name AS role_name, r.code AS role_code FROM org_user_roles our JOIN org_roles r ON r.id = our.role_id WHERE our.account_id = oa.id ORDER BY our.role_id ASC LIMIT 1) r ON true").
 		Where("e.organization_id = ? AND e.deleted_at IS NULL", orgID)
 

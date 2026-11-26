@@ -50,5 +50,41 @@
       "code_required": "请填写分支代码。",
       "name_required": "请填写分支名称。"
     }
+  },
+  "operating_hours": {
+    "title": "营业时间",
+    "description": "每周分支机构开闭时间安排。",
+    "save": "保存时间表",
+    "saved": "营业时间已保存。",
+    "invalid_time": "营业日的关闭时间必须晚于开放时间。",
+    "day": "星期",
+    "closed": "休息",
+    "opening_time": "开放时间",
+    "closing_time": "关闭时间",
+    "days": {
+      "MONDAY": "星期一",
+      "TUESDAY": "星期二",
+      "WEDNESDAY": "星期三",
+      "THURSDAY": "星期四",
+      "FRIDAY": "星期五",
+      "SATURDAY": "星期六",
+      "SUNDAY": "星期日"
+    }
+  },
+  "sections": {
+    "sub_branches": "下级分支",
+    "empty_sub_branches": "暂无下级分支。",
+    "departments": "下属部门",
+    "department_name": "部门名称",
+    "empty_departments": "该分支暂无关联部门。",
+    "shifts": "班次配置",
+    "shift_name": "班次名称",
+    "empty_shifts": "该分支暂无班次。",
+    "schedule": "班次时间",
+    "employees": "在职员工",
+    "employee_name": "员工姓名",
+    "empty_employees": "该分支暂无员工。",
+    "position": "职位",
+    "view_all": "查看全部"
   }
 }

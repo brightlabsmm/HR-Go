@@ -10,6 +10,8 @@ type AuditLogResponse struct {
 	OrganizationID *string         `json:"organizationId"`
 	ActorID        *string         `json:"actorId"`
 	ActorType      string          `json:"actorType"`
+	ActorName      *string         `json:"actorName,omitempty"`
+	ActorCode      *string         `json:"actorCode,omitempty"`
 	Action         string          `json:"action"`
 	EntityName     string          `json:"entityName"`
 	EntityID       *string         `json:"entityId"`

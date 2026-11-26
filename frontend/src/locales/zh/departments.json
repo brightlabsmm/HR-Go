@@ -43,6 +43,12 @@
     "description": "添加部门以便按团队组织人员。"
   },
   "sections": {
-    "details": "部门详情"
+    "details": "部门详情",
+    "positions": "职位列表",
+    "empty_positions": "该部门暂无职位。",
+    "employees": "部门员工",
+    "empty_employees": "该部门暂无员工。",
+    "position": "职位",
+    "view_all": "查看全部"
   }
 }

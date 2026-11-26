@@ -22,22 +22,33 @@ func New(db *gorm.DB) Repository {
 }
 
 func (r *repo) List(ctx context.Context, orgID string, q request.ListAuditLogsQuery) ([]models.AuditLog, int64, error) {
-	tx := r.db.WithContext(ctx).Model(&models.AuditLog{}).Where("organization_id = ?", orgID)
+	tx := r.db.WithContext(ctx).Table("audit_logs a").
+		Select(`a.*,
+			COALESCE(
+				NULLIF(TRIM(CONCAT(ei.first_name, ' ', ei.last_name)), ''),
+				oa.identifier,
+				pu.full_name
+			) AS actor_name,
+			COALESCE(NULLIF(ei.employee_code, ''), oa.identifier) AS actor_code`).
+		Joins("LEFT JOIN organization_accounts oa ON oa.id = a.actor_id").
+		Joins("LEFT JOIN employee_identities ei ON ei.id = oa.employee_id").
+		Joins("LEFT JOIN platform_users pu ON pu.id = a.actor_id").
+		Where("a.organization_id = ?", orgID)
 
 	if q.EntityName != "" {
-		tx = tx.Where("entity_name = ?", q.EntityName)
+		tx = tx.Where("LOWER(a.entity_name) LIKE LOWER(?)", "%"+q.EntityName+"%")
 	}
 	if q.Action != "" {
-		tx = tx.Where("action = ?", q.Action)
+		tx = tx.Where("LOWER(a.action) LIKE LOWER(?)", "%"+q.Action+"%")
 	}
 	if q.ActorID != "" {
-		tx = tx.Where("actor_id = ?", q.ActorID)
+		tx = tx.Where("a.actor_id = ?", q.ActorID)
 	}
 	if q.From != "" {
-		tx = tx.Where("created_at >= ?", q.From)
+		tx = tx.Where("a.created_at >= ?", q.From)
 	}
 	if q.To != "" {
-		tx = tx.Where("created_at <= ?", q.To)
+		tx = tx.Where("a.created_at <= ?", q.To)
 	}
 
 	var total int64
@@ -55,7 +66,7 @@ func (r *repo) List(ctx context.Context, orgID string, q request.ListAuditLogsQu
 	}
 
 	var items []models.AuditLog
-	if err := tx.Order("created_at DESC").Offset((page - 1) * pageSize).Limit(pageSize).Find(&items).Error; err != nil {
+	if err := tx.Order("a.created_at DESC").Offset((page - 1) * pageSize).Limit(pageSize).Scan(&items).Error; err != nil {
 		return nil, 0, err
 	}
 	return items, total, nil

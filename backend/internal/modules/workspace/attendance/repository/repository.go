@@ -166,7 +166,7 @@ func (r *repository) GetSummaryAggregate(ctx context.Context, orgID string, q re
 	query := r.db.WithContext(ctx).Table("attendance_records a").
 		Select(`
 			COUNT(*) as total_days,
-			COUNT(*) FILTER (WHERE UPPER(a.attendance_status) IN ('PRESENT', 'LATE', 'EARLY_LEAVE')) as present_days,
+			COUNT(*) FILTER (WHERE UPPER(a.attendance_status) = 'PRESENT') as present_days,
 			COUNT(*) FILTER (WHERE UPPER(a.attendance_status) = 'LATE') as late_days,
 			COUNT(*) FILTER (WHERE UPPER(a.attendance_status) = 'ABSENT') as absent_days,
 			COUNT(*) FILTER (WHERE UPPER(a.attendance_status) = 'HALF_DAY') as half_days,

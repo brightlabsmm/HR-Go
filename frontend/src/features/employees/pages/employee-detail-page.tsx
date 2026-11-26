@@ -1,7 +1,7 @@
 import { useState } from "react"
-import { CalendarIcon, PencilIcon, Trash2Icon, UserCheckIcon } from "lucide-react"
+import { CalendarIcon, PencilIcon, Trash2Icon, UserCheckIcon, CheckCircleIcon, ShieldOffIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { useNavigate, useParams } from "react-router"
+import { Link, useNavigate, useParams } from "react-router"
 
 import { ConfirmDialog } from "@/components/common/confirm-dialog"
 import { DetailActionButton } from "@/components/common/detail-action-button"
@@ -33,6 +33,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import { EmployeeLifecycleSections } from "@/features/employees/components/employee-lifecycle-sections"
+import { useCurrentUserQuery } from "@/shared/queries/auth.query"
 import {
   useChangePositionMutation,
   useDeleteEmployeeMutation,
@@ -45,9 +46,13 @@ import {
   useEmployeeShiftAssignmentsQuery,
   useShiftsQuery,
 } from "@/shared/queries/shift.query"
+import {
+  useDeactivateUserMutation,
+  useReactivateUserMutation,
+} from "@/shared/queries/user.query"
 import { toast } from "@/shared/stores/toast.store"
 import { notifyApiError } from "@/app/api/feedback"
-import { formatDate, formatLocalDateInput } from "@/util/format-date"
+import { formatDate, formatDateTime, formatLocalDateInput } from "@/util/format-date"
 import { getInitials } from "@/util/initials"
 
 export function EmployeeDetailPage() {
@@ -58,6 +63,7 @@ export function EmployeeDetailPage() {
 
   const employeeQuery = useEmployeeQuery(id)
   const employee = employeeQuery.data
+  const meQuery = useCurrentUserQuery()
 
   const positionHistoryQuery = usePositionHistoryQuery(id)
   const shiftAssignmentsQuery = useEmployeeShiftAssignmentsQuery(id)
@@ -68,14 +74,27 @@ export function EmployeeDetailPage() {
   const canUpdate = can("org.employee.update")
   const canDelete = can("org.employee.delete")
   const canAssignShift = can("org.shift.assign")
+  const canManageAccount = can("org.user.deactivate") || can("org.role.assign")
 
   const deleteMutation = useDeleteEmployeeMutation()
   const changePositionMutation = useChangePositionMutation()
   const assignShiftMutation = useAssignShiftMutation()
+  const deactivateAccountMutation = useDeactivateUserMutation()
+  const reactivateAccountMutation = useReactivateUserMutation()
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showPositionDialog, setShowPositionDialog] = useState(false)
   const [showShiftDialog, setShowShiftDialog] = useState(false)
+  const [showDeactivateAccountDialog, setShowDeactivateAccountDialog] =
+    useState(false)
+  const [showReactivateAccountDialog, setShowReactivateAccountDialog] =
+    useState(false)
+
+  const isSelfAccount = Boolean(
+    employee?.accountId && meQuery.data?.id === employee.accountId
+  )
+  const isAccountInactive =
+    (employee?.accountStatus ?? "").toUpperCase() === "INACTIVE"
 
   // Position change state
   const [newPositionId, setNewPositionId] = useState("")
@@ -107,9 +126,45 @@ export function EmployeeDetailPage() {
     { label: t("columns.code"), value: employee?.employeeCode, mono: true },
     { label: t("form.email"), value: employee?.email || "—" },
     { label: t("form.phone"), value: employee?.phone || "—" },
-    { label: t("columns.branch"), value: employee?.branchName || "—" },
-    { label: t("columns.department"), value: employee?.departmentName || "—" },
-    { label: t("columns.position"), value: employee?.positionTitle || "—" },
+    {
+      label: t("columns.branch"),
+      value: employee?.branchId ? (
+        <Link
+          to={`/branches/${employee.branchId}`}
+          className="text-primary hover:underline"
+        >
+          {employee.branchName || employee.branchId}
+        </Link>
+      ) : (
+        employee?.branchName || "—"
+      ),
+    },
+    {
+      label: t("columns.department"),
+      value: employee?.departmentId ? (
+        <Link
+          to={`/departments/${employee.departmentId}`}
+          className="text-primary hover:underline"
+        >
+          {employee.departmentName || employee.departmentId}
+        </Link>
+      ) : (
+        employee?.departmentName || "—"
+      ),
+    },
+    {
+      label: t("columns.position"),
+      value: employee?.positionId ? (
+        <Link
+          to={`/positions/${employee.positionId}`}
+          className="text-primary hover:underline"
+        >
+          {employee.positionTitle || employee.positionId}
+        </Link>
+      ) : (
+        employee?.positionTitle || "—"
+      ),
+    },
     { label: t("form.role", { defaultValue: "Role" }), value: employee?.roleName || "—" },
     {
       label: t("columns.joined"),
@@ -146,6 +201,27 @@ export function EmployeeDetailPage() {
     {
       label: t("form.address"),
       value: employee?.profile?.address || "—",
+    },
+  ]
+
+  const accessItems = [
+    {
+      label: t("form.role"),
+      value: employee?.roleName || "—",
+    },
+    {
+      label: t("columns.account_status"),
+      value: employee?.accountStatus ? (
+        <StatusBadge status={employee.accountStatus} />
+      ) : (
+        "—"
+      ),
+    },
+    {
+      label: t("columns.last_login_at"),
+      value: employee?.lastLoginAt
+        ? formatDateTime(employee.lastLoginAt, i18n.language)
+        : "—",
     },
   ]
 
@@ -187,6 +263,26 @@ export function EmployeeDetailPage() {
           <CalendarIcon className="size-4" />
           {t("assign_shift.button")}
         </Button>
+      )}
+      {canManageAccount && employee?.accountId && !isSelfAccount && isAccountInactive && (
+        <DetailActionButton
+          tone="success"
+          loading={reactivateAccountMutation.isPending}
+          onClick={() => setShowReactivateAccountDialog(true)}
+        >
+          <CheckCircleIcon />
+          {t("account.reactivate")}
+        </DetailActionButton>
+      )}
+      {canManageAccount && employee?.accountId && !isSelfAccount && !isAccountInactive && (
+        <DetailActionButton
+          tone="destructive"
+          loading={deactivateAccountMutation.isPending}
+          onClick={() => setShowDeactivateAccountDialog(true)}
+        >
+          <ShieldOffIcon />
+          {t("account.deactivate")}
+        </DetailActionButton>
       )}
       {canDelete && employee && (
         <DetailActionButton
@@ -242,6 +338,13 @@ export function EmployeeDetailPage() {
                   {t("sections.personal")}
                 </h2>
                 <DetailList columns={2} items={personalItems} />
+              </section>
+
+              <section className="border-t border-hair pt-6">
+                <h2 className="mb-6 text-body-2 font-semibold text-foreground">
+                  {t("sections.access")}
+                </h2>
+                <DetailList columns={2} items={accessItems} />
               </section>
 
               <section className="border-t border-hair pt-6">
@@ -543,6 +646,56 @@ export function EmployeeDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Deactivate / Reactivate Account Dialogs */}
+      <ConfirmDialog
+        open={showDeactivateAccountDialog}
+        title={t("account.deactivate_title", { name })}
+        description={t("account.deactivate_description", { name })}
+        confirmLabel={t("account.deactivate_confirm")}
+        confirmVariant="destructive"
+        isPending={deactivateAccountMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open) setShowDeactivateAccountDialog(false)
+        }}
+        onConfirm={() => {
+          if (!employee?.accountId) return
+          deactivateAccountMutation.mutate(employee.accountId, {
+            onSuccess: () => {
+              setShowDeactivateAccountDialog(false)
+              toast.success(t("account.deactivate_success"))
+            },
+            onError: (err) => {
+              setShowDeactivateAccountDialog(false)
+              notifyApiError(err)
+            },
+          })
+        }}
+      />
+
+      <ConfirmDialog
+        open={showReactivateAccountDialog}
+        title={t("account.reactivate_title", { name })}
+        description={t("account.reactivate_description", { name })}
+        confirmLabel={t("account.reactivate_confirm")}
+        isPending={reactivateAccountMutation.isPending}
+        onOpenChange={(open) => {
+          if (!open) setShowReactivateAccountDialog(false)
+        }}
+        onConfirm={() => {
+          if (!employee?.accountId) return
+          reactivateAccountMutation.mutate(employee.accountId, {
+            onSuccess: () => {
+              setShowReactivateAccountDialog(false)
+              toast.success(t("account.reactivate_success"))
+            },
+            onError: (err) => {
+              setShowReactivateAccountDialog(false)
+              notifyApiError(err)
+            },
+          })
+        }}
+      />
 
       {/* Delete Employee Confirm Dialog */}
       <ConfirmDialog

@@ -8,6 +8,7 @@
   "tab_records": "Attendance Records",
   "tab_corrections": "Correction Requests",
   "all_status": "All status",
+  "month_label": "Month:",
   "date_label": "Date:",
   "default_shift": "Default",
   "late_badge": "+{{count}}m late",

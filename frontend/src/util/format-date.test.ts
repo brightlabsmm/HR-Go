@@ -5,6 +5,7 @@ import {
   formatDate,
   formatDateTime,
   formatMonth,
+  splitServiceYears,
 } from "./format-date"
 
 describe("formatDate and formatDateTime (BUG-09)", () => {
@@ -53,5 +54,13 @@ describe("formatDate and formatDateTime (BUG-09)", () => {
     expect(formatMonth(12, "en-US")).toBe("December")
     expect(formatMonth(0, "en-US")).toBe("—")
     expect(formatMonth(13, "en-US")).toBe("—")
+  })
+
+  it("splits decimal service years into years and months cleanly", () => {
+    expect(splitServiceYears(1.31)).toEqual({ years: 1, months: 4 })
+    expect(splitServiceYears(2.0)).toEqual({ years: 2, months: 0 })
+    expect(splitServiceYears(0.5)).toEqual({ years: 0, months: 6 })
+    expect(splitServiceYears(0.99)).toEqual({ years: 1, months: 0 })
+    expect(splitServiceYears(0)).toEqual({ years: 0, months: 0 })
   })
 })

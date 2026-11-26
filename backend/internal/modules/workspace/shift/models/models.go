@@ -16,7 +16,7 @@ type Shift struct {
 	UpdatedAt      time.Time
 	DeletedAt      *time.Time `gorm:"index"`
 
-	BranchName string `gorm:"-"`
+	BranchName string `gorm:"->;column:branch_name"`
 }
 
 func (Shift) TableName() string {
@@ -35,11 +35,11 @@ type EmployeeShiftAssignment struct {
 	UpdatedAt      time.Time
 	DeletedAt      *time.Time `gorm:"index"`
 
-	EmployeeCode string `gorm:"-"`
-	EmployeeName string `gorm:"-"`
-	ShiftName    string `gorm:"-"`
-	StartTime    string `gorm:"-"`
-	EndTime      string `gorm:"-"`
+	EmployeeCode string `gorm:"->;column:employee_code"`
+	EmployeeName string `gorm:"->;column:employee_name"`
+	ShiftName    string `gorm:"->;column:shift_name"`
+	StartTime    string `gorm:"->;column:start_time"`
+	EndTime      string `gorm:"->;column:end_time"`
 }
 
 func (EmployeeShiftAssignment) TableName() string {
@@ -61,8 +61,8 @@ type EmployeeShiftAssignmentHistory struct {
 	ChangedAt          time.Time  `gorm:"default:CURRENT_TIMESTAMP"`
 	Reason             *string    `gorm:"type:varchar(255)"`
 
-	OldShiftName string `gorm:"-"`
-	NewShiftName string `gorm:"-"`
+	OldShiftName string `gorm:"->;column:old_shift_name"`
+	NewShiftName string `gorm:"->;column:new_shift_name"`
 }
 
 func (EmployeeShiftAssignmentHistory) TableName() string {

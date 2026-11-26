@@ -13,7 +13,6 @@ import {
   ShieldIcon,
   TimerIcon,
   UserRoundIcon,
-  UsersIcon,
 } from "lucide-react"
 
 import type { PortalNavItem } from "@/portals/types"
@@ -135,14 +134,6 @@ export const ORGANIZATION_NAV: PortalNavItem[] = [
     icon: TimerIcon,
     matchPrefix: "/overtime",
     permissions: ["org.overtime.read", "org.overtime.approve", "org.overtime.manage"],
-  },
-  {
-    to: "/users",
-    labelKey: "nav.users",
-    groupKey: "nav_groups.people",
-    icon: UsersIcon,
-    matchPrefix: "/users",
-    permissions: ["org.user.read", "org.role.read", "org.role.assign"],
   },
   {
     to: "/roles",

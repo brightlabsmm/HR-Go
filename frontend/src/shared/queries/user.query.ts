@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query"
 
 import { authKeys } from "@/shared/queries/auth.query"
+import { employeeKeys } from "@/shared/queries/employee.query"
 import {
   createUser,
   deactivateUser,
@@ -105,6 +106,7 @@ export function useDeactivateUserMutation() {
     mutationFn: (id: string) => deactivateUser(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: userKeys.all })
+      void queryClient.invalidateQueries({ queryKey: employeeKeys.all })
     },
   })
 }
@@ -116,6 +118,7 @@ export function useReactivateUserMutation() {
     mutationFn: (id: string) => reactivateUser(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: userKeys.all })
+      void queryClient.invalidateQueries({ queryKey: employeeKeys.all })
     },
   })
 }

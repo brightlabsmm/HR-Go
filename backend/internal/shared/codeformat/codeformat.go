@@ -14,9 +14,9 @@ const (
 	DefaultDepartmentCodeFormat = "DEPT-{0000}"
 )
 
-var seqPlaceholderRegex = regexp.MustCompile(`\{([0N#]+)\}`)
+var seqPlaceholderRegex = regexp.MustCompile(`(?i)\{(?:[0N#]+|SEQ(?::(\d+))?)\}`)
 
-// IsValidFormat checks whether pattern contains a valid sequence placeholder like {0000}, {NNNN}, etc.
+// IsValidFormat checks whether pattern contains a valid sequence placeholder like {0000}, {NNNN}, or {SEQ}.
 // An empty or whitespace-only pattern is considered valid because it falls back to the default format.
 func IsValidFormat(pattern string) bool {
 	trimmed := strings.TrimSpace(pattern)
@@ -27,7 +27,7 @@ func IsValidFormat(pattern string) bool {
 }
 
 // Format generates a formatted entity code from a format template and 1-based sequence number.
-// Supported sequence placeholders include {0000}, {NNNN}, {000}, {NNN}, {00}, {NN}, etc.
+// Supported sequence placeholders include {0000}, {NNNN}, {000}, {NNN}, {SEQ}, {SEQ:4}, etc.
 // If no placeholder is present in pattern, pattern is used as a prefix with 4-digit zero padding.
 func Format(pattern string, seq int, fallbackPattern string) string {
 	if seq < 1 {
@@ -41,10 +41,17 @@ func Format(pattern string, seq int, fallbackPattern string) string {
 
 	if seqPlaceholderRegex.MatchString(tpl) {
 		return seqPlaceholderRegex.ReplaceAllStringFunc(tpl, func(match string) string {
-			inner := strings.Trim(match, "{}")
-			width := len(inner)
-			if width < 1 {
-				width = 4
+			inner := strings.ToUpper(strings.Trim(match, "{}"))
+			width := 4
+			if strings.HasPrefix(inner, "SEQ") {
+				if idx := strings.Index(inner, ":"); idx >= 0 {
+					var parsed int
+					if _, err := fmt.Sscanf(inner[idx+1:], "%d", &parsed); err == nil && parsed > 0 && parsed <= 12 {
+						width = parsed
+					}
+				}
+			} else if len(inner) >= 1 {
+				width = len(inner)
 			}
 			return fmt.Sprintf("%0*d", width, seq)
 		})

@@ -13,6 +13,8 @@ func ToPositionResponse(p *models.Position) response.PositionResponse {
 		PositionCode:   p.Code,
 		PositionName:   p.Name,
 		Status:         p.Status,
+		CreatedAt:      p.CreatedAt,
+		UpdatedAt:      p.UpdatedAt,
 	}
 }
 

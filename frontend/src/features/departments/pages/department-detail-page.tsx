@@ -1,8 +1,9 @@
 import { useState } from "react"
 import { PencilIcon, Trash2Icon } from "lucide-react"
 import { useTranslation } from "react-i18next"
-import { useNavigate, useParams } from "react-router"
+import { Link, useNavigate, useParams } from "react-router"
 
+import { notifyApiError } from "@/app/api/feedback"
 import { ConfirmDialog } from "@/components/common/confirm-dialog"
 import { DetailActionButton } from "@/components/common/detail-action-button"
 import { DetailList } from "@/components/common/detail-list"
@@ -11,6 +12,7 @@ import { MotionStack } from "@/components/common/motion-stack"
 import { NotFoundState } from "@/components/common/not-found-state"
 import { PageHeader } from "@/components/common/page-header"
 import { ProfileSummaryCard } from "@/components/common/profile-summary-card"
+import { RelatedRecordsSection } from "@/components/common/related-records-section"
 import { StatusBadge } from "@/components/common/status-badge"
 import { usePermissions } from "@/shared/hooks/use-permissions"
 import { useBranchesQuery } from "@/shared/queries/branch.query"
@@ -18,9 +20,113 @@ import {
   useDeactivateDepartmentMutation,
   useDepartmentQuery,
 } from "@/shared/queries/department.query"
+import { useEmployeesQuery } from "@/shared/queries/employee.query"
+import { usePositionsQuery } from "@/shared/queries/position.query"
 import { toast } from "@/shared/stores/toast.store"
-import { formatDate } from "@/util/format-date"
+import { formatDateTime } from "@/util/format-date"
 import { getInitials } from "@/util/initials"
+
+function DepartmentPositionsSection({
+  departmentId,
+}: {
+  departmentId: string
+}) {
+  const { t } = useTranslation("departments")
+  const positionsQuery = usePositionsQuery({ departmentId, limit: 100 })
+  const items = positionsQuery.data?.items ?? []
+
+  return (
+    <RelatedRecordsSection
+      title={t("sections.positions")}
+      count={positionsQuery.data?.meta.totalItems}
+      isLoading={positionsQuery.isPending}
+      emptyText={t("sections.empty_positions")}
+      items={items}
+      getRowKey={(p) => p.id}
+      viewAllTo="/positions"
+      viewAllLabel={t("sections.view_all")}
+      columns={[
+        {
+          key: "code",
+          header: t("columns.code"),
+          className: "font-mono text-muted-foreground",
+          render: (p) => p.positionCode,
+        },
+        {
+          key: "name",
+          header: t("columns.name"),
+          render: (p) => (
+            <Link
+              to={`/positions/${p.id}`}
+              className="font-medium text-primary hover:underline"
+            >
+              {p.positionName}
+            </Link>
+          ),
+        },
+        {
+          key: "status",
+          header: t("columns.status"),
+          render: (p) => <StatusBadge status={p.status} />,
+        },
+      ]}
+    />
+  )
+}
+
+function DepartmentEmployeesSection({
+  departmentId,
+}: {
+  departmentId: string
+}) {
+  const { t } = useTranslation("departments")
+  const employeesQuery = useEmployeesQuery({ departmentId, limit: 100 })
+  const items = employeesQuery.data?.items ?? []
+
+  return (
+    <RelatedRecordsSection
+      title={t("sections.employees")}
+      count={employeesQuery.data?.meta.totalItems}
+      isLoading={employeesQuery.isPending}
+      emptyText={t("sections.empty_employees")}
+      items={items}
+      getRowKey={(e) => e.id}
+      viewAllTo="/employees"
+      viewAllLabel={t("sections.view_all")}
+      columns={[
+        {
+          key: "code",
+          header: t("columns.code"),
+          className: "font-mono text-muted-foreground",
+          render: (e) => e.employeeCode,
+        },
+        {
+          key: "name",
+          header: t("columns.name"),
+          render: (e) => (
+            <Link
+              to={`/employees/${e.id}`}
+              className="font-medium text-primary hover:underline"
+            >
+              {e.fullName}
+            </Link>
+          ),
+        },
+        {
+          key: "position",
+          header: t("sections.position"),
+          className: "text-muted-foreground",
+          render: (e) => e.positionTitle || "—",
+        },
+        {
+          key: "status",
+          header: t("columns.status"),
+          render: (e) => <StatusBadge status={e.employmentStatus} />,
+        },
+      ]}
+    />
+  )
+}
 
 export function DepartmentDetailPage() {
   const { t, i18n } = useTranslation("departments")
@@ -33,6 +139,8 @@ export function DepartmentDetailPage() {
   const { can } = usePermissions()
   const canUpdate = can("org.department.update")
   const canDeactivate = can("org.department.deactivate")
+  const canReadPositions = can("org.position.read")
+  const canReadEmployees = can("org.employee.read")
   const deactivateMutation = useDeactivateDepartmentMutation()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
@@ -55,14 +163,30 @@ export function DepartmentDetailPage() {
   const identityItems = [
     { label: t("columns.code"), value: department?.departmentCode, mono: true },
     { label: t("columns.name"), value: department?.departmentName },
-    { label: t("form.branch", "Branch"), value: branchName },
+    {
+      label: t("form.branch", "Branch"),
+      value: department?.branchId ? (
+        <Link
+          to={`/branches/${department.branchId}`}
+          className="text-primary hover:underline"
+        >
+          {branchName}
+        </Link>
+      ) : (
+        "—"
+      ),
+    },
     {
       label: tCommon("created_at", "Created"),
-      value: department ? formatDate(department.createdAt, i18n.language) : null,
+      value: department
+        ? formatDateTime(department.createdAt, i18n.language)
+        : null,
     },
     {
       label: tCommon("updated_at", "Updated"),
-      value: department ? formatDate(department.updatedAt, i18n.language) : null,
+      value: department
+        ? formatDateTime(department.updatedAt, i18n.language)
+        : null,
     },
   ]
 
@@ -117,6 +241,12 @@ export function DepartmentDetailPage() {
               <DetailList columns={2} items={identityItems} />
             </section>
           )}
+          {department && canReadPositions && (
+            <DepartmentPositionsSection departmentId={department.id} />
+          )}
+          {department && canReadEmployees && (
+            <DepartmentEmployeesSection departmentId={department.id} />
+          )}
         </div>
       </div>
       <ConfirmDialog
@@ -137,7 +267,10 @@ export function DepartmentDetailPage() {
               toast.success(t("delete.success"))
               void navigate("/departments")
             },
-            onError: () => setShowDeleteDialog(false),
+            onError: (err) => {
+              setShowDeleteDialog(false)
+              notifyApiError(err)
+            },
           })
         }}
       />

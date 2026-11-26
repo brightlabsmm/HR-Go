@@ -45,7 +45,7 @@ import {
   useServiceYearsQuery,
 } from "@/shared/queries/lifecycle.query"
 import { toast } from "@/shared/stores/toast.store"
-import { formatDate } from "@/util/format-date"
+import { formatDate, splitServiceYears } from "@/util/format-date"
 
 function todayLocalDate(): string {
   const now = new Date()
@@ -60,7 +60,7 @@ export function EmployeeLifecycleSections({
 }: {
   employeeId: string
 }) {
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation("employees")
   const { can } = usePermissions()
   const canUpdate = can("org.employee.update")
   const canDelete = can("org.employee.delete")
@@ -310,14 +310,24 @@ export function EmployeeLifecycleSections({
               <p className="text-small-2 text-muted-foreground">No calculations yet.</p>
             ) : (
               <ul className="space-y-1.5 text-small-2">
-                {serviceYears.map((sy) => (
-                  <li key={sy.id} className="flex justify-between">
-                    <span>{formatDate(sy.calculationDate, i18n.language)}</span>
-                    <span className="font-semibold text-foreground">
-                      {sy.serviceYears} yrs
-                    </span>
-                  </li>
-                ))}
+                {serviceYears.map((sy) => {
+                  const { years, months } = splitServiceYears(sy.serviceYears)
+                  const parts: string[] = []
+                  if (years > 0) parts.push(t("service_duration.years", { count: years }))
+                  if (months > 0) parts.push(t("service_duration.months", { count: months }))
+                  const label =
+                    parts.length > 0
+                      ? parts.join(" ")
+                      : sy.serviceYears > 0
+                        ? t("service_duration.less_than_month")
+                        : t("service_duration.zero")
+                  return (
+                    <li key={sy.id} className="flex justify-between">
+                      <span>{formatDate(sy.calculationDate, i18n.language)}</span>
+                      <span className="font-semibold text-foreground">{label}</span>
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </div>

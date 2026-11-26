@@ -1,8 +1,10 @@
 package audit
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -155,22 +157,65 @@ func MetaFromGin(c *gin.Context) (actorID, actorType, clientIP, userAgent string
 	return actorID, actorType, c.ClientIP(), c.Request.UserAgent()
 }
 
+const maxCapturedAuditBody = 64 * 1024
+
+type responseCaptureWriter struct {
+	gin.ResponseWriter
+	body bytes.Buffer
+}
+
+func (w *responseCaptureWriter) Write(b []byte) (int, error) {
+	if w.body.Len() < maxCapturedAuditBody {
+		rem := maxCapturedAuditBody - w.body.Len()
+		if len(b) > rem {
+			w.body.Write(b[:rem])
+		} else {
+			w.body.Write(b)
+		}
+	}
+	return w.ResponseWriter.Write(b)
+}
+
+func (w *responseCaptureWriter) WriteString(s string) (int, error) {
+	if w.body.Len() < maxCapturedAuditBody {
+		rem := maxCapturedAuditBody - w.body.Len()
+		if len(s) > rem {
+			w.body.WriteString(s[:rem])
+		} else {
+			w.body.WriteString(s)
+		}
+	}
+	return w.ResponseWriter.WriteString(s)
+}
+
 // WorkspaceMutationMiddleware records successful write operations under /api/v1/workspace
 // when a handler has not already emitted a richer domain audit entry.
 func WorkspaceMutationMiddleware(recorder Recorder) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		method := c.Request.Method
+		isMutation := method == http.MethodPost || method == http.MethodPut ||
+			method == http.MethodPatch || method == http.MethodDelete
+
+		var reqBody []byte
+		var capture *responseCaptureWriter
+		if recorder != nil && isMutation && strings.HasPrefix(c.Request.URL.Path, "/api/v1/workspace/") {
+			if c.Request.Body != nil {
+				raw, err := io.ReadAll(io.LimitReader(c.Request.Body, maxCapturedAuditBody))
+				if err == nil {
+					reqBody = raw
+					c.Request.Body = io.NopCloser(bytes.NewReader(raw))
+				}
+			}
+			capture = &responseCaptureWriter{ResponseWriter: c.Writer}
+			c.Writer = capture
+		}
+
 		c.Next()
 
-		if recorder == nil {
+		if recorder == nil || !isMutation {
 			return
 		}
 		if _, already := c.Get(auditRecordedKey); already {
-			return
-		}
-
-		method := c.Request.Method
-		if method != http.MethodPost && method != http.MethodPut &&
-			method != http.MethodPatch && method != http.MethodDelete {
 			return
 		}
 
@@ -191,26 +236,80 @@ func WorkspaceMutationMiddleware(recorder Recorder) gin.HandlerFunc {
 
 		actorID, actorType, clientIP, userAgent := MetaFromGin(c)
 		entityName, entityID := deriveEntity(path, c)
+		action := deriveAction(method, path)
+
+		var reqMap map[string]any
+		if len(reqBody) > 0 {
+			_ = json.Unmarshal(reqBody, &reqMap)
+			reqMap = sanitizeAuditMap(reqMap)
+		}
+
+		var respMap map[string]any
+		if capture != nil && capture.body.Len() > 0 {
+			_ = json.Unmarshal(capture.body.Bytes(), &respMap)
+			respMap = sanitizeAuditMap(respMap)
+		}
+
+		if entityID == "" && respMap != nil {
+			if id, ok := respMap["id"].(string); ok && strings.TrimSpace(id) != "" {
+				entityID = strings.TrimSpace(id)
+			}
+		}
+
+		var newValues any
+		if respMap != nil && len(respMap) > 0 {
+			newValues = respMap
+		} else if reqMap != nil && len(reqMap) > 0 {
+			newValues = reqMap
+		}
+
+		details := map[string]any{
+			"method": method,
+			"path":   c.Request.URL.Path,
+			"status": status,
+		}
+		if len(reqMap) > 0 {
+			details["request"] = reqMap
+		}
 
 		_ = recorder.Record(c.Request.Context(), RecordInput{
 			OrganizationID: claims.OrganizationID,
 			ActorID:        actorID,
 			ActorType:      actorType,
-			Action:         methodToAction(method),
+			Action:         action,
 			EntityName:     entityName,
 			EntityID:       entityID,
-			Details: map[string]any{
-				"method": method,
-				"path":   c.Request.URL.Path,
-				"status": status,
-			},
-			ClientIP:  clientIP,
-			UserAgent: userAgent,
+			NewValues:      newValues,
+			Details:        details,
+			ClientIP:       clientIP,
+			UserAgent:      userAgent,
 		})
 	}
 }
 
-func methodToAction(method string) string {
+func deriveAction(method, fullPath string) string {
+	lower := strings.ToLower(fullPath)
+	switch {
+	case strings.HasSuffix(lower, "/deactivate"):
+		return "DEACTIVATE"
+	case strings.HasSuffix(lower, "/reactivate"):
+		return "REACTIVATE"
+	case strings.HasSuffix(lower, "/review"):
+		return "REVIEW"
+	case strings.HasSuffix(lower, "/approve"):
+		return "APPROVE"
+	case strings.HasSuffix(lower, "/cancel"):
+		return "CANCEL"
+	case strings.HasSuffix(lower, "/check-in"):
+		return "CHECK_IN"
+	case strings.HasSuffix(lower, "/check-out"):
+		return "CHECK_OUT"
+	case strings.HasSuffix(lower, "/adjustments"):
+		return "ADJUST"
+	case strings.HasSuffix(lower, "/assign"):
+		return "ASSIGN"
+	}
+
 	switch method {
 	case http.MethodPost:
 		return "CREATE"
@@ -223,16 +322,41 @@ func methodToAction(method string) string {
 	}
 }
 
+func sanitizeAuditMap(m map[string]any) map[string]any {
+	if m == nil {
+		return nil
+	}
+	out := make(map[string]any, len(m))
+	for k, v := range m {
+		lower := strings.ToLower(k)
+		if strings.Contains(lower, "password") || strings.Contains(lower, "secret") || strings.Contains(lower, "token") {
+			out[k] = "[REDACTED]"
+			continue
+		}
+		if nested, ok := v.(map[string]any); ok {
+			out[k] = sanitizeAuditMap(nested)
+		} else {
+			out[k] = v
+		}
+	}
+	return out
+}
+
 func deriveEntity(fullPath string, c *gin.Context) (string, string) {
 	trimmed := strings.TrimPrefix(fullPath, "/api/v1/workspace/")
 	parts := strings.Split(trimmed, "/")
 	entity := parts[0]
-	if len(parts) >= 3 && !strings.HasPrefix(parts[2], ":") {
+	if len(parts) >= 3 && !strings.HasPrefix(parts[2], ":") &&
+		parts[2] != "deactivate" && parts[2] != "reactivate" &&
+		parts[2] != "review" && parts[2] != "cancel" {
 		entity = parts[2]
 	}
 
 	var entityID string
-	for _, key := range []string{"id", "branchId", "contractId", "documentId", "roleId", "userId"} {
+	for _, key := range []string{
+		"id", "branchId", "departmentId", "positionId", "employeeId",
+		"shiftId", "holidayId", "contractId", "documentId", "roleId", "userId",
+	} {
 		if v := c.Param(key); v != "" {
 			entityID = v
 			break

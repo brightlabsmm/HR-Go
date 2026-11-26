@@ -44,6 +44,12 @@
     "description": "Add departments to organize people by team."
   },
   "sections": {
-    "details": "Department details"
+    "details": "Department details",
+    "positions": "Positions",
+    "empty_positions": "No positions defined in this department.",
+    "employees": "Employees",
+    "empty_employees": "No employees assigned to this department.",
+    "position": "Position",
+    "view_all": "View all"
   }
 }

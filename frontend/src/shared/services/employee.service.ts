@@ -38,6 +38,9 @@ export interface Employee {
   departmentName?: string | null
   positionId?: string | null
   positionTitle?: string | null
+  accountId?: string | null
+  accountStatus?: string | null
+  lastLoginAt?: string | null
   roleId?: string | null
   roleName?: string | null
   roleCode?: string | null

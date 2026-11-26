@@ -50,5 +50,41 @@
       "code_required": "ต้องระบุรหัสสาขา",
       "name_required": "ต้องระบุชื่อสาขา"
     }
+  },
+  "operating_hours": {
+    "title": "เวลาทำการ",
+    "description": "ตารางเวลาเปิด-ปิดประจำสัปดาห์ของสาขา",
+    "save": "บันทึกตารางเวลา",
+    "saved": "บันทึกเวลาทำการเรียบร้อยแล้ว",
+    "invalid_time": "สำหรับวันที่เปิดทำการ เวลาปิดต้องช้ากว่าเวลาเปิด",
+    "day": "วัน",
+    "closed": "วันหยุดปิด",
+    "opening_time": "เวลาเปิด",
+    "closing_time": "เวลาปิด",
+    "days": {
+      "MONDAY": "วันจันทร์",
+      "TUESDAY": "วันอังคาร",
+      "WEDNESDAY": "วันพุธ",
+      "THURSDAY": "วันพฤหัสบดี",
+      "FRIDAY": "วันศุกร์",
+      "SATURDAY": "วันเสาร์",
+      "SUNDAY": "วันอาทิตย์"
+    }
+  },
+  "sections": {
+    "sub_branches": "สาขาย่อย",
+    "empty_sub_branches": "ยังไม่มีสาขาย่อย",
+    "departments": "แผนก",
+    "department_name": "แผนก",
+    "empty_departments": "ยังไม่มีแผนกในสาขานี้",
+    "shifts": "กะการทำงาน",
+    "shift_name": "กะการทำงาน",
+    "empty_shifts": "ยังไม่มีกะการทำงานในสาขานี้",
+    "schedule": "ตารางเวลา",
+    "employees": "พนักงาน",
+    "employee_name": "พนักงาน",
+    "empty_employees": "ยังไม่มีพนักงานในสาขานี้",
+    "position": "ตำแหน่ง",
+    "view_all": "ดูทั้งหมด"
   }
 }
