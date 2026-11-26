@@ -67,13 +67,19 @@ func (s *svc) ImportCSV(ctx context.Context, orgID, accountID string, req reques
 		key := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(col, "\ufeff")))
 		headerIdx[key] = i
 	}
-	if _, ok := headerIdx["employeecode"]; !ok {
-		if _, okAlt := headerIdx["employee_code"]; !okAlt {
-			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{{
-				Field:   "csvContent",
-				Message: "CSV header must include employeeCode and attendanceDate columns.",
-			}})
-		}
+	_, hasEmp := headerIdx["employeecode"]
+	if !hasEmp {
+		_, hasEmp = headerIdx["employee_code"]
+	}
+	_, hasDate := headerIdx["attendancedate"]
+	if !hasDate {
+		_, hasDate = headerIdx["attendance_date"]
+	}
+	if !hasEmp || !hasDate {
+		return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{{
+			Field:   "csvContent",
+			Message: "CSV header must include employeeCode and attendanceDate columns.",
+		}})
 	}
 
 	tzName := s.repo.GetOrgTimezone(ctx, orgID)
