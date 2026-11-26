@@ -116,5 +116,64 @@
   "empty": {
     "title": "ไม่พบบันทึกการเข้างาน",
     "description": "บันทึกเวลาเข้าออกงานประจำวันจะปรากฏที่นี่"
+  },
+  "imports": {
+    "title": "นำเข้าและส่งออกการเข้างาน",
+    "subtitle": "ดาวน์โหลดเทมเพลต CSV เพื่อกรอกข้อมูลนำเข้า หรือส่งออกรายงานการเข้างานตามตัวกรอง",
+    "download_template": "ดาวน์โหลดเทมเพลต",
+    "template_downloaded": "ดาวน์โหลดเทมเพลต CSV เรียบร้อยแล้ว",
+    "export_csv": "ส่งออก CSV",
+    "import_csv": "นำเข้า CSV",
+    "guide_title": "ขั้นตอนการนำเข้า CSV มาตรฐาน",
+    "guide_steps": "1. ดาวน์โหลดเทมเพลต CSV  ->  2. กรอกข้อมูลพนักงาน (YYYY-MM-DD, HH:MM)  ->  3. อัปโหลดไฟล์ CSV เพื่อนำเข้าข้อมูล",
+    "columns": {
+      "file": "ไฟล์",
+      "total_rows": "แถวทั้งหมด",
+      "succeeded": "สำเร็จ",
+      "failed": "ล้มเหลว",
+      "status": "สถานะ",
+      "imported_at": "นำเข้าเมื่อ",
+      "errors": "ข้อผิดพลาด"
+    },
+    "batch_status": {
+      "COMPLETED": "สำเร็จทั้งหมด",
+      "PARTIAL": "สำเร็จบางส่วน",
+      "FAILED": "ล้มเหลว"
+    },
+    "import_dialog": {
+      "title": "นำเข้าข้อมูลการเข้างาน CSV",
+      "description": "ดาวน์โหลดเทมเพลตมาตรฐานก่อน กรอกข้อมูลให้ครบ จากนั้นอัปโหลดไฟล์ CSV หรือวางข้อมูลด้านล่าง",
+      "step_template_label": "ขั้นตอนที่ 1: ดาวน์โหลดรูปแบบ CSV",
+      "step_template_hint": "คอลัมน์: employeeCode, attendanceDate (YYYY-MM-DD), checkIn (HH:MM), checkOut (HH:MM), status, remarks",
+      "upload_file": "ขั้นตอนที่ 2: เลือกไฟล์ CSV",
+      "upload_button": "เลือกไฟล์ .csv",
+      "file_loaded": "โหลด {{name}} แล้ว ({{rows}} แถวข้อมูล)",
+      "file_reference": "ชื่ออ้างอิงชุดข้อมูล",
+      "csv_content": "ตัวอย่างเนื้อหา CSV",
+      "rows_detected": "พบ {{count}} แถวข้อมูล",
+      "run": "เริ่มนำเข้า",
+      "success": "นำเข้าแล้ว {{success}}/{{total}} แถว ({{status}})"
+    },
+    "export_dialog": {
+      "title": "ส่งออกข้อมูลการเข้างาน CSV",
+      "description": "เลือกช่วงวันที่ สาขา และสถานะที่ต้องการก่อนดาวน์โหลดรายงาน CSV",
+      "from_date": "ตั้งแต่วันที่",
+      "to_date": "ถึงวันที่",
+      "branch": "สาขา",
+      "all_branches": "ทุกสาขา",
+      "status": "สถานะ",
+      "download": "ดาวน์โหลด CSV",
+      "success": "ส่งออกข้อมูลการเข้างาน CSV เรียบร้อยแล้ว"
+    },
+    "errors_dialog": {
+      "title": "รายละเอียดแถวที่นำเข้าไม่สำเร็จ",
+      "description": "แถวที่ผิดพลาดจากชุดข้อมูล {{file}}",
+      "view": "ดู ({{count}})",
+      "row": "แถว {{row}}"
+    },
+    "empty": {
+      "title": "ยังไม่มีประวัตินำเข้า CSV",
+      "description": "ดาวน์โหลดเทมเพลต CSV กรอกข้อมูลการเข้างาน และอัปโหลดนำเข้าได้ที่นี่"
+    }
   }
 }
