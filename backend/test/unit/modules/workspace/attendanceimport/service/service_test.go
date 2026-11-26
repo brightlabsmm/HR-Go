@@ -82,4 +82,12 @@ func TestImportCSVAndExportFormulaSanitization(t *testing.T) {
 	if !strings.Contains(string(csvBytes), "'=CMD") {
 		t.Fatalf("expected CSV formula injection guard, got:\n%s", string(csvBytes))
 	}
+
+	_, missingHeaderErr := svc.ImportCSV(context.Background(), "org-1", "acc-1", request.ImportAttendanceCSVRequest{
+		FileReference: "bad.csv",
+		CSVContent:    "employeeCode,checkIn\nEMP-001,09:00",
+	}, audit.RecordInput{ActorID: "acc-1"})
+	if missingHeaderErr == nil {
+		t.Fatalf("expected validation error when attendanceDate header is missing")
+	}
 }
