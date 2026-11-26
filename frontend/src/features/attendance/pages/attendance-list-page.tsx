@@ -23,8 +23,8 @@ import { MotionStack } from "@/components/common/motion-stack"
 import { PageEmptyState } from "@/components/common/page-empty-state"
 import { PageHeader } from "@/components/common/page-header"
 import { Pagination } from "@/components/common/pagination"
-import { StatusBadge } from "@/components/common/status-badge"
 import { TableSkeleton } from "@/components/common/table-skeleton"
+import { ToneBadge, type BadgeTone } from "@/components/common/tone-badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -80,6 +80,47 @@ import type {
 const recordCol = createDataTableColumns<AttendanceRecord>()
 const correctionCol = createDataTableColumns<AttendanceCorrection>()
 
+function attendanceStatusTone(status: string): BadgeTone {
+  switch (status.toUpperCase()) {
+    case "PRESENT":
+      return "success"
+    case "LATE":
+      return "warning"
+    case "HALF_DAY":
+    case "EARLY_LEAVE":
+      return "info"
+    case "ABSENT":
+      return "destructive"
+    case "ON_LEAVE":
+      return "brand"
+    default:
+      return "neutral"
+  }
+}
+
+function correctionStatusTone(status: string): BadgeTone {
+  switch (status.toUpperCase()) {
+    case "APPROVED":
+      return "success"
+    case "REJECTED":
+      return "destructive"
+    case "PENDING":
+      return "warning"
+    default:
+      return "neutral"
+  }
+}
+
+function getMonthRange(monthStr: string): { from: string; to: string } {
+  const match = /^(\d{4})-(\d{2})$/.exec(monthStr)
+  const now = new Date()
+  const year = match ? Number(match[1]) : now.getFullYear()
+  const monthIdx = match ? Number(match[2]) - 1 : now.getMonth()
+  const from = formatLocalDateInput(new Date(year, monthIdx, 1))
+  const to = formatLocalDateInput(new Date(year, monthIdx + 1, 0))
+  return { from, to }
+}
+
 export function AttendanceListPage() {
   const { t, i18n } = useTranslation("attendance")
   const { t: tCommon } = useTranslation("common")
@@ -87,11 +128,21 @@ export function AttendanceListPage() {
 
   const [activeTab, setActiveTab] = useState<"records" | "corrections">("records")
 
+  const today = new Date()
+  const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`
+  const todayDate = formatLocalDateInput(today)
+
   // Filters
   const status = searchParams.get("status") ?? undefined
-  const date = searchParams.get("date") ?? formatLocalDateInput(new Date())
+  const month = searchParams.get("month") ?? currentMonth
+  const date = searchParams.get("date") ?? undefined
   const page = parsePageParam(searchParams.get(PAGE_PARAM))
   const limit = parsePageSizeParam(searchParams.get(PAGE_SIZE_PARAM))
+
+  const { from: firstDayOfMonth, to: lastDayOfMonth } = useMemo(
+    () => getMonthRange(month),
+    [month]
+  )
 
   // Permissions
   const { can } = usePermissions()
@@ -105,6 +156,8 @@ export function AttendanceListPage() {
     limit,
     status,
     date,
+    from: date ? undefined : firstDayOfMonth,
+    to: date ? undefined : lastDayOfMonth,
   })
 
   const correctionsQuery = useAttendanceCorrectionsQuery({
@@ -112,15 +165,6 @@ export function AttendanceListPage() {
     limit,
     status,
   })
-
-  // Date range for summary (current month)
-  const today = new Date()
-  const firstDayOfMonth = formatLocalDateInput(
-    new Date(today.getFullYear(), today.getMonth(), 1)
-  )
-  const lastDayOfMonth = formatLocalDateInput(
-    new Date(today.getFullYear(), today.getMonth() + 1, 0)
-  )
 
   const summaryQuery = useAttendanceSummaryQuery({
     from: firstDayOfMonth,
@@ -152,7 +196,7 @@ export function AttendanceListPage() {
 
   // Manual modal state
   const [manualEmployeeId, setManualEmployeeId] = useState("")
-  const [manualDate, setManualDate] = useState(date)
+  const [manualDate, setManualDate] = useState(date ?? todayDate)
   const [manualShiftId, setManualShiftId] = useState("")
   const [manualCheckIn, setManualCheckIn] = useState("")
   const [manualCheckOut, setManualCheckOut] = useState("")
@@ -161,7 +205,7 @@ export function AttendanceListPage() {
 
   // Correction request modal state
   const [corrEmployeeId, setCorrEmployeeId] = useState("")
-  const [corrDate, setCorrDate] = useState(date)
+  const [corrDate, setCorrDate] = useState(date ?? todayDate)
   const [corrCheckIn, setCorrCheckIn] = useState("")
   const [corrCheckOut, setCorrCheckOut] = useState("")
   const [corrReason, setCorrReason] = useState("")
@@ -209,8 +253,18 @@ export function AttendanceListPage() {
     const next = new URLSearchParams(searchParams)
     next.delete("status")
     next.delete("date")
+    next.delete("month")
     next.delete(PAGE_PARAM)
     setSearchParams(next)
+  }
+
+  function toggleCardStatusFilter(targetStatus: string | null) {
+    setActiveTab("records")
+    if (targetStatus === null || status === targetStatus) {
+      patch("status", null)
+    } else {
+      patch("status", targetStatus)
+    }
   }
 
   const statusItems = [
@@ -316,7 +370,14 @@ export function AttendanceListPage() {
     recordCol.accessor("attendanceStatus", {
       header: t("columns.status"),
       enableSorting: false,
-      cell: ({ getValue }) => <StatusBadge status={getValue()} />,
+      cell: ({ getValue }) => {
+        const val = getValue()
+        return (
+          <ToneBadge tone={attendanceStatusTone(val)} dot>
+            {t(`status.${val}`, { defaultValue: val })}
+          </ToneBadge>
+        )
+      },
     }),
     recordCol.accessor("source", {
       header: t("columns.source"),
@@ -388,7 +449,14 @@ export function AttendanceListPage() {
     correctionCol.accessor("requestStatus", {
       header: t("corrections.columns.status"),
       enableSorting: false,
-      cell: ({ getValue }) => <StatusBadge status={getValue()} />,
+      cell: ({ getValue }) => {
+        const val = getValue()
+        return (
+          <ToneBadge tone={correctionStatusTone(val)} dot>
+            {t(`correction_status.${val}`, { defaultValue: val })}
+          </ToneBadge>
+        )
+      },
     }),
     correctionCol.display({
       id: "actions",
@@ -464,7 +532,7 @@ export function AttendanceListPage() {
             variant="outline"
             onClick={() => {
               setManualEmployeeId("")
-              setManualDate(date)
+              setManualDate(date ?? todayDate)
               setManualShiftId("")
               setManualCheckIn("09:00")
               setManualCheckOut("18:00")
@@ -485,7 +553,7 @@ export function AttendanceListPage() {
           variant="outline"
           onClick={() => {
             setCorrEmployeeId("")
-            setCorrDate(date)
+            setCorrDate(date ?? todayDate)
             setCorrCheckIn("09:00")
             setCorrCheckOut("18:00")
             setCorrReason("")
@@ -509,77 +577,163 @@ export function AttendanceListPage() {
         actions={actionButtons}
       />
 
-      {/* Summary KPI Cards */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        <div className="flex flex-col gap-1 rounded-xl border border-hair bg-surface p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-caption font-medium text-muted-foreground">
-            <CalendarCheckIcon className="size-4 text-emerald-500" />
-            {t("metrics.present")}
+      {/* Dashboard Month Filter + Interactive KPI Filter Cards */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="month-filter" className="text-small-2 text-muted-foreground">
+              {t("month_label")}
+            </Label>
+            <Input
+              id="month-filter"
+              type="month"
+              value={month}
+              onChange={(e) => {
+                const next = new URLSearchParams(searchParams)
+                const val = e.target.value
+                if (!val || val === currentMonth) {
+                  next.delete("month")
+                } else {
+                  next.set("month", val)
+                }
+                next.delete("date")
+                next.delete(PAGE_PARAM)
+                setSearchParams(next)
+              }}
+              className="h-9 w-44"
+            />
           </div>
-          <span className="text-2xl font-bold text-foreground">
-            {summary?.presentDays ?? 0}
-          </span>
-          <span className="text-caption text-muted-foreground">
-            {t("metrics.this_month")}
-          </span>
+          {month !== currentMonth && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => patch("month", null)}
+            >
+              {t("metrics.this_month")}
+            </Button>
+          )}
         </div>
 
-        <div className="flex flex-col gap-1 rounded-xl border border-hair bg-surface p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-caption font-medium text-muted-foreground">
-            <AlertCircleIcon className="size-4 text-amber-500" />
-            {t("metrics.late")}
-          </div>
-          <span className="text-2xl font-bold text-foreground">
-            {summary?.lateDays ?? 0}
-          </span>
-          <span className="text-caption text-muted-foreground">
-            {t("metrics.mins_total", { count: summary?.totalLateMinutes ?? 0 })}
-          </span>
-        </div>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          <button
+            type="button"
+            onClick={() => toggleCardStatusFilter("PRESENT")}
+            aria-pressed={activeTab === "records" && status === "PRESENT"}
+            className={`flex cursor-pointer flex-col gap-1 rounded-xl border bg-surface p-4 text-left shadow-sm transition hover:border-primary/50 ${
+              activeTab === "records" && status === "PRESENT"
+                ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                : "border-hair"
+            }`}
+          >
+            <div className="flex items-center gap-2 text-caption font-medium text-muted-foreground">
+              <CalendarCheckIcon className="size-4 text-emerald-500" />
+              {t("metrics.present")}
+            </div>
+            <span className="text-2xl font-bold text-foreground">
+              {summary?.presentDays ?? 0}
+            </span>
+            <span className="text-caption text-muted-foreground">
+              {month === currentMonth ? t("metrics.this_month") : month}
+            </span>
+          </button>
 
-        <div className="flex flex-col gap-1 rounded-xl border border-hair bg-surface p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-caption font-medium text-muted-foreground">
-            <UserXIcon className="size-4 text-rose-500" />
-            {t("metrics.absent")}
-          </div>
-          <span className="text-2xl font-bold text-foreground">
-            {summary?.absentDays ?? 0}
-          </span>
-          <span className="text-caption text-muted-foreground">
-            {t("metrics.unexcused")}
-          </span>
-        </div>
+          <button
+            type="button"
+            onClick={() => toggleCardStatusFilter("LATE")}
+            aria-pressed={activeTab === "records" && status === "LATE"}
+            className={`flex cursor-pointer flex-col gap-1 rounded-xl border bg-surface p-4 text-left shadow-sm transition hover:border-primary/50 ${
+              activeTab === "records" && status === "LATE"
+                ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                : "border-hair"
+            }`}
+          >
+            <div className="flex items-center gap-2 text-caption font-medium text-muted-foreground">
+              <AlertCircleIcon className="size-4 text-amber-500" />
+              {t("metrics.late")}
+            </div>
+            <span className="text-2xl font-bold text-foreground">
+              {summary?.lateDays ?? 0}
+            </span>
+            <span className="text-caption text-muted-foreground">
+              {t("metrics.mins_total", { count: summary?.totalLateMinutes ?? 0 })}
+            </span>
+          </button>
 
-        <div className="flex flex-col gap-1 rounded-xl border border-hair bg-surface p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-caption font-medium text-muted-foreground">
-            <ClockIcon className="size-4 text-indigo-500" />
-            {t("metrics.half_day")}
-          </div>
-          <span className="text-2xl font-bold text-foreground">
-            {summary?.halfDays ?? 0}
-          </span>
-          <span className="text-caption text-muted-foreground">
-            {t("metrics.recorded")}
-          </span>
-        </div>
+          <button
+            type="button"
+            onClick={() => toggleCardStatusFilter("ABSENT")}
+            aria-pressed={activeTab === "records" && status === "ABSENT"}
+            className={`flex cursor-pointer flex-col gap-1 rounded-xl border bg-surface p-4 text-left shadow-sm transition hover:border-primary/50 ${
+              activeTab === "records" && status === "ABSENT"
+                ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                : "border-hair"
+            }`}
+          >
+            <div className="flex items-center gap-2 text-caption font-medium text-muted-foreground">
+              <UserXIcon className="size-4 text-rose-500" />
+              {t("metrics.absent")}
+            </div>
+            <span className="text-2xl font-bold text-foreground">
+              {summary?.absentDays ?? 0}
+            </span>
+            <span className="text-caption text-muted-foreground">
+              {t("metrics.unexcused")}
+            </span>
+          </button>
 
-        <div className="flex flex-col gap-1 rounded-xl border border-hair bg-surface p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-caption font-medium text-muted-foreground">
-            <ClockIcon className="size-4 text-primary" />
-            {t("metrics.total_worked")}
-          </div>
-          <span className="text-2xl font-bold text-foreground">
-            {summary ? Math.floor(summary.totalWorkedMinutes / 60) : 0}h
-          </span>
-          <span className="text-caption text-muted-foreground">
-            {t("metrics.accumulated")}
-          </span>
+          <button
+            type="button"
+            onClick={() => toggleCardStatusFilter("HALF_DAY")}
+            aria-pressed={activeTab === "records" && status === "HALF_DAY"}
+            className={`flex cursor-pointer flex-col gap-1 rounded-xl border bg-surface p-4 text-left shadow-sm transition hover:border-primary/50 ${
+              activeTab === "records" && status === "HALF_DAY"
+                ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                : "border-hair"
+            }`}
+          >
+            <div className="flex items-center gap-2 text-caption font-medium text-muted-foreground">
+              <ClockIcon className="size-4 text-indigo-500" />
+              {t("metrics.half_day")}
+            </div>
+            <span className="text-2xl font-bold text-foreground">
+              {summary?.halfDays ?? 0}
+            </span>
+            <span className="text-caption text-muted-foreground">
+              {t("metrics.recorded")}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => toggleCardStatusFilter(null)}
+            aria-pressed={activeTab === "records" && !status}
+            className={`flex cursor-pointer flex-col gap-1 rounded-xl border bg-surface p-4 text-left shadow-sm transition hover:border-primary/50 ${
+              activeTab === "records" && !status
+                ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                : "border-hair"
+            }`}
+          >
+            <div className="flex items-center gap-2 text-caption font-medium text-muted-foreground">
+              <ClockIcon className="size-4 text-primary" />
+              {t("metrics.total_worked")}
+            </div>
+            <span className="text-2xl font-bold text-foreground">
+              {summary ? Math.floor(summary.totalWorkedMinutes / 60) : 0}h
+            </span>
+            <span className="text-caption text-muted-foreground">
+              {t("metrics.accumulated")}
+            </span>
+          </button>
         </div>
       </div>
 
       <ListCard
         toolbar={
-          <FilterBar hasFilters={Boolean(status || date)} onReset={resetFilters}>
+          <FilterBar
+            hasFilters={Boolean(status || date || month !== currentMonth)}
+            onReset={resetFilters}
+          >
             <div className="flex items-center gap-2">
               <Label htmlFor="date-filter" className="text-small-2 text-muted-foreground">
                 {t("date_label")}
@@ -587,7 +741,7 @@ export function AttendanceListPage() {
               <Input
                 id="date-filter"
                 type="date"
-                value={date}
+                value={date ?? ""}
                 onChange={(e) => patch("date", e.target.value || null)}
                 className="h-9 w-40"
               />

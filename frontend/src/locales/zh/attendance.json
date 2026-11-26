@@ -8,6 +8,7 @@
   "tab_records": "考勤记录",
   "tab_corrections": "补卡申请",
   "all_status": "全部状态",
+  "month_label": "月份：",
   "date_label": "日期：",
   "default_shift": "默认",
   "late_badge": "迟到 +{{count}}分钟",

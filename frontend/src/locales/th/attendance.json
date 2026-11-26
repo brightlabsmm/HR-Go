@@ -8,6 +8,7 @@
   "tab_records": "บันทึกการเข้างาน",
   "tab_corrections": "คำขอแก้ไขเวลา",
   "all_status": "ทุกสถานะ",
+  "month_label": "เดือน:",
   "date_label": "วันที่:",
   "default_shift": "ค่าเริ่มต้น",
   "late_badge": "สาย +{{count}} นาที",
