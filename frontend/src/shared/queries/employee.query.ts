@@ -10,6 +10,7 @@ import {
   createEmployee,
   deleteEmployee,
   getEmployee,
+  getEmployeeSummary,
   getPositionHistory,
   listEmployees,
   updateEmployee,
@@ -25,10 +26,22 @@ export const employeeKeys = {
   lists: () => [...employeeKeys.all, "list"] as const,
   list: (params?: EmployeeListParams) =>
     [...employeeKeys.lists(), params ?? {}] as const,
+  summary: (branchId?: string) =>
+    [...employeeKeys.all, "summary", branchId ?? "all"] as const,
   details: () => [...employeeKeys.all, "detail"] as const,
   detail: (id: string) => [...employeeKeys.details(), id] as const,
   positionHistory: (id: string) =>
     [...employeeKeys.detail(id), "position-history"] as const,
+}
+
+export function useEmployeeSummaryQuery(branchId?: string, enabled = true) {
+  const accessToken = useAuthStore((state) => state.accessToken)
+
+  return useQuery({
+    queryKey: employeeKeys.summary(branchId),
+    queryFn: () => getEmployeeSummary(branchId),
+    enabled: Boolean(accessToken) && enabled,
+  })
 }
 
 export function useEmployeesQuery(params?: EmployeeListParams) {

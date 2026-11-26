@@ -1,4 +1,61 @@
 {
-  "title": "ยินดีต้อนรับสู่ HR Go",
-  "subtitle": "พื้นที่ทำงานฝั่งฟรอนต์เอนด์พร้อมแล้ว เริ่มสร้างฟีเจอร์จากที่นี่ได้เลย"
+  "title": "แดชบอร์ดกำลังคน",
+  "subtitle": "จำนวนพนักงานแยกตามสาขา แผนก ตำแหน่ง กะการทำงาน และสถานะการจ้างงาน",
+  "all_branches": "ทุกสาขา",
+  "add_employee": "เพิ่มพนักงาน",
+  "view_employees": "ดูรายชื่อพนักงาน",
+  "unassigned": "ยังไม่ระบุ",
+  "none": "ไม่มีสัญญาที่ใช้งาน",
+  "of_total": "{{pct}}% ของทั้งหมด",
+  "active_sub": "ปฏิบัติงาน {{count}}",
+  "kpis": {
+    "total_employees": "พนักงานทั้งหมด",
+    "active_employees": "พนักงานที่ปฏิบัติงาน",
+    "branches": "สาขาที่เปิดใช้งาน",
+    "departments": "แผนก",
+    "positions": "ตำแหน่ง",
+    "shifts": "กะการทำงาน",
+    "inactive_count": "ไม่ปฏิบัติงาน / ออก {{count}}"
+  },
+  "sections": {
+    "by_branch": "พนักงานตามสาขา",
+    "by_branch_hint": "คลิกสาขาเพื่อกรองข้อมูลแดชบอร์ด",
+    "by_department": "พนักงานตามแผนก",
+    "by_position": "พนักงานตามตำแหน่ง",
+    "by_shift": "พนักงานตามกะการทำงาน",
+    "by_status": "ตามสถานะพนักงาน",
+    "by_contract": "ตามประเภทสัญญา",
+    "today_attendance": "สรุปการเข้างานวันนี้"
+  },
+  "attendance": {
+    "present": "มาทำงาน",
+    "late": "มาสาย",
+    "absent": "ขาดงาน",
+    "half_day": "ครึ่งวัน",
+    "view_attendance": "เปิดหน้าการเข้างาน"
+  },
+  "status_labels": {
+    "ACTIVE": "ปฏิบัติงาน",
+    "PROBATION": "ทดลองงาน",
+    "ON_LEAVE": "ลางาน",
+    "SUSPENDED": "ระงับชั่วคราว",
+    "TERMINATED": "เลิกจ้าง",
+    "RESIGNED": "ลาออก",
+    "INACTIVE": "ไม่ใช้งาน"
+  },
+  "contract_labels": {
+    "PERMANENT": "พนักงานประจำ",
+    "PROBATION": "ทดลองงาน",
+    "CONTRACT": "สัญญาจ้าง",
+    "PART_TIME": "พาร์ทไทม์",
+    "INTERN": "ฝึกงาน",
+    "NONE": "ไม่มีสัญญาที่ใช้งาน"
+  },
+  "fallback": {
+    "title": "ยินดีต้อนรับ {{name}}",
+    "subtitle": "ทางลัดไปยังเครื่องมือในพื้นที่ทำงานของคุณ",
+    "attendance": "การเข้างาน",
+    "holidays": "วันหยุด",
+    "account": "บัญชีของฉัน"
+  }
 }

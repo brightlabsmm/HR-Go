@@ -8,6 +8,7 @@ import {
   BranchCreatePage,
   BranchDetailPage,
   BranchEditPage,
+  BranchListPage,
   DepartmentDetailPage,
   DepartmentFormPage,
   DepartmentListPage,
@@ -39,7 +40,7 @@ import {
 
 export const organizationRoutes: RouteObject[] = [
   { index: true, element: <HomePage /> },
-  { path: "branches", element: <HomePage /> },
+  { path: "branches", element: <BranchListPage /> },
   { path: "branches/new", element: <BranchCreatePage /> },
   { path: "branches/:id/edit", element: <BranchEditPage /> },
   { path: "branches/:id", element: <BranchDetailPage /> },

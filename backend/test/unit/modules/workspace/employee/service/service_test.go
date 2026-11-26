@@ -9,6 +9,7 @@ import (
 	"hrgo/backend/internal/modules/workspace/employee/models"
 	"hrgo/backend/internal/modules/workspace/employee/repository"
 	"hrgo/backend/internal/modules/workspace/employee/request"
+	"hrgo/backend/internal/modules/workspace/employee/response"
 	"hrgo/backend/internal/modules/workspace/employee/service"
 )
 
@@ -87,6 +88,16 @@ func (m *mockEmployeeRepo) FindByCode(ctx context.Context, orgID, code string) (
 		}
 	}
 	return nil, nil
+}
+
+func (m *mockEmployeeRepo) GetSummary(ctx context.Context, orgID, branchID string) (*response.EmployeeSummaryResponse, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return &response.EmployeeSummaryResponse{
+		TotalEmployees:  int64(len(m.employees)),
+		ActiveEmployees: int64(len(m.employees)),
+	}, nil
 }
 
 func (m *mockEmployeeRepo) FindByEmail(ctx context.Context, orgID, email string) (*models.Employee, error) {
@@ -228,5 +239,18 @@ func TestEmployeeService_CreateAndList(t *testing.T) {
 	}
 	if list.Pagination.Total != 2 {
 		t.Errorf("expected 2 items, got %d", list.Pagination.Total)
+	}
+
+	summary, sumErr := svc.GetSummary(ctx, "org-1", "")
+	if sumErr != nil {
+		t.Fatalf("unexpected error getting employee summary: %v", sumErr)
+	}
+	if summary.TotalEmployees != 2 {
+		t.Errorf("expected summary totalEmployees=2, got %d", summary.TotalEmployees)
+	}
+
+	repo.rejectBranch = true
+	if _, branchErr := svc.GetSummary(ctx, "org-1", "invalid-branch"); branchErr == nil {
+		t.Fatalf("expected validation error for unknown branchId")
 	}
 }

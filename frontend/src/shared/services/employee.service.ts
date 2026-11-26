@@ -115,6 +115,39 @@ export interface ChangePositionInput {
   remarks?: string | null
 }
 
+export interface WorkforceCountItem {
+  id?: string | null
+  code?: string | null
+  label: string
+  count: number
+  activeCount: number
+}
+
+export interface EmployeeSummary {
+  branchId?: string | null
+  totalEmployees: number
+  activeEmployees: number
+  inactiveEmployees: number
+  branchCount: number
+  departmentCount: number
+  positionCount: number
+  shiftCount: number
+  byBranch: WorkforceCountItem[]
+  byDepartment: WorkforceCountItem[]
+  byPosition: WorkforceCountItem[]
+  byShift: WorkforceCountItem[]
+  byStatus: WorkforceCountItem[]
+  byContractType: WorkforceCountItem[]
+}
+
+export function getEmployeeSummary(branchId?: string) {
+  return unwrap<EmployeeSummary>(
+    apiClient.get(workspacePath("/employees/summary"), {
+      params: branchId ? { branchId } : undefined,
+    })
+  )
+}
+
 export function listEmployees(params?: EmployeeListParams) {
   return unwrapPage<Employee>(
     apiClient.get(workspacePath("/employees"), {

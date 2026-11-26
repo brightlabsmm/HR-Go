@@ -12,6 +12,7 @@ func Register(rg *gin.RouterGroup, h *handler.Handler, sec *security.Middleware)
 	group.Use(sec.RequireWorkspace())
 	{
 		group.GET("", sec.RequirePermission("org.employee.read"), h.List)
+		group.GET("/summary", sec.RequirePermission("org.employee.read"), h.GetSummary)
 		group.POST("", sec.RequirePermission("org.employee.create"), h.Create)
 		group.GET("/:id", sec.RequirePermission("org.employee.read"), h.GetByID)
 		group.PUT("/:id", sec.RequirePermission("org.employee.update"), h.Update)
