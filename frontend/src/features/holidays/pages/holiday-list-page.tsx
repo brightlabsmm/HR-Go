@@ -49,30 +49,49 @@ import { parsePageParam, parsePageSizeParam } from "@/util/pagination"
 const column = createDataTableColumns<Holiday>()
 const FILTER_KEYS = ["type", "branch", "q"] as const
 
-function holidayTypeTone(type: string): BadgeTone {
-  switch (type.toUpperCase()) {
-    case "PUBLIC":
-      return "brand"
-    case "COMPANY":
-      return "success"
-    case "OPTIONAL":
-      return "warning"
-    default:
-      return "neutral"
-  }
+interface HolidayStyleConfig {
+  tone: BadgeTone
+  cellClass: string
+  pillClass: string
+  dotClass: string
+  dayClass: string
 }
 
-function holidayTypePillClass(type: string) {
-  switch (type.toUpperCase()) {
-    case "PUBLIC":
-      return "bg-primary/12 text-primary"
-    case "COMPANY":
-      return "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300"
-    case "OPTIONAL":
-      return "bg-amber-500/15 text-amber-800 dark:text-amber-300"
-    default:
-      return "bg-muted text-muted-foreground"
-  }
+const HOLIDAY_TYPE_STYLES: Record<string, HolidayStyleConfig> = {
+  PUBLIC: {
+    tone: "destructive",
+    cellClass: "bg-rose-50/90 hover:bg-rose-100/80 dark:bg-rose-950/35",
+    pillClass: "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+    dotClass: "bg-rose-500",
+    dayClass: "font-semibold text-rose-700 dark:text-rose-300",
+  },
+  COMPANY: {
+    tone: "success",
+    cellClass:
+      "bg-emerald-50/90 hover:bg-emerald-100/80 dark:bg-emerald-950/35",
+    pillClass: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    dotClass: "bg-emerald-500",
+    dayClass: "font-semibold text-emerald-700 dark:text-emerald-300",
+  },
+  OPTIONAL: {
+    tone: "warning",
+    cellClass: "bg-amber-50/90 hover:bg-amber-100/80 dark:bg-amber-950/35",
+    pillClass: "bg-amber-500/20 text-amber-800 dark:text-amber-300",
+    dotClass: "bg-amber-500",
+    dayClass: "font-semibold text-amber-800 dark:text-amber-300",
+  },
+}
+
+const DEFAULT_HOLIDAY_STYLE: HolidayStyleConfig = {
+  tone: "neutral",
+  cellClass: "bg-muted/60 hover:bg-muted",
+  pillClass: "bg-muted text-muted-foreground",
+  dotClass: "bg-muted-foreground",
+  dayClass: "font-semibold text-foreground",
+}
+
+function getHolidayStyle(type: string): HolidayStyleConfig {
+  return HOLIDAY_TYPE_STYLES[type.toUpperCase()] ?? DEFAULT_HOLIDAY_STYLE
 }
 
 function formatMonthValue(year: number, month: number) {
@@ -262,7 +281,7 @@ export function HolidayListPage() {
       cell: ({ getValue }) => {
         const type = getValue()
         return (
-          <ToneBadge tone={holidayTypeTone(type)} dot>
+          <ToneBadge tone={getHolidayStyle(type).tone} dot>
             {t(`types.${type}`, { defaultValue: type })}
           </ToneBadge>
         )
@@ -387,7 +406,7 @@ export function HolidayListPage() {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <ToneBadge tone={holidayTypeTone(h.holidayType)} dot>
+          <ToneBadge tone={getHolidayStyle(h.holidayType).tone} dot>
             {t(`types.${h.holidayType}`, { defaultValue: h.holidayType })}
           </ToneBadge>
           <Badge variant={h.isPaid ? "secondary" : "outline"}>
@@ -482,15 +501,15 @@ export function HolidayListPage() {
 
             <div className="flex flex-wrap items-center gap-3 text-caption text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
-                <span className="size-2 rounded-full bg-primary" />
+                <span className={`size-2 rounded-full ${HOLIDAY_TYPE_STYLES.PUBLIC.dotClass}`} />
                 {t("types.PUBLIC")}
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="size-2 rounded-full bg-emerald-500" />
+                <span className={`size-2 rounded-full ${HOLIDAY_TYPE_STYLES.COMPANY.dotClass}`} />
                 {t("types.COMPANY")}
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="size-2 rounded-full bg-amber-500" />
+                <span className={`size-2 rounded-full ${HOLIDAY_TYPE_STYLES.OPTIONAL.dotClass}`} />
                 {t("types.OPTIONAL")}
               </span>
             </div>
@@ -529,6 +548,15 @@ export function HolidayListPage() {
               )
               const firstHoliday = dayHolidays[0]
               const extraCount = dayHolidays.length - 1
+              const holidayStyle = firstHoliday
+                ? getHolidayStyle(firstHoliday.holidayType)
+                : null
+
+              const baseCellBg = holidayStyle
+                ? holidayStyle.cellClass
+                : isWeekend
+                  ? "bg-subtle/45 hover:bg-accent/30"
+                  : "bg-surface hover:bg-accent/30"
 
               return (
                 <button
@@ -536,12 +564,8 @@ export function HolidayListPage() {
                   type="button"
                   onClick={() => setSelectedDateState(dateStr)}
                   aria-pressed={isSelected}
-                  className={`flex min-h-[58px] cursor-pointer flex-col items-stretch gap-1 p-1.5 text-left transition-colors hover:bg-accent/30 ${
-                    isSelected
-                      ? "bg-primary/5 ring-2 ring-inset ring-primary"
-                      : isWeekend
-                        ? "bg-subtle/45"
-                        : "bg-surface"
+                  className={`flex min-h-[58px] cursor-pointer flex-col items-stretch gap-1 p-1.5 text-left transition-colors ${baseCellBg} ${
+                    isSelected ? "ring-2 ring-inset ring-primary" : ""
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -549,25 +573,29 @@ export function HolidayListPage() {
                       className={`inline-flex size-5 items-center justify-center rounded-full text-caption font-medium ${
                         isToday
                           ? "bg-primary font-bold text-primary-foreground"
-                          : isSelected
-                            ? "font-semibold text-primary"
-                            : "text-muted-foreground"
+                          : holidayStyle
+                            ? holidayStyle.dayClass
+                            : isSelected
+                              ? "font-semibold text-primary"
+                              : "text-muted-foreground"
                       }`}
                     >
                       {dayNum}
                     </span>
-                    {extraCount > 0 && (
-                      <span className="text-[10px] font-medium text-muted-foreground">
+                    {extraCount > 0 ? (
+                      <span className="text-[10px] font-semibold text-muted-foreground">
                         +{extraCount}
                       </span>
-                    )}
+                    ) : holidayStyle ? (
+                      <span
+                        className={`size-1.5 rounded-full ${holidayStyle.dotClass}`}
+                      />
+                    ) : null}
                   </div>
 
-                  {firstHoliday ? (
+                  {firstHoliday && holidayStyle ? (
                     <span
-                      className={`truncate rounded px-1 py-0.5 text-[11px] font-medium leading-tight ${holidayTypePillClass(
-                        firstHoliday.holidayType
-                      )}`}
+                      className={`truncate rounded px-1 py-0.5 text-[11px] font-medium leading-tight ${holidayStyle.pillClass}`}
                       title={dayHolidays.map((h) => h.holidayName).join(", ")}
                     >
                       {firstHoliday.holidayName}
@@ -660,7 +688,7 @@ export function HolidayListPage() {
                           </p>
                         </div>
                         <ToneBadge
-                          tone={holidayTypeTone(h.holidayType)}
+                          tone={getHolidayStyle(h.holidayType).tone}
                           className="shrink-0"
                         >
                           {t(`types.${h.holidayType}`, {
