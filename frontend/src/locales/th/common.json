@@ -2,6 +2,7 @@
   "app_name": "HR Go",
   "nav": {
     "home": "หน้าหลัก",
+    "dashboard": "แดชบอร์ด",
     "login": "เข้าสู่ระบบ",
     "branches": "สาขา",
     "organizations": "องค์กร",
@@ -133,6 +134,7 @@
     "reload": "โหลดหน้าใหม่"
   },
   "nav_groups": {
+    "overview": "ภาพรวม",
     "structure": "โครงสร้าง",
     "workforce": "กำลังคน",
     "attendance": "เวลาและการเข้างาน",

@@ -2,6 +2,7 @@
   "app_name": "HR Go",
   "nav": {
     "home": "ပင်မစာမျက်နှာ",
+    "dashboard": "ဒက်ရှ်ဘုတ်",
     "login": "ဝင်ရောက်ရန်",
     "branches": "ဌာနခွဲများ",
     "organizations": "အဖွဲ့အစည်းများ",
@@ -133,6 +134,7 @@
     "reload": "ပြန်ဖွင့်ရန်"
   },
   "nav_groups": {
+    "overview": "ခြုံငုံသုံးသပ်ချက်",
     "structure": "ဖွဲ့စည်းပုံ",
     "workforce": "ဝန်ထမ်းရေးရာ",
     "attendance": "အချိန်နှင့် တက်ရောက်မှု",

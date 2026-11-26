@@ -2,6 +2,7 @@
   "app_name": "HR Go",
   "nav": {
     "home": "首页",
+    "dashboard": "概览看板",
     "login": "登录",
     "branches": "分支机构",
     "organizations": "组织",
@@ -133,6 +134,7 @@
     "reload": "刷新页面"
   },
   "nav_groups": {
+    "overview": "总览",
     "structure": "组织架构",
     "workforce": "员工管理",
     "attendance": "时间与考勤",

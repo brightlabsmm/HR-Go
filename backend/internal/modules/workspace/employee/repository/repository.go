@@ -11,6 +11,7 @@ import (
 
 	"hrgo/backend/internal/modules/workspace/employee/models"
 	"hrgo/backend/internal/modules/workspace/employee/request"
+	"hrgo/backend/internal/modules/workspace/employee/response"
 )
 
 type Repository interface {
@@ -20,6 +21,7 @@ type Repository interface {
 	FindByCode(ctx context.Context, orgID, code string) (*models.Employee, error)
 	FindByEmail(ctx context.Context, orgID, email string) (*models.Employee, error)
 	List(ctx context.Context, orgID string, q request.ListEmployeesQuery) ([]models.Employee, int64, error)
+	GetSummary(ctx context.Context, orgID, branchID string) (*response.EmployeeSummaryResponse, error)
 	Update(ctx context.Context, emp *models.Employee, profile *models.EmployeeProfile, roleID *string, fallbackPassHash string) error
 	SoftDelete(ctx context.Context, orgID, id string) error
 	GetProfile(ctx context.Context, orgID, employeeID string) (*models.EmployeeProfile, error)
@@ -393,4 +395,278 @@ func (r *repository) ListPositionHistory(ctx context.Context, orgID, employeeID 
 		Order("h.effective_date DESC, h.created_at DESC").
 		Scan(&items).Error
 	return items, err
+}
+
+func appendUnassignedBucket(items []response.WorkforceCountItem, total, active int64) []response.WorkforceCountItem {
+	if total <= 0 {
+		return items
+	}
+	return append(items, response.WorkforceCountItem{
+		Label:       "Unassigned",
+		Count:       total,
+		ActiveCount: active,
+	})
+}
+
+func (r *repository) GetSummary(ctx context.Context, orgID, branchID string) (*response.EmployeeSummaryResponse, error) {
+	summary := &response.EmployeeSummaryResponse{
+		ByBranch:       []response.WorkforceCountItem{},
+		ByDepartment:   []response.WorkforceCountItem{},
+		ByPosition:     []response.WorkforceCountItem{},
+		ByShift:        []response.WorkforceCountItem{},
+		ByStatus:       []response.WorkforceCountItem{},
+		ByContractType: []response.WorkforceCountItem{},
+	}
+	if branchID != "" {
+		summary.BranchID = &branchID
+	}
+
+	var empTotals struct {
+		Total  int64
+		Active int64
+	}
+	empTotalsTx := r.db.WithContext(ctx).Table("employee_identities").
+		Select(`COUNT(*) AS total, COUNT(*) FILTER (WHERE UPPER(employment_status) = 'ACTIVE') AS active`).
+		Where("organization_id = ? AND deleted_at IS NULL", orgID)
+	if branchID != "" {
+		empTotalsTx = empTotalsTx.Where("branch_id = ?", branchID)
+	}
+	if err := empTotalsTx.Scan(&empTotals).Error; err != nil {
+		return nil, err
+	}
+	summary.TotalEmployees = empTotals.Total
+	summary.ActiveEmployees = empTotals.Active
+	summary.InactiveEmployees = empTotals.Total - empTotals.Active
+
+	if err := r.db.WithContext(ctx).Table("branches").
+		Where("organization_id = ? AND status = 'ACTIVE'", orgID).
+		Count(&summary.BranchCount).Error; err != nil {
+		return nil, err
+	}
+
+	deptCountTx := r.db.WithContext(ctx).Table("departments").
+		Where("organization_id = ? AND status = 'ACTIVE'", orgID)
+	if branchID != "" {
+		deptCountTx = deptCountTx.Where("branch_id = ? OR branch_id IS NULL", branchID)
+	}
+	if err := deptCountTx.Count(&summary.DepartmentCount).Error; err != nil {
+		return nil, err
+	}
+
+	posCountTx := r.db.WithContext(ctx).Table("positions p").
+		Joins("LEFT JOIN departments d ON d.id = p.department_id").
+		Where("p.organization_id = ? AND p.status = 'ACTIVE'", orgID)
+	if branchID != "" {
+		posCountTx = posCountTx.Where("d.branch_id = ? OR d.branch_id IS NULL", branchID)
+	}
+	if err := posCountTx.Count(&summary.PositionCount).Error; err != nil {
+		return nil, err
+	}
+
+	shiftCountTx := r.db.WithContext(ctx).Table("shifts").
+		Where("organization_id = ? AND status = 'ACTIVE' AND deleted_at IS NULL", orgID)
+	if branchID != "" {
+		shiftCountTx = shiftCountTx.Where("branch_id = ? OR branch_id IS NULL", branchID)
+	}
+	if err := shiftCountTx.Count(&summary.ShiftCount).Error; err != nil {
+		return nil, err
+	}
+
+	// By Branch (always shows all active branches for comparison)
+	if err := r.db.WithContext(ctx).Table("branches b").
+		Select(`b.id AS id, b.code AS code, b.name AS label,
+			COUNT(e.id) AS count,
+			COUNT(e.id) FILTER (WHERE UPPER(e.employment_status) = 'ACTIVE') AS active_count`).
+		Joins("LEFT JOIN employee_identities e ON e.branch_id = b.id AND e.organization_id = ? AND e.deleted_at IS NULL", orgID).
+		Where("b.organization_id = ? AND b.status = 'ACTIVE'", orgID).
+		Group("b.id, b.code, b.name").
+		Order("count DESC, b.name ASC").
+		Scan(&summary.ByBranch).Error; err != nil {
+		return nil, err
+	}
+	if branchID == "" {
+		var unBranch struct {
+			Total  int64
+			Active int64
+		}
+		if err := r.db.WithContext(ctx).Table("employee_identities").
+			Select(`COUNT(*) AS total, COUNT(*) FILTER (WHERE UPPER(employment_status) = 'ACTIVE') AS active`).
+			Where("organization_id = ? AND deleted_at IS NULL AND branch_id IS NULL", orgID).
+			Scan(&unBranch).Error; err != nil {
+			return nil, err
+		}
+		summary.ByBranch = appendUnassignedBucket(summary.ByBranch, unBranch.Total, unBranch.Active)
+	}
+
+	// By Department
+	deptJoinCond := "e.department_id = d.id AND e.organization_id = ? AND e.deleted_at IS NULL"
+	deptJoinArgs := []any{orgID}
+	if branchID != "" {
+		deptJoinCond += " AND e.branch_id = ?"
+		deptJoinArgs = append(deptJoinArgs, branchID)
+	}
+	deptTx := r.db.WithContext(ctx).Table("departments d").
+		Select(`d.id AS id, d.code AS code, d.name AS label,
+			COUNT(e.id) AS count,
+			COUNT(e.id) FILTER (WHERE UPPER(e.employment_status) = 'ACTIVE') AS active_count`).
+		Joins("LEFT JOIN employee_identities e ON "+deptJoinCond, deptJoinArgs...).
+		Where("d.organization_id = ? AND d.status = 'ACTIVE'", orgID)
+	if branchID != "" {
+		deptTx = deptTx.Where("d.branch_id = ? OR d.branch_id IS NULL", branchID)
+	}
+	if err := deptTx.Group("d.id, d.code, d.name").Order("count DESC, d.name ASC").Scan(&summary.ByDepartment).Error; err != nil {
+		return nil, err
+	}
+	var unDept struct {
+		Total  int64
+		Active int64
+	}
+	unDeptTx := r.db.WithContext(ctx).Table("employee_identities").
+		Select(`COUNT(*) AS total, COUNT(*) FILTER (WHERE UPPER(employment_status) = 'ACTIVE') AS active`).
+		Where("organization_id = ? AND deleted_at IS NULL AND department_id IS NULL", orgID)
+	if branchID != "" {
+		unDeptTx = unDeptTx.Where("branch_id = ?", branchID)
+	}
+	if err := unDeptTx.Scan(&unDept).Error; err != nil {
+		return nil, err
+	}
+	summary.ByDepartment = appendUnassignedBucket(summary.ByDepartment, unDept.Total, unDept.Active)
+
+	// By Position
+	posJoinCond := "e.position_id = p.id AND e.organization_id = ? AND e.deleted_at IS NULL"
+	posJoinArgs := []any{orgID}
+	if branchID != "" {
+		posJoinCond += " AND e.branch_id = ?"
+		posJoinArgs = append(posJoinArgs, branchID)
+	}
+	posTx := r.db.WithContext(ctx).Table("positions p").
+		Select(`p.id AS id, p.code AS code, p.name AS label,
+			COUNT(e.id) AS count,
+			COUNT(e.id) FILTER (WHERE UPPER(e.employment_status) = 'ACTIVE') AS active_count`).
+		Joins("LEFT JOIN departments d ON d.id = p.department_id").
+		Joins("LEFT JOIN employee_identities e ON "+posJoinCond, posJoinArgs...).
+		Where("p.organization_id = ? AND p.status = 'ACTIVE'", orgID)
+	if branchID != "" {
+		posTx = posTx.Where("d.branch_id = ? OR d.branch_id IS NULL", branchID)
+	}
+	if err := posTx.Group("p.id, p.code, p.name").Order("count DESC, p.name ASC").Scan(&summary.ByPosition).Error; err != nil {
+		return nil, err
+	}
+	var unPos struct {
+		Total  int64
+		Active int64
+	}
+	unPosTx := r.db.WithContext(ctx).Table("employee_identities").
+		Select(`COUNT(*) AS total, COUNT(*) FILTER (WHERE UPPER(employment_status) = 'ACTIVE') AS active`).
+		Where("organization_id = ? AND deleted_at IS NULL AND position_id IS NULL", orgID)
+	if branchID != "" {
+		unPosTx = unPosTx.Where("branch_id = ?", branchID)
+	}
+	if err := unPosTx.Scan(&unPos).Error; err != nil {
+		return nil, err
+	}
+	summary.ByPosition = appendUnassignedBucket(summary.ByPosition, unPos.Total, unPos.Active)
+
+	// By Current Active Shift Assignment
+	empBranchClause := ""
+	shiftArgs := []any{orgID, orgID}
+	if branchID != "" {
+		empBranchClause = " AND e.branch_id = ?"
+		shiftArgs = append(shiftArgs, branchID)
+	}
+	shiftArgs = append(shiftArgs, orgID)
+	shiftSQL := `
+		WITH current_assignments AS (
+			SELECT DISTINCT ON (employee_id) employee_id, shift_id
+			FROM employee_shift_assignments
+			WHERE organization_id = ?
+			  AND status = 'ACTIVE'
+			  AND deleted_at IS NULL
+			  AND effective_from <= CURRENT_DATE
+			  AND (effective_to IS NULL OR effective_to >= CURRENT_DATE)
+			ORDER BY employee_id, effective_from DESC, created_at DESC
+		)
+		SELECT s.id AS id, NULL::text AS code, s.shift_name AS label,
+			COUNT(e.id) AS count,
+			COUNT(e.id) FILTER (WHERE UPPER(e.employment_status) = 'ACTIVE') AS active_count
+		FROM shifts s
+		LEFT JOIN current_assignments ca ON ca.shift_id = s.id
+		LEFT JOIN employee_identities e ON e.id = ca.employee_id AND e.organization_id = ? AND e.deleted_at IS NULL` + empBranchClause + `
+		WHERE s.organization_id = ? AND s.status = 'ACTIVE' AND s.deleted_at IS NULL`
+	if branchID != "" {
+		shiftSQL += " AND (s.branch_id = ? OR s.branch_id IS NULL)"
+		shiftArgs = append(shiftArgs, branchID)
+	}
+	shiftSQL += " GROUP BY s.id, s.shift_name ORDER BY count DESC, s.shift_name ASC"
+	if err := r.db.WithContext(ctx).Raw(shiftSQL, shiftArgs...).Scan(&summary.ByShift).Error; err != nil {
+		return nil, err
+	}
+
+	unShiftArgs := []any{orgID, orgID}
+	unShiftSQL := `
+		WITH current_assignments AS (
+			SELECT DISTINCT ON (employee_id) employee_id, shift_id
+			FROM employee_shift_assignments
+			WHERE organization_id = ?
+			  AND status = 'ACTIVE'
+			  AND deleted_at IS NULL
+			  AND effective_from <= CURRENT_DATE
+			  AND (effective_to IS NULL OR effective_to >= CURRENT_DATE)
+			ORDER BY employee_id, effective_from DESC, created_at DESC
+		)
+		SELECT COUNT(*) AS total,
+			COUNT(*) FILTER (WHERE UPPER(e.employment_status) = 'ACTIVE') AS active
+		FROM employee_identities e
+		LEFT JOIN current_assignments ca ON ca.employee_id = e.id
+		WHERE e.organization_id = ? AND e.deleted_at IS NULL AND ca.shift_id IS NULL`
+	if branchID != "" {
+		unShiftSQL += " AND e.branch_id = ?"
+		unShiftArgs = append(unShiftArgs, branchID)
+	}
+	var unShift struct {
+		Total  int64
+		Active int64
+	}
+	if err := r.db.WithContext(ctx).Raw(unShiftSQL, unShiftArgs...).Scan(&unShift).Error; err != nil {
+		return nil, err
+	}
+	summary.ByShift = appendUnassignedBucket(summary.ByShift, unShift.Total, unShift.Active)
+
+	// By Employment Status
+	statusTx := r.db.WithContext(ctx).Table("employee_identities").
+		Select(`UPPER(employment_status) AS label, COUNT(*) AS count,
+			COUNT(*) FILTER (WHERE UPPER(employment_status) = 'ACTIVE') AS active_count`).
+		Where("organization_id = ? AND deleted_at IS NULL", orgID)
+	if branchID != "" {
+		statusTx = statusTx.Where("branch_id = ?", branchID)
+	}
+	if err := statusTx.Group("UPPER(employment_status)").Order("count DESC, label ASC").Scan(&summary.ByStatus).Error; err != nil {
+		return nil, err
+	}
+
+	// By Active Contract Type
+	contractArgs := []any{orgID, orgID}
+	contractSQL := `
+		WITH active_contracts AS (
+			SELECT DISTINCT ON (employee_id) employee_id, contract_type
+			FROM employment_contracts
+			WHERE organization_id = ? AND contract_status = 'ACTIVE'
+			ORDER BY employee_id, start_date DESC, created_at DESC
+		)
+		SELECT COALESCE(NULLIF(UPPER(c.contract_type), ''), 'NONE') AS label,
+			COUNT(*) AS count,
+			COUNT(*) FILTER (WHERE UPPER(e.employment_status) = 'ACTIVE') AS active_count
+		FROM employee_identities e
+		LEFT JOIN active_contracts c ON c.employee_id = e.id
+		WHERE e.organization_id = ? AND e.deleted_at IS NULL`
+	if branchID != "" {
+		contractSQL += " AND e.branch_id = ?"
+		contractArgs = append(contractArgs, branchID)
+	}
+	contractSQL += " GROUP BY label ORDER BY count DESC, label ASC"
+	if err := r.db.WithContext(ctx).Raw(contractSQL, contractArgs...).Scan(&summary.ByContractType).Error; err != nil {
+		return nil, err
+	}
+
+	return summary, nil
 }

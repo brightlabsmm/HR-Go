@@ -1,4 +1,61 @@
 {
-  "title": "Welcome to HR Go",
-  "subtitle": "The frontend workspace is ready. Start building features from here."
+  "title": "Workforce Dashboard",
+  "subtitle": "Headcount distribution across branches, departments, positions, shifts, and employment status",
+  "all_branches": "All branches",
+  "add_employee": "Add Employee",
+  "view_employees": "View employees",
+  "unassigned": "Unassigned",
+  "none": "No active contract",
+  "of_total": "{{pct}}% of workforce",
+  "active_sub": "{{count}} active",
+  "kpis": {
+    "total_employees": "Total Employees",
+    "active_employees": "Active Staff",
+    "branches": "Active Branches",
+    "departments": "Departments",
+    "positions": "Positions",
+    "shifts": "Active Shifts",
+    "inactive_count": "{{count}} inactive / exited"
+  },
+  "sections": {
+    "by_branch": "Employees by Branch",
+    "by_branch_hint": "Click a branch to scope dashboard counts",
+    "by_department": "Employees by Department",
+    "by_position": "Employees by Position",
+    "by_shift": "Employees by Shift",
+    "by_status": "By Employment Status",
+    "by_contract": "By Active Contract Type",
+    "today_attendance": "Today's Attendance Snapshot"
+  },
+  "attendance": {
+    "present": "Present",
+    "late": "Late",
+    "absent": "Absent",
+    "half_day": "Half Day",
+    "view_attendance": "Open Attendance"
+  },
+  "status_labels": {
+    "ACTIVE": "Active",
+    "PROBATION": "Probation",
+    "ON_LEAVE": "On Leave",
+    "SUSPENDED": "Suspended",
+    "TERMINATED": "Terminated",
+    "RESIGNED": "Resigned",
+    "INACTIVE": "Inactive"
+  },
+  "contract_labels": {
+    "PERMANENT": "Permanent",
+    "PROBATION": "Probation",
+    "CONTRACT": "Contract",
+    "PART_TIME": "Part-time",
+    "INTERN": "Intern",
+    "NONE": "No active contract"
+  },
+  "fallback": {
+    "title": "Welcome back, {{name}}",
+    "subtitle": "Quick access to your workspace tools",
+    "attendance": "Attendance",
+    "holidays": "Holidays",
+    "account": "My account"
+  }
 }

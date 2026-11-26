@@ -1,4 +1,61 @@
 {
-  "title": "欢迎使用 HR Go",
-  "subtitle": "前端工作区已就绪。从这里开始构建功能。"
+  "title": "员工分布概览",
+  "subtitle": "按分部、部门、职位、班次和在职状态统计员工人数分布",
+  "all_branches": "全部分部",
+  "add_employee": "新增员工",
+  "view_employees": "查看员工",
+  "unassigned": "未分配",
+  "none": "无有效合同",
+  "of_total": "占比 {{pct}}%",
+  "active_sub": "在职 {{count}}",
+  "kpis": {
+    "total_employees": "员工总数",
+    "active_employees": "在职员工",
+    "branches": "启用分部",
+    "departments": "部门",
+    "positions": "职位",
+    "shifts": "启用班次",
+    "inactive_count": "{{count}} 名非在职/离职"
+  },
+  "sections": {
+    "by_branch": "按分部统计人数",
+    "by_branch_hint": "点击分部可筛选仪表盘统计",
+    "by_department": "按部门统计人数",
+    "by_position": "按职位统计人数",
+    "by_shift": "按班次统计人数",
+    "by_status": "按在职状态统计",
+    "by_contract": "按当前合同类型统计",
+    "today_attendance": "今日考勤概览"
+  },
+  "attendance": {
+    "present": "正常出勤",
+    "late": "迟到",
+    "absent": "缺勤",
+    "half_day": "半天",
+    "view_attendance": "查看考勤"
+  },
+  "status_labels": {
+    "ACTIVE": "在职",
+    "PROBATION": "试用期",
+    "ON_LEAVE": "休假中",
+    "SUSPENDED": "停职",
+    "TERMINATED": "已解聘",
+    "RESIGNED": "已离职",
+    "INACTIVE": "未启用"
+  },
+  "contract_labels": {
+    "PERMANENT": "正式员工",
+    "PROBATION": "试用期",
+    "CONTRACT": "合同工",
+    "PART_TIME": "兼职",
+    "INTERN": "实习生",
+    "NONE": "无有效合同"
+  },
+  "fallback": {
+    "title": "欢迎回来，{{name}}",
+    "subtitle": "快速访问您的工作台功能",
+    "attendance": "考勤",
+    "holidays": "节假日",
+    "account": "我的账户"
+  }
 }

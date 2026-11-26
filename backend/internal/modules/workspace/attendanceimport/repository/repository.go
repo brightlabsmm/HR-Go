@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -63,16 +64,29 @@ func New(db *gorm.DB) Repository {
 }
 
 func (r *repo) GetOrgTimezone(ctx context.Context, orgID string) string {
-	var tz string
-	_ = r.db.WithContext(ctx).
+	var val string
+	err := r.db.WithContext(ctx).
 		Table("organization_settings").
-		Select("timezone").
-		Where("organization_id = ?", orgID).
-		Scan(&tz).Error
-	if tz == "" {
-		return "Asia/Yangon"
+		Select("setting_value").
+		Where("organization_id = ? AND setting_key = 'timezone'", orgID).
+		Limit(1).
+		Scan(&val).Error
+	if err == nil && strings.TrimSpace(val) != "" {
+		return strings.TrimSpace(val)
 	}
-	return tz
+
+	var tz string
+	err = r.db.WithContext(ctx).
+		Table("organizations o").
+		Select("c.default_timezone").
+		Joins("JOIN countries c ON LOWER(c.iso_code) = LOWER(o.country) OR LOWER(c.name) = LOWER(o.country)").
+		Where("o.id = ?", orgID).
+		Limit(1).
+		Scan(&tz).Error
+	if err == nil && strings.TrimSpace(tz) != "" {
+		return strings.TrimSpace(tz)
+	}
+	return "Asia/Yangon"
 }
 
 func (r *repo) FindEmployeeIDByCode(ctx context.Context, orgID, employeeCode string) (string, error) {
@@ -120,7 +134,7 @@ func (r *repo) ListExportRows(ctx context.Context, orgID string, q request.Expor
 		Table("attendance_records ar").
 		Select(`e.employee_code,
 			TRIM(e.first_name || ' ' || e.last_name) AS employee_name,
-			b.branch_name,
+			b.name AS branch_name,
 			s.shift_name,
 			ar.attendance_date,
 			ar.check_in,
@@ -146,7 +160,7 @@ func (r *repo) ListExportRows(ctx context.Context, orgID string, q request.Expor
 		tx = tx.Where("e.branch_id = ?", q.BranchID)
 	}
 	if q.Status != "" {
-		tx = tx.Where("ar.attendance_status = ?", q.Status)
+		tx = tx.Where("LOWER(ar.attendance_status) = LOWER(?)", q.Status)
 	}
 
 	var rows []ExportRow

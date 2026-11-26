@@ -116,5 +116,64 @@
   "empty": {
     "title": "No attendance records found",
     "description": "Daily attendance punch-ins and manual records will appear here."
+  },
+  "imports": {
+    "title": "Attendance Import & Export",
+    "subtitle": "Download the CSV layout, fill in attendance rows to import, or export filtered attendance records",
+    "download_template": "Download Template",
+    "template_downloaded": "Attendance import CSV template downloaded.",
+    "export_csv": "Export CSV",
+    "import_csv": "Import CSV",
+    "guide_title": "Standard CSV Import Workflow",
+    "guide_steps": "1. Download the CSV layout template  ->  2. Fill in employee rows (YYYY-MM-DD, HH:MM)  ->  3. Upload the filled CSV file to import.",
+    "columns": {
+      "file": "File",
+      "total_rows": "Total Rows",
+      "succeeded": "Succeeded",
+      "failed": "Failed",
+      "status": "Status",
+      "imported_at": "Imported At",
+      "errors": "Errors"
+    },
+    "batch_status": {
+      "COMPLETED": "Completed",
+      "PARTIAL": "Partial",
+      "FAILED": "Failed"
+    },
+    "import_dialog": {
+      "title": "Import Attendance CSV",
+      "description": "Download the standard template first, fill in your attendance rows, then upload the CSV file or paste its contents below.",
+      "step_template_label": "Step 1: Get CSV Layout",
+      "step_template_hint": "Columns: employeeCode, attendanceDate (YYYY-MM-DD), checkIn (HH:MM), checkOut (HH:MM), status, remarks",
+      "upload_file": "Step 2: Choose CSV File",
+      "upload_button": "Select .csv file",
+      "file_loaded": "Loaded {{name}} ({{rows}} data row(s))",
+      "file_reference": "Batch File Reference",
+      "csv_content": "CSV Content Preview",
+      "rows_detected": "{{count}} data row(s) detected",
+      "run": "Run Import",
+      "success": "Imported {{success}}/{{total}} rows ({{status}})."
+    },
+    "export_dialog": {
+      "title": "Export Attendance CSV",
+      "description": "Choose optional date range, branch, and status filters before downloading the attendance report.",
+      "from_date": "From Date",
+      "to_date": "To Date",
+      "branch": "Branch",
+      "all_branches": "All branches",
+      "status": "Status",
+      "download": "Download CSV",
+      "success": "Attendance CSV exported."
+    },
+    "errors_dialog": {
+      "title": "Import Row Errors",
+      "description": "Failed rows from batch {{file}}.",
+      "view": "View ({{count}})",
+      "row": "Row {{row}}"
+    },
+    "empty": {
+      "title": "No CSV import batches yet",
+      "description": "Download the CSV layout template, fill in attendance records, and import them here."
+    }
   }
 }

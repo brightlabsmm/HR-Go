@@ -57,5 +57,12 @@
     "description": "确定要删除 {{name}} 吗？",
     "confirm": "删除节假日",
     "success": "节假日已删除。"
+  },
+  "calendar": {
+    "month_holidays": "本月节假日（{{count}}）",
+    "no_holidays_month": "本月暂无节假日安排。",
+    "no_holidays_day": "当日无节假日。",
+    "add_on_day": "在此日新增",
+    "more": "+{{count}} 项"
   }
 }

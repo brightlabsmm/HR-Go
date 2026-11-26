@@ -65,3 +65,28 @@ type EmployeeListResponse struct {
 	Items      []EmployeeResponse `json:"items"`
 	Pagination PaginationMeta     `json:"pagination"`
 }
+
+type WorkforceCountItem struct {
+	ID          *string `json:"id,omitempty"`
+	Code        *string `json:"code,omitempty"`
+	Label       string  `json:"label"`
+	Count       int64   `json:"count"`
+	ActiveCount int64   `json:"activeCount"`
+}
+
+type EmployeeSummaryResponse struct {
+	BranchID          *string              `json:"branchId,omitempty"`
+	TotalEmployees    int64                `json:"totalEmployees"`
+	ActiveEmployees   int64                `json:"activeEmployees"`
+	InactiveEmployees int64                `json:"inactiveEmployees"`
+	BranchCount       int64                `json:"branchCount"`
+	DepartmentCount   int64                `json:"departmentCount"`
+	PositionCount     int64                `json:"positionCount"`
+	ShiftCount        int64                `json:"shiftCount"`
+	ByBranch          []WorkforceCountItem `json:"byBranch"`
+	ByDepartment      []WorkforceCountItem `json:"byDepartment"`
+	ByPosition        []WorkforceCountItem `json:"byPosition"`
+	ByShift           []WorkforceCountItem `json:"byShift"`
+	ByStatus          []WorkforceCountItem `json:"byStatus"`
+	ByContractType    []WorkforceCountItem `json:"byContractType"`
+}

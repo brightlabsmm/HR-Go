@@ -21,6 +21,7 @@ type Service interface {
 	Create(ctx context.Context, orgID string, req request.CreateEmployeeRequest) (*response.EmployeeResponse, *apperrors.Error)
 	GetByID(ctx context.Context, orgID, id string) (*response.EmployeeResponse, *apperrors.Error)
 	List(ctx context.Context, orgID string, q request.ListEmployeesQuery) (*response.EmployeeListResponse, *apperrors.Error)
+	GetSummary(ctx context.Context, orgID, branchID string) (*response.EmployeeSummaryResponse, *apperrors.Error)
 	Update(ctx context.Context, orgID, id string, req request.UpdateEmployeeRequest) (*response.EmployeeResponse, *apperrors.Error)
 	Delete(ctx context.Context, orgID, id string) *apperrors.Error
 	GetPositionHistory(ctx context.Context, orgID, id string) ([]response.PositionHistoryResponse, *apperrors.Error)
@@ -568,6 +569,27 @@ func (s *service) ChangePosition(ctx context.Context, orgID, id string, req requ
 	profile, _ := s.repo.GetProfile(ctx, orgID, id)
 	res := mapper.ToEmployeeResponse(updatedEmp, profile)
 	return &res, nil
+}
+
+func (s *service) GetSummary(ctx context.Context, orgID, branchID string) (*response.EmployeeSummaryResponse, *apperrors.Error) {
+	trimmedBranchID := strings.TrimSpace(branchID)
+	if trimmedBranchID != "" {
+		ok, err := s.repo.ValidateBranch(ctx, orgID, trimmedBranchID)
+		if err != nil {
+			return nil, apperrors.Internal()
+		}
+		if !ok {
+			return nil, apperrors.ValidationFailed([]apperrors.FieldIssue{
+				{Field: "branchId", Message: "Selected branch was not found in this organization or is inactive."},
+			})
+		}
+	}
+
+	res, err := s.repo.GetSummary(ctx, orgID, trimmedBranchID)
+	if err != nil {
+		return nil, apperrors.Internal()
+	}
+	return res, nil
 }
 
 func (s *service) validateOrgReferences(ctx context.Context, orgID string, branchID, departmentID, positionID, roleID *string) *apperrors.Error {
