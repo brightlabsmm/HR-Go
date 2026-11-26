@@ -10,7 +10,6 @@ import {
   DataTableActions,
 } from "@/components/common/data-table"
 import { FilterBar } from "@/components/common/filter-bar"
-import { FilterSelect } from "@/components/common/filter-select"
 import { ListCard } from "@/components/common/list-card"
 import { MotionStack } from "@/components/common/motion-stack"
 import { PageEmptyState } from "@/components/common/page-empty-state"
@@ -20,41 +19,42 @@ import { StatusBadge } from "@/components/common/status-badge"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { Button } from "@/components/ui/button"
 import { PAGE_PARAM, PAGE_SIZE_PARAM } from "@/constants/pagination"
-import { useListSort } from "@/shared/hooks/use-list-sort"
+import { useListTableParams } from "@/shared/hooks/use-list-table-params"
 import { useDepartmentsQuery } from "@/shared/queries/department.query"
 import {
   useDeactivatePositionMutation,
   usePositionsQuery,
 } from "@/shared/queries/position.query"
 import { toast } from "@/shared/stores/toast.store"
+import { SELECT_FILTER_OPS } from "@/util/column-filter"
 import { parsePageParam, parsePageSizeParam } from "@/util/pagination"
 
 import type { Position } from "@/shared/services/position.service"
 
 const column = createDataTableColumns<Position>()
-const FILTER_KEYS = ["status", "department"] as const
 
 export function PositionListPage() {
   const { t } = useTranslation("positions")
   const { t: tCommon } = useTranslation("common")
   const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const { sorting, setSorting, listSortParams } = useListSort()
-  const status =
-    searchParams.get("status") === "inactive" ||
-    searchParams.get("status") === "active"
-      ? searchParams.get("status")
-      : undefined
-  const departmentId = searchParams.get("department") ?? undefined
-  const hasFilters = FILTER_KEYS.some((key) => searchParams.has(key))
+  const [searchParams] = useSearchParams()
+  const {
+    sorting,
+    setSorting,
+    filters,
+    applyColumnDialog,
+    clearAllFilters,
+    hasFilters,
+    listSortParams,
+    listFilterParams,
+  } = useListTableParams()
   const page = parsePageParam(searchParams.get(PAGE_PARAM))
   const limit = parsePageSizeParam(searchParams.get(PAGE_SIZE_PARAM))
   const positionsQuery = usePositionsQuery({
     page,
     limit,
-    status: status ?? undefined,
-    departmentId,
     ...listSortParams,
+    ...listFilterParams,
   })
   const departmentsQuery = useDepartmentsQuery({ limit: 100 })
   const deactivateMutation = useDeactivatePositionMutation()
@@ -68,56 +68,58 @@ export function PositionListPage() {
       department.departmentName,
     ])
   )
-
-  function patch(key: string, value: string | null) {
-    const next = new URLSearchParams(searchParams)
-    if (!value || value === "all") {
-      next.delete(key)
-    } else {
-      next.set(key, value)
-    }
-    next.delete(PAGE_PARAM)
-    setSearchParams(next)
-  }
-
-  function resetFilters() {
-    const next = new URLSearchParams(searchParams)
-    for (const key of FILTER_KEYS) {
-      next.delete(key)
-    }
-    next.delete(PAGE_PARAM)
-    setSearchParams(next)
-  }
-
-  const statusItems = [
-    { value: "all", label: t("all_status") },
-    { value: "active", label: tCommon("status.active") },
-    { value: "inactive", label: tCommon("status.inactive") },
-  ]
-  const departmentItems = [
-    { value: "all", label: t("all_departments") },
-    ...(departmentsQuery.data?.items ?? []).map((department) => ({
+  const departmentOptions = (departmentsQuery.data?.items ?? []).map(
+    (department) => ({
       value: department.id,
       label: department.departmentName,
-    })),
+    })
+  )
+  const statusOptions = [
+    { value: "ACTIVE", label: tCommon("status.active") },
+    { value: "INACTIVE", label: tCommon("status.inactive") },
   ]
+
   const columns = column.columns([
     column.accessor("positionName", {
       id: "name",
       header: t("columns.name"),
       enableSorting: true,
+      meta: {
+        filter: {
+          field: "name",
+          valueType: "text",
+          defaultOp: "ilike",
+        },
+      },
     }),
     column.accessor("positionCode", {
       id: "code",
       header: t("columns.code"),
       enableSorting: true,
+      meta: {
+        filter: {
+          field: "code",
+          valueType: "text",
+          defaultOp: "ilike",
+        },
+      },
       cell: ({ getValue }) => (
         <span className="font-mono text-small-2 text-muted-foreground">{getValue()}</span>
       ),
     }),
     column.accessor("departmentId", {
+      id: "departmentId",
       header: t("form.department"),
       enableSorting: false,
+      meta: {
+        filter: {
+          field: "departmentId",
+          valueType: "select",
+          ops: SELECT_FILTER_OPS,
+          defaultOp: "eq",
+          options: departmentOptions,
+        },
+      },
       cell: ({ getValue }) => {
         const value = getValue()
         return value ? (departmentNames.get(value) ?? "—") : "—"
@@ -126,6 +128,15 @@ export function PositionListPage() {
     column.accessor("status", {
       header: t("columns.status"),
       enableSorting: true,
+      meta: {
+        filter: {
+          field: "status",
+          valueType: "select",
+          ops: SELECT_FILTER_OPS,
+          defaultOp: "eq",
+          options: statusOptions,
+        },
+      },
       cell: ({ getValue }) => <StatusBadge status={getValue()} />,
     }),
     column.display({
@@ -176,7 +187,7 @@ export function PositionListPage() {
           title={tCommon("states.no_results_title")}
           description={tCommon("states.no_results_description")}
           action={
-            <Button type="button" variant="outline" onClick={resetFilters}>
+            <Button type="button" variant="outline" onClick={clearAllFilters}>
               {tCommon("actions.reset_filters")}
             </Button>
           }
@@ -193,6 +204,8 @@ export function PositionListPage() {
         label={t("title")}
         sorting={sorting}
         onSortingChange={setSorting}
+        columnFilters={filters}
+        onColumnDialogApply={applyColumnDialog}
         onRowClick={(position) => void navigate(`/positions/${position.id}`)}
       />
     )
@@ -203,20 +216,10 @@ export function PositionListPage() {
       <PageHeader title={t("title")} description={t("subtitle")} actions={addButton} />
       <ListCard
         toolbar={
-          <FilterBar hasFilters={hasFilters} onReset={resetFilters}>
-            <FilterSelect
-              items={statusItems}
-              value={status ?? "all"}
-              label={t("all_status")}
-              onValueChange={(value) => patch("status", value)}
-            />
-            <FilterSelect
-              items={departmentItems}
-              value={departmentId ?? "all"}
-              label={t("all_departments")}
-              onValueChange={(value) => patch("department", value)}
-              className="w-52"
-            />
+          <FilterBar hasFilters={hasFilters} onReset={clearAllFilters}>
+            <span className="text-small-2 text-muted-foreground">
+              {tCommon("table.filter_hint")}
+            </span>
           </FilterBar>
         }
         footer={

@@ -90,6 +90,7 @@ export function getStatusDialogContent(
           defaultValue: `This will set ${name} to Active. The change takes effect immediately.`,
         }),
         confirmLabel: t("status_actions.activate", { defaultValue: "Activate" }),
+        illustration: "activate" as const,
       }
     case "reactivate":
       return {
@@ -99,6 +100,7 @@ export function getStatusDialogContent(
           defaultValue: `This will reactivate ${name} and restore workspace access.`,
         }),
         confirmLabel: t("status_actions.reactivate", { defaultValue: "Reactivate" }),
+        illustration: "activate" as const,
       }
     case "suspend":
       return {
@@ -108,12 +110,14 @@ export function getStatusDialogContent(
           defaultValue: `This will suspend ${name}. Workspace users will be logged out and unable to access the organization.`,
         }),
         confirmLabel: t("status_actions.suspend", { defaultValue: "Suspend" }),
+        illustration: "suspend" as const,
       }
     default:
       return {
         title: t("status_change.title", { status: targetStatus }),
         description: t("status_change.description", { name, status: targetStatus }),
         confirmLabel: t("status_change.confirm"),
+        illustration: "activate" as const,
       }
   }
 }

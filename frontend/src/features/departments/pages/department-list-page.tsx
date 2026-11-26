@@ -10,7 +10,6 @@ import {
   DataTableActions,
 } from "@/components/common/data-table"
 import { FilterBar } from "@/components/common/filter-bar"
-import { FilterSelect } from "@/components/common/filter-select"
 import { ListCard } from "@/components/common/list-card"
 import { MotionStack } from "@/components/common/motion-stack"
 import { PageEmptyState } from "@/components/common/page-empty-state"
@@ -20,41 +19,42 @@ import { StatusBadge } from "@/components/common/status-badge"
 import { TableSkeleton } from "@/components/common/table-skeleton"
 import { Button } from "@/components/ui/button"
 import { PAGE_PARAM, PAGE_SIZE_PARAM } from "@/constants/pagination"
-import { useListSort } from "@/shared/hooks/use-list-sort"
+import { useListTableParams } from "@/shared/hooks/use-list-table-params"
 import { useBranchesQuery } from "@/shared/queries/branch.query"
 import {
   useDeactivateDepartmentMutation,
   useDepartmentsQuery,
 } from "@/shared/queries/department.query"
 import { toast } from "@/shared/stores/toast.store"
+import { SELECT_FILTER_OPS } from "@/util/column-filter"
 import { parsePageParam, parsePageSizeParam } from "@/util/pagination"
 
 import type { Department } from "@/shared/services/department.service"
 
 const column = createDataTableColumns<Department>()
-const FILTER_KEYS = ["status", "branch"] as const
 
 export function DepartmentListPage() {
   const { t } = useTranslation("departments")
   const { t: tCommon } = useTranslation("common")
   const navigate = useNavigate()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const { sorting, setSorting, listSortParams } = useListSort()
-  const status =
-    searchParams.get("status") === "inactive" ||
-    searchParams.get("status") === "active"
-      ? searchParams.get("status")
-      : undefined
-  const branchId = searchParams.get("branch") ?? undefined
-  const hasFilters = FILTER_KEYS.some((key) => searchParams.has(key))
+  const [searchParams] = useSearchParams()
+  const {
+    sorting,
+    setSorting,
+    filters,
+    applyColumnDialog,
+    clearAllFilters,
+    hasFilters,
+    listSortParams,
+    listFilterParams,
+  } = useListTableParams()
   const page = parsePageParam(searchParams.get(PAGE_PARAM))
   const limit = parsePageSizeParam(searchParams.get(PAGE_SIZE_PARAM))
   const departmentsQuery = useDepartmentsQuery({
     page,
     limit,
-    status: status ?? undefined,
-    branchId,
     ...listSortParams,
+    ...listFilterParams,
   })
   const branchesQuery = useBranchesQuery({ limit: 100 })
   const deactivateMutation = useDeactivateDepartmentMutation()
@@ -65,56 +65,56 @@ export function DepartmentListPage() {
   const branchNames = new Map(
     (branchesQuery.data?.items ?? []).map((branch) => [branch.id, branch.branchName])
   )
-
-  function patch(key: string, value: string | null) {
-    const next = new URLSearchParams(searchParams)
-    if (!value || value === "all") {
-      next.delete(key)
-    } else {
-      next.set(key, value)
-    }
-    next.delete(PAGE_PARAM)
-    setSearchParams(next)
-  }
-
-  function resetFilters() {
-    const next = new URLSearchParams(searchParams)
-    for (const key of FILTER_KEYS) {
-      next.delete(key)
-    }
-    next.delete(PAGE_PARAM)
-    setSearchParams(next)
-  }
-
-  const statusItems = [
-    { value: "all", label: t("all_status") },
-    { value: "active", label: tCommon("status.active") },
-    { value: "inactive", label: tCommon("status.inactive") },
+  const branchOptions = (branchesQuery.data?.items ?? []).map((branch) => ({
+    value: branch.id,
+    label: branch.branchName,
+  }))
+  const statusOptions = [
+    { value: "ACTIVE", label: tCommon("status.active") },
+    { value: "INACTIVE", label: tCommon("status.inactive") },
   ]
-  const branchItems = [
-    { value: "all", label: t("all_branches") },
-    ...(branchesQuery.data?.items ?? []).map((branch) => ({
-      value: branch.id,
-      label: branch.branchName,
-    })),
-  ]
+
   const columns = column.columns([
     column.accessor("departmentName", {
       id: "name",
       header: t("columns.name"),
       enableSorting: true,
+      meta: {
+        filter: {
+          field: "name",
+          valueType: "text",
+          defaultOp: "ilike",
+        },
+      },
     }),
     column.accessor("departmentCode", {
       id: "code",
       header: t("columns.code"),
       enableSorting: true,
+      meta: {
+        filter: {
+          field: "code",
+          valueType: "text",
+          defaultOp: "ilike",
+        },
+      },
       cell: ({ getValue }) => (
         <span className="font-mono text-small-2 text-muted-foreground">{getValue()}</span>
       ),
     }),
     column.accessor("branchId", {
+      id: "branchId",
       header: t("form.branch"),
       enableSorting: false,
+      meta: {
+        filter: {
+          field: "branchId",
+          valueType: "select",
+          ops: SELECT_FILTER_OPS,
+          defaultOp: "eq",
+          options: branchOptions,
+        },
+      },
       cell: ({ getValue }) => {
         const value = getValue()
         return value ? (branchNames.get(value) ?? "—") : "—"
@@ -123,6 +123,15 @@ export function DepartmentListPage() {
     column.accessor("status", {
       header: t("columns.status"),
       enableSorting: true,
+      meta: {
+        filter: {
+          field: "status",
+          valueType: "select",
+          ops: SELECT_FILTER_OPS,
+          defaultOp: "eq",
+          options: statusOptions,
+        },
+      },
       cell: ({ getValue }) => <StatusBadge status={getValue()} />,
     }),
     column.display({
@@ -173,7 +182,7 @@ export function DepartmentListPage() {
           title={tCommon("states.no_results_title")}
           description={tCommon("states.no_results_description")}
           action={
-            <Button type="button" variant="outline" onClick={resetFilters}>
+            <Button type="button" variant="outline" onClick={clearAllFilters}>
               {tCommon("actions.reset_filters")}
             </Button>
           }
@@ -190,6 +199,8 @@ export function DepartmentListPage() {
         label={t("title")}
         sorting={sorting}
         onSortingChange={setSorting}
+        columnFilters={filters}
+        onColumnDialogApply={applyColumnDialog}
         onRowClick={(department) => void navigate(`/departments/${department.id}`)}
       />
     )
@@ -200,20 +211,10 @@ export function DepartmentListPage() {
       <PageHeader title={t("title")} description={t("subtitle")} actions={addButton} />
       <ListCard
         toolbar={
-          <FilterBar hasFilters={hasFilters} onReset={resetFilters}>
-            <FilterSelect
-              items={statusItems}
-              value={status ?? "all"}
-              label={t("all_status")}
-              onValueChange={(value) => patch("status", value)}
-            />
-            <FilterSelect
-              items={branchItems}
-              value={branchId ?? "all"}
-              label={t("all_branches")}
-              onValueChange={(value) => patch("branch", value)}
-              className="w-52"
-            />
+          <FilterBar hasFilters={hasFilters} onReset={clearAllFilters}>
+            <span className="text-small-2 text-muted-foreground">
+              {tCommon("table.filter_hint")}
+            </span>
           </FilterBar>
         }
         footer={

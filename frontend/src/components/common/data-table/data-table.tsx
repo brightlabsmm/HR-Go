@@ -17,6 +17,8 @@ import {
   TableHead,
   TableHeader,
 } from "@/components/ui/table"
+import type { ColumnDialogApply } from "@/shared/hooks/use-list-table-params"
+import type { ColumnFilterValue } from "@/util/column-filter"
 
 interface DataTableProps<TData extends RowData> {
   columns: ColumnDef<typeof dataTableFeatures, TData>[]
@@ -28,6 +30,8 @@ interface DataTableProps<TData extends RowData> {
   label?: string
   sorting?: SortingState
   onSortingChange?: (sorting: SortingState) => void
+  columnFilters?: ColumnFilterValue[]
+  onColumnDialogApply?: (update: ColumnDialogApply) => void
   enableColumnVisibility?: boolean
   onRowClick?: (row: TData) => void
 }
@@ -75,6 +79,8 @@ export function DataTable<TData extends RowData>({
   label,
   sorting,
   onSortingChange,
+  columnFilters,
+  onColumnDialogApply,
   enableColumnVisibility = true,
   onRowClick,
 }: DataTableProps<TData>) {
@@ -116,6 +122,15 @@ export function DataTable<TData extends RowData>({
   const rows = table.getRowModel().rows
   const columnCount = Math.max(table.getVisibleLeafColumns().length, 1)
   const resolvedEmpty = emptyMessage ?? t("table.empty")
+  const activeSorting: SortingState = sorting ?? []
+
+  function handleColumnDialogApply(update: ColumnDialogApply) {
+    if (onColumnDialogApply) {
+      onColumnDialogApply(update)
+      return
+    }
+    onSortingChange?.(update.sorting)
+  }
 
   return (
     <table.AppTable>
@@ -130,6 +145,12 @@ export function DataTable<TData extends RowData>({
             <DataTableRow key={headerGroup.id} className="h-12 hover:bg-transparent md:h-11">
               {headerGroup.headers.map((header) => {
                 const meta = header.column.columnDef.meta
+                const sortIndex = activeSorting.findIndex(
+                  (item) => item.id === header.column.id
+                )
+                const headerDef = header.column.columnDef.header
+                const titleLabel =
+                  typeof headerDef === "string" ? headerDef : header.column.id
 
                 return (
                   <TableHead
@@ -143,12 +164,24 @@ export function DataTable<TData extends RowData>({
                   >
                     {header.isPlaceholder ? null : (
                       <DataTableColumnHeader
+                        title={titleLabel}
+                        columnId={header.column.id}
                         canSort={header.column.getCanSort()}
                         sorted={header.column.getIsSorted()}
-                        onSort={header.column.getToggleSortingHandler()}
-                      >
-                        <table.FlexRender header={header} />
-                      </DataTableColumnHeader>
+                        sortIndex={
+                          activeSorting.length > 1 && sortIndex >= 0
+                            ? sortIndex
+                            : undefined
+                        }
+                        sorting={activeSorting}
+                        filterMeta={meta?.filter}
+                        columnFilters={columnFilters}
+                        onColumnDialogApply={
+                          onColumnDialogApply || onSortingChange
+                            ? handleColumnDialogApply
+                            : undefined
+                        }
+                      />
                     )}
                   </TableHead>
                 )

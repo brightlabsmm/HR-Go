@@ -41,6 +41,7 @@
     "delete": "删除",
     "view": "查看详情",
     "back": "返回",
+    "apply": "应用",
     "reset_filters": "重置筛选",
     "back_home": "返回首页"
   },
@@ -71,9 +72,35 @@
     "empty": "暂无数据",
     "columns": "列",
     "toggle_columns": "显示或隐藏列",
+    "sort": "排序",
     "sort_asc": "升序排列",
     "sort_desc": "降序排列",
+    "sort_none": "不排序",
     "clear_sort": "清除排序",
+    "clear_filter": "清除 {{column}} 筛选",
+    "clear_column": "清除此列",
+    "column_menu": "筛选并排序 {{column}}",
+    "column_dialog_title": "{{column}}",
+    "column_dialog_description": "为此列设置排序和筛选。可同时对多列排序和筛选。",
+    "filter_hint": "点击列名以筛选或排序",
+    "filter_operator": "运算符",
+    "filter_value": "值",
+    "filter_value_placeholder": "选择值",
+    "filter_search_placeholder": "在此列中搜索",
+    "filter_value_required": "请输入或选择值以应用此筛选",
+    "filter_ops": {
+      "eq": "等于",
+      "ne": "不等于",
+      "gt": "大于",
+      "gte": "大于或等于",
+      "lt": "小于",
+      "lte": "小于或等于",
+      "like": "包含（区分大小写）",
+      "ilike": "包含",
+      "in": "在列表中",
+      "isnull": "为空",
+      "notnull": "不为空"
+    },
     "row_actions": "行操作"
   },
   "language": "语言",
@@ -153,6 +180,8 @@
     "headline_platform": "在一个控制台中管理所有 HR Go 租户",
     "feature_structure": "分支、部门与汇报关系",
     "feature_access": "为每位成员提供基于角色的权限",
-    "feature_audit": "完整记录每一次变更"
+    "feature_audit": "完整记录每一次变更",
+    "banner_login": "HR Go 登录横幅",
+    "banner_change_password": "HR Go 修改密码横幅"
   }
 }
